@@ -39,6 +39,12 @@ public class FileHelper {
 		this.s3ClientHelper = s3ClientHelper;
 	}
 
+	public FileHelper(String bucketName, S3Client s3Client) {
+		this.bucketName = bucketName;
+		this.s3Client = s3Client;
+		this.s3ClientHelper = new S3ClientHelper(s3Client);
+	}
+
 	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) {
 		S3PutRequestBuilder s3PutRequestBuilder = s3ClientHelper.newPutRequest(bucketName, targetFilePath, fileStream);
 		S3PutRequestBuilder length = s3PutRequestBuilder.length(fileSize);
