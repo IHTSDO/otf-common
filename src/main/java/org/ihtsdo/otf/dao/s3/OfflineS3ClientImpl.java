@@ -60,6 +60,12 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		List<S3ObjectSummary> objectSummaries = listing.getObjectSummaries();
 
 		String searchLocation = getPlatformDependantPath(prefix);
+		// Go up a directory, prefix could include partial filename
+		if (searchLocation.indexOf("/") > 1) {
+			searchLocation = searchLocation.substring(0, searchLocation.lastIndexOf("/"));
+		} else {
+			searchLocation = "";
+		}
 		File searchStartDir;
 
 		File bucket = getBucket(bucketName);
@@ -69,10 +75,12 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 			if (list != null) {
 				for (File file : list) {
 					String key = getRelativePathAsKey(bucketName, file);
-					S3ObjectSummary summary = new S3ObjectSummary();
-					summary.setKey(key);
-					summary.setBucketName(bucketName);
-					objectSummaries.add(summary);
+					if (key.startsWith(prefix)) {
+						S3ObjectSummary summary = new S3ObjectSummary();
+						summary.setKey(key);
+						summary.setBucketName(bucketName);
+						objectSummaries.add(summary);
+					}
 				}
 			}
 			listing.setBucketName(bucketName);

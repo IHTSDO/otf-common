@@ -3,9 +3,6 @@ package org.ihtsdo.otf.dao.s3;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.*;
-
-import org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl;
-import org.ihtsdo.otf.dao.s3.S3Client;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -63,6 +60,21 @@ public class OfflineS3ClientImplTest {
 		Assert.assertEquals("products/123/exec2/file2.txt", objectSummaries.get(3).getKey());
 		Assert.assertEquals("products/123/execA/file1.txt", objectSummaries.get(4).getKey());
 		Assert.assertEquals("products/123/execZ/file1.txt", objectSummaries.get(5).getKey());
+	}
+
+	@Test
+	public void testListObjectsWithPartFilenamePrefix() throws IOException {
+		String prefix = "products/123/exec1/file";
+		Assert.assertEquals(0, s3Client.listObjects(TEST_BUCKET, prefix).getObjectSummaries().size());
+
+		s3Client.putObject(TEST_BUCKET, prefix + "1.txt", getTestFileStream(), null);
+		s3Client.putObject(TEST_BUCKET, prefix + "2.txt", getTestFileStream(), null);
+
+		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(TEST_BUCKET, prefix).getObjectSummaries();
+
+		Assert.assertEquals(2, objectSummaries.size());
+		Assert.assertEquals("products/123/exec1/file1.txt", objectSummaries.get(0).getKey());
+		Assert.assertEquals("products/123/exec1/file2.txt", objectSummaries.get(1).getKey());
 	}
 
 	@Test
