@@ -121,6 +121,11 @@ public class FileHelper {
 		s3Client.deleteObject(bucketName, filePath);
 	}
 
+	/**
+	 * Copies a file from one S3 location to another
+	 * @param sourcePath
+	 * @param targetPath
+	 */
 	public void copyFile(String sourcePath, String targetPath) {
 		LOGGER.debug("Copy file '{}' to '{}'", sourcePath, targetPath);
 		s3Client.copyObject(bucketName, sourcePath, bucketName, targetPath);
@@ -128,6 +133,7 @@ public class FileHelper {
 
 
 	/**
+	 * Copies a file from one S3 location to another
 	 * @param sourcePath   source path
 	 * @param targetBucket target bucket name
 	 * @param targetPath   target path
