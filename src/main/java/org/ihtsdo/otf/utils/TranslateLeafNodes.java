@@ -23,7 +23,7 @@ public class TranslateLeafNodes {
 	public static void main(String[] args) throws Exception {
 		if (args.length < 2) {
 			echo("Usage TranslateLeafNodes <json ENGLISH filename> <output language> [-null]");
-			echo("The null flag will recreate the file without trasnslation for consistency in ordering");
+			echo("The null flag will recreate the file without translation for consistency in ordering");
 			System.exit(1);
 		}
 
@@ -40,7 +40,7 @@ public class TranslateLeafNodes {
 			echo("Saving as " + newFilename);
 
 			String jsonStr = FileUtils.readFileToString(enFile);
-			// json.org does not preseve order. We'll dip into JSON to obtain an ordered map
+			// json.org does not preserve order. We'll dip into JSON to obtain an ordered map
 			// JsonParser parser = new JsonParser();
 			// java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<Map>() {
 			// }.getType();
