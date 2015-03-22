@@ -81,7 +81,6 @@ public class FileUtils {
 		File resultFile = new File(resultFilePath);
 		FileOutputStream fop = new FileOutputStream(resultFile);
 
-		// get the content in bytes
 		byte[] contentInBytes = md5String.getBytes();
 
 		fop.write(contentInBytes);
