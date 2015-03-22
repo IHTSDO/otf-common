@@ -91,6 +91,7 @@ public class FileUtils {
 	}
 
 	public static boolean hasExtension(final String fileName, final String extension) {
+    if (fileName == null) { return false; }
 		return fileName.endsWith(extension);
 	}
 
