@@ -4,6 +4,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.*;
 
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.dao.s3.S3Client;
 import org.ihtsdo.otf.utils.FileUtils;
 import org.slf4j.Logger;
@@ -66,23 +67,30 @@ public class FileHelper {
 	public String putFile(File file, String targetFilePath, boolean calcMD5) throws NoSuchAlgorithmException, IOException, DecoderException {
 
 		InputStream is = new FileInputStream(file);
-		S3PutRequestBuilder putRequest = s3ClientHelper.newPutRequest(bucketName, targetFilePath, is).length(file.length()).useBucketAcl();
-		String localMd5 = null;
-		if (calcMD5) {
-			localMd5 = FileUtils.calculateMD5(file);
-			putRequest.withMD5(localMd5);
-		}
-		PutObjectResult putResult = s3Client.putObject(putRequest);
-		String md5Received = (putResult == null ? null : putResult.getContentMd5());
-		LOGGER.debug("S3Client put request returned MD5: " + md5Received);
+		String md5Received = "MD5 not received";
+		try {
+			S3PutRequestBuilder putRequest = s3ClientHelper.newPutRequest(bucketName, targetFilePath, is).length(file.length())
+					.useBucketAcl();
+			String localMd5 = null;
+			if (calcMD5) {
+				localMd5 = FileUtils.calculateMD5(file);
+				putRequest.withMD5(localMd5);
+			}
+			PutObjectResult putResult = s3Client.putObject(putRequest);
+			md5Received = (putResult == null ? null : putResult.getContentMd5());
+			LOGGER.debug("S3Client put request returned MD5: " + md5Received);
 
-		if (calcMD5) {
-			//Also upload the hex encoded (ie normal) md5 digest in a file
-			String md5TargetPath = targetFilePath + ".md5";
-			File md5File = FileUtils.createMD5File(file, localMd5);
-			InputStream isMD5 = new FileInputStream(md5File);
-			S3PutRequestBuilder md5PutRequest = s3ClientHelper.newPutRequest(bucketName, md5TargetPath, isMD5).length(md5File.length()).useBucketAcl();
-			s3Client.putObject(md5PutRequest);
+			if (calcMD5) {
+				// Also upload the hex encoded (ie normal) md5 digest in a file
+				String md5TargetPath = targetFilePath + ".md5";
+				File md5File = FileUtils.createMD5File(file, localMd5);
+				InputStream isMD5 = new FileInputStream(md5File);
+				S3PutRequestBuilder md5PutRequest = s3ClientHelper.newPutRequest(bucketName, md5TargetPath, isMD5).length(md5File.length())
+						.useBucketAcl();
+				s3Client.putObject(md5PutRequest);
+			}
+		} finally {
+			IOUtils.closeQuietly(is);
 		}
 
 		return md5Received;
