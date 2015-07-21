@@ -39,7 +39,7 @@ import java.util.List;
 
 public class SnowOwlRestClient {
 
-	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl-v1+json";
+	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final String SNOMED_TERMINOLOGY_URL = "snomed-ct";
 	public static final String MAIN = "MAIN";
