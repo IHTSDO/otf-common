@@ -358,7 +358,7 @@ public class SnowOwlRestClient {
 				throw new SnowOwlRestClientException("Rest client error while checking status of " + waitingFor + ".", e);
 			}
 			finalStateAchieved = !("RUNNING".equals(status) || "SCHEDULED".equals(status) || "SAVING_IN_PROGRESS".equals(status));
-			if (timeoutDate != null && new Date().after(timeoutDate)) {
+			if (!finalStateAchieved && timeoutDate != null && new Date().after(timeoutDate)) {
 				throw new SnowOwlRestClientException("Client timeout waiting for " + waitingFor + ".");
 			}
 			
