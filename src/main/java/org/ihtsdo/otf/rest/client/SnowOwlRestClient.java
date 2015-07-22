@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonWriter;
 
 //import net.rcarz.jiraclient.Issue;
 
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -75,7 +76,7 @@ public class SnowOwlRestClient {
 	private String rolloverLogPath;
 	private final Gson gson;
 	private int importTimeoutMinutes;
-	private int classificationTimeoutMinutes;
+	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -186,6 +187,7 @@ public class SnowOwlRestClient {
 			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_V1_CONTENT_TYPE);
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
+			results.setClassificationLocation(classificationLocation);
 		} catch (IOException | JSONException e) {
 			throw new SnowOwlRestClientException("Create classification failed.", e);
 		}
@@ -201,12 +203,17 @@ public class SnowOwlRestClient {
 	 */
 	public ClassificationResults classify(String branchPath) throws SnowOwlRestClientException, InterruptedException {
 
-		String date = SIMPLE_DATE_FORMAT.format(new Date());
 		ClassificationResults results = startClassification(branchPath);
+		results = waitForClassificationToComplete(results);
+		return results;
+	}
+	
+	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws SnowOwlRestClientException, InterruptedException {
 		String classificationLocation = results.getClassificationLocation();
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
+			results.setStatus(ProcessingStatus.COMPLETED.toString());
 			try {
 				// Check equivalent concepts
 				JSONArray items = getItems(classificationLocation + EQUIVALENT_CONCEPTS_URL);
@@ -224,6 +231,7 @@ public class SnowOwlRestClient {
 				Integer total = (Integer) relationshipChangesUnlimited.get("total");
 				results.setRelationshipChangesCount(total);
 				Path tempDirectory = Files.createTempDirectory(getClass().getSimpleName());
+				String date = SIMPLE_DATE_FORMAT.format(new Date());
 				File file = new File(tempDirectory.toFile(), "relationship-changes-" + date + ".json");
 				toPrettyJson(relationshipChangesUnlimited.object().toString(), file);
 				results.setRelationshipChangesFile(file);
@@ -344,15 +352,19 @@ public class SnowOwlRestClient {
 		boolean finalStateAchieved = false;
 		while (!finalStateAchieved) {
 			try {
-				status = (String) resty.json(url).get("status");
+				Object statusObj = resty.json(url).get("status");
+				status = statusObj.toString() ;
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Rest client error while checking status of " + waitingFor + ".", e);
 			}
 			finalStateAchieved = !("RUNNING".equals(status) || "SCHEDULED".equals(status) || "SAVING_IN_PROGRESS".equals(status));
-			if (new Date().after(timeoutDate)) {
+			if (timeoutDate != null && new Date().after(timeoutDate)) {
 				throw new SnowOwlRestClientException("Client timeout waiting for " + waitingFor + ".");
 			}
-			Thread.sleep(1000 * 10);
+			
+			if (!finalStateAchieved) {
+				Thread.sleep(1000 * 10);
+			}
 		}
 
 		boolean targetStatusAchieved = targetStatus.toString().equals(status);
@@ -363,9 +375,13 @@ public class SnowOwlRestClient {
 	}
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
-		GregorianCalendar timeoutCalendar = new GregorianCalendar();
-		timeoutCalendar.add(Calendar.MINUTE, importTimeoutMinutes);
-		return timeoutCalendar.getTime();
+		if (importTimeoutMinutes > 0) {
+			GregorianCalendar timeoutCalendar = new GregorianCalendar();
+			timeoutCalendar.add(Calendar.MINUTE, importTimeoutMinutes);
+			return timeoutCalendar.getTime();
+		} 
+
+		return null;
 	}
 
 	private String getClassificationsUrl(String branchPath) throws SnowOwlRestClientException {
