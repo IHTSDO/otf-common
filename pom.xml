@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common</artifactId>
-	<version>0.0.10</version>
+	<version>0.0.11</version>
 	<name>OTF Common</name>
 	
 	<licenses>
@@ -87,7 +87,7 @@
 		<dependency>
 			<groupId>us.monoid.web</groupId>
 			<artifactId>resty</artifactId>
-			<version>0.3.2</version>
+			<version>0.3.3-IHTSDO</version>
 		</dependency>
 		<dependency> <!-- This would also be pulled in via the Jira client -->
 			<groupId>org.apache.httpcomponents</groupId>
@@ -140,7 +140,7 @@
 				<executions>
 				<execution>
 					<id>attach-sources</id>
-					<phase>deploy</phase>
+					<phase>install</phase>
 					<goals><goal>jar-no-fork</goal></goals> 
 				</execution>
 				</executions>
