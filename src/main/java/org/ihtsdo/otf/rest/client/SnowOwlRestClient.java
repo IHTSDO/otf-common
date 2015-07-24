@@ -244,6 +244,20 @@ public class SnowOwlRestClient {
 		}
 	}
 
+	public String getLatestClassificationOnBranch(String branchPath) throws SnowOwlRestClientException {
+		final String classificationsUrl = getClassificationsUrl(branchPath);
+		try {
+			final JSONArray items = getItems(classificationsUrl);
+			if (items != null) {
+				final JSONObject jsonObject = items.getJSONObject(items.length() - 1);
+				return jsonObject.toString();
+			}
+			return null;
+		} catch (Exception e) {
+			throw new SnowOwlRestClientException("Failed to retrieve list of classifications.", e);
+		}
+	}
+
 	public void saveClassification(String branchPath, String classificationId) throws SnowOwlRestClientException,
 			InterruptedException {
 		String classificationUrl = getClassificationsUrl(branchPath) + "/" + classificationId;
@@ -269,6 +283,7 @@ public class SnowOwlRestClient {
 			items = (JSONArray) jsonResource.get("items");
 		} catch (JSONException e) {
 			// this gets thrown when the attribute does not exist
+			logger.info("No items property of resource at '{}'", url);
 		}
 		return items;
 	}
