@@ -7,9 +7,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
 
-//import net.rcarz.jiraclient.Issue;
-
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -33,6 +30,7 @@ import us.monoid.web.JSONResource;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -40,36 +38,20 @@ import java.util.List;
 
 public class SnowOwlRestClient {
 
-	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
+	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
-	public static final String SNOMED_TERMINOLOGY_URL = "snomed-ct";
-	public static final String MAIN = "MAIN";
-	public static final String MAIN_BRANCH_URL = SNOMED_TERMINOLOGY_URL + "/" + MAIN;
-	public static final String TASKS_URL = MAIN_BRANCH_URL + "/tasks";
-	public static final String IMPORTS_URL = SNOMED_TERMINOLOGY_URL + "/imports";
-	public static final String EXPORTS_URL = "/exports";
-	public static final String CLASSIFICATIONS_URL = "/classifications";
-	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
-	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes?limit=1000000";
-	private static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
+	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
+	public static final String US_EN_LANG_REFSET = "900000000000509007";
+	private final SnowOwlRestUrlHelper urlHelper;
 
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
 	};
 
-	public enum BranchState {
-		NOT_SYNCHRONIZED, SYNCHRONIZED, PROMOTED
-	}
-
-	public enum BranchType {
-		MAIN, BRANCH
-	}
-
 	public enum ProcessingStatus {
 		COMPLETED, SAVED
 	}
 
-	private final String snowOwlUrl;
 	private final RestyHelper resty;
 	private String reasonerId;
 	private String logPath;
@@ -81,71 +63,107 @@ public class SnowOwlRestClient {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
-		this.snowOwlUrl = snowOwlUrl;
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
+		urlHelper = new SnowOwlRestUrlHelper(snowOwlUrl);
 		resty.authenticate(snowOwlUrl, username, password.toCharArray());
 		gson = new GsonBuilder().setPrettyPrinting().create();
 	}
 
-	@SuppressWarnings("unchecked")
-	public List<String> listBranches() throws SnowOwlRestClientException {
-		try {
-			JSONResource tasks = resty.json(snowOwlUrl + TASKS_URL);
-			return (List<String>) tasks.get("items.taskId");
-		} catch (IOException e) {
-			throw new SnowOwlRestClientException("Failed to retrieve branch list.", e);
-		} catch (Exception e) {
-			throw new SnowOwlRestClientException("Failed to parse branch list.", e);
+	public void createProjectBranch(String branchName) throws RestClientException {
+		createBranch(urlHelper.getMainBranchPath(), branchName);
+	}
+
+	public void createProjectBranchIfNeeded(String projectName) throws RestClientException {
+		if (!listProjectBranches().contains(projectName)) {
+			createProjectBranch(projectName);
 		}
 	}
 
-	/**
-	 * @param branchName
-	 * @return true if branch created, false if already existed
-	 * @throws SnowOwlRestClientException
-	 */
-	public boolean getCreateBranch(String branchName) throws SnowOwlRestClientException {
-		// http://localhost:8080/snowowl/snomed-ct/MAIN/tasks/create-1
+	private void createBranch(String parentBranch, String newBranchName) throws RestClientException {
 		try {
-			resty.json(snowOwlUrl + TASKS_URL + "/" + branchName);
-			logger.info("Branch exists {}", branchName);
-			return false;
-		} catch (IOException e) {
-			if (e.getCause() instanceof FileNotFoundException) {
-				// Branch not found. Create.
-				try {
-					String json = "{\n" +
-							"  \"description\": \"" + branchName + "\",\n" +
-							"  \"taskId\": \"" + branchName + "\"\n" +
-							"}";
-					resty.json(snowOwlUrl + TASKS_URL, RestyHelper.content(new JSONObject(json), SNOWOWL_V1_CONTENT_TYPE));
-					logger.info("Created branch {}", branchName);
-					return true;
-				} catch (IOException | JSONException e1) {
-					throw new SnowOwlRestClientException("Failed to create branch '" + branchName + "'.", e1);
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("parent", parentBranch);
+			jsonObject.put("name", newBranchName);
+			resty.json(urlHelper.getBranchesUrl(), RestyHelper.content((jsonObject), SNOWOWL_CONTENT_TYPE));
+		} catch (IOException | JSONException e) {
+			throw new RestClientException("Failed to create branch " + newBranchName + ", parent branch " + parentBranch, e);
+		}
+	}
+
+	public List<String> listProjectBranches() throws RestClientException {
+		return listBranchDirectChildren(urlHelper.getMainBranchPath());
+	}
+
+	public List<String> listProjectTasks(String projectName) throws RestClientException {
+		return listBranchDirectChildren(urlHelper.getBranchPath(projectName));
+	}
+
+	private List<String> listBranchDirectChildren(String branchPath) throws RestClientException {
+		try {
+			List<String> projectNames = new ArrayList<>();
+			JSONResource json = resty.json(urlHelper.getBranchChildrenUrl(branchPath));
+			try {
+				@SuppressWarnings("unchecked")
+				List<String> childBranchPaths = (List<String>) json.get("items.path");
+				for (String childBranchPath : childBranchPaths) {
+					String branchName = childBranchPath.substring((branchPath + "/").length());
+					if (!branchName.contains("/")) {
+						projectNames.add(branchName);
+					}
 				}
-			} else {
-				throw new SnowOwlRestClientException("Failed to create branch '" + branchName + "'.", e);
+			} catch (JSONException e) {
+				// this thrown if there are no items.. do nothing
 			}
+			return projectNames;
+		} catch (IOException e) {
+			throw new RestClientException("Failed to retrieve branch list.", e);
+		} catch (Exception e) {
+			throw new RestClientException("Failed to parse branch list.", e);
 		}
 	}
 
-	public boolean importRF2Archive(String branchName, final InputStream rf2ZipFileStream) throws SnowOwlRestClientException {
+	public void deleteProjectBranch(String projectBranchName) throws RestClientException {
+		deleteBranch(projectBranchName);
+	}
+
+	public void deleteTaskBranch(String projectName, String taskName) throws RestClientException {
+		deleteBranch(projectName + "/" + taskName);
+	}
+
+	private void deleteBranch(String branchPathRelativeToMain) throws RestClientException {
+		try {
+			resty.json(urlHelper.getBranchUrlRelativeToMain(branchPathRelativeToMain), RestyHelper.delete());
+		} catch (IOException e) {
+			throw new RestClientException("Failed to delete branch " + branchPathRelativeToMain, e);
+		}
+	}
+
+	public void createProjectTask(String projectName, String taskName) throws RestClientException {
+		createBranch(urlHelper.getBranchPath(projectName), taskName);
+	}
+
+	public void createProjectTaskIfNeeded(String projectName, String taskName) throws RestClientException {
+		if (!listProjectTasks(projectName).contains(taskName)) {
+			createProjectTask(projectName, taskName);
+		}
+	}
+
+	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
+ throws RestClientException {
 		Assert.notNull(rf2ZipFileStream, "Archive to import should not be null.");
 
 		try {
 			// Create import
-			logger.info("Create import, branch name '{}'", branchName);
-			String jsonString = "{\n" +
-					"  \"version\": \"MAIN\",\n" +
-					"  \"type\": \"DELTA\",\n" +
-					"  \"taskId\": \"" + branchName + "\",\n" +
-					"  \"languageRefSetId\": \"900000000000509007\",\n" +
-					"  \"createVersions\": false\n" +
-					"}\n";
+			String branchPath = urlHelper.getBranchPath(projectName, taskName);
+			logger.info("Create import, branch '{}'", branchPath);
 
-			resty.withHeader("Accept", SNOWOWL_V1_CONTENT_TYPE);
-			JSONResource json = resty.json(snowOwlUrl + IMPORTS_URL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
+			JSONObject params = new JSONObject();
+			params.put("type", "DELTA");
+			params.put("branchPath", branchPath);
+			params.put("languageRefSetId", US_EN_LANG_REFSET);
+			params.put("createVersions", "false");
+			resty.withHeader("Accept", SNOWOWL_CONTENT_TYPE);
+			JSONResource json = resty.json(urlHelper.getImportsUrl(), RestyHelper.content(params, SNOWOWL_CONTENT_TYPE));
 			String location = json.getUrlConnection().getHeaderField("Location");
 			String importId = location.substring(location.lastIndexOf("/") + 1);
 
@@ -163,7 +181,7 @@ public class SnowOwlRestClient {
 				multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 				HttpEntity httpEntity = multipartEntityBuilder.build();
 				resty.withHeader("Accept", ANY_CONTENT_TYPE);
-				resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId + "/archive", new HttpEntityContent(httpEntity));
+				resty.json(urlHelper.getImportArchiveUrl(importId), new HttpEntityContent(httpEntity));
 
 			} finally {
 				tempFile.delete();
@@ -172,24 +190,25 @@ public class SnowOwlRestClient {
 
 			// Poll import entity until complete or times-out
 			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
-			return waitForStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(importTimeoutMinutes), ProcessingStatus.COMPLETED, "import");
+			return waitForStatus(urlHelper.getImportUrl(importId), getTimeoutDate(importTimeoutMinutes), ProcessingStatus.COMPLETED,
+					"import");
 		} catch (Exception e) {
-			throw new SnowOwlRestClientException("Import failed.", e);
+			throw new RestClientException("Import failed.", e);
 		}
 	}
 	
-	public ClassificationResults startClassification (String branchPath) throws SnowOwlRestClientException {
+	public ClassificationResults startClassification (String branchPath) throws RestClientException {
 		ClassificationResults results = new ClassificationResults();
 		try {
 			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
-			String classifyURL = getClassificationsUrl(branchPath);
+			String classifyURL = urlHelper.getClassificationsUrl(branchPath);
 			logger.debug("Initiating classification via {}", classifyURL);
-			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_V1_CONTENT_TYPE);
+			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_CONTENT_TYPE);
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
 		} catch (IOException | JSONException e) {
-			throw new SnowOwlRestClientException("Create classification failed.", e);
+			throw new RestClientException("Create classification failed.", e);
 		}
 		return results;
 	}
@@ -198,54 +217,54 @@ public class SnowOwlRestClient {
 	 * Initiates a classification and waits for the results
 	 * @param branchPath
 	 * @return
-	 * @throws SnowOwlRestClientException
+	 * @throws RestClientException
 	 * @throws InterruptedException
 	 */
-	public ClassificationResults classify(String branchPath) throws SnowOwlRestClientException, InterruptedException {
+	public ClassificationResults classify(String branchPath) throws RestClientException, InterruptedException {
 
 		ClassificationResults results = startClassification(branchPath);
 		results = waitForClassificationToComplete(results);
 		return results;
 	}
 	
-	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws SnowOwlRestClientException, InterruptedException {
+	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws RestClientException, InterruptedException {
 		String classificationLocation = results.getClassificationLocation();
+		String date = SIMPLE_DATE_FORMAT.format(new Date());
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
 			results.setStatus(ProcessingStatus.COMPLETED.toString());
 			try {
 				// Check equivalent concepts
-				JSONArray items = getItems(classificationLocation + EQUIVALENT_CONCEPTS_URL);
+				JSONArray items = getItems(urlHelper.getEquivalentConceptsUrl(classificationLocation));
 				boolean equivalentConceptsFound = !(items == null || items.length() == 0);
 				results.setEquivalentConceptsFound(equivalentConceptsFound);
 				if (equivalentConceptsFound) {
 					results.setEquivalentConceptsJson(toPrettyJson(items.toString()));
 				}
 			} catch (Exception e) {
-				throw new SnowOwlRestClientException("Failed to retrieve equivalent concepts of classification.", e);
+				throw new RestClientException("Failed to retrieve equivalent concepts of classification.", e);
 			}
 			try {
 				// Check relationship changes
-				JSONResource relationshipChangesUnlimited = resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL);
+				JSONResource relationshipChangesUnlimited = resty.json(urlHelper.getRelationshipChangesFirstTenThousand(classificationLocation));
 				Integer total = (Integer) relationshipChangesUnlimited.get("total");
 				results.setRelationshipChangesCount(total);
 				Path tempDirectory = Files.createTempDirectory(getClass().getSimpleName());
-				String date = SIMPLE_DATE_FORMAT.format(new Date());
 				File file = new File(tempDirectory.toFile(), "relationship-changes-" + date + ".json");
 				toPrettyJson(relationshipChangesUnlimited.object().toString(), file);
 				results.setRelationshipChangesFile(file);
 			} catch (Exception e) {
-				throw new SnowOwlRestClientException("Failed to retrieve relationship changes of classification.", e);
+				throw new RestClientException("Failed to retrieve relationship changes of classification.", e);
 			}
 			return results;
 		} else {
-			throw new SnowOwlRestClientException("Classification failed, see SnowOwl logs for details.");
+			throw new RestClientException("Classification failed, see SnowOwl logs for details.");
 		}
 	}
 
-	public String getLatestClassificationOnBranch(String branchPath) throws SnowOwlRestClientException {
-		final String classificationsUrl = getClassificationsUrl(branchPath);
+	public String getLatestClassificationOnBranch(String branchPath) throws RestClientException {
+		final String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
 		try {
 			final JSONArray items = getItems(classificationsUrl);
 			if (items != null) {
@@ -254,25 +273,26 @@ public class SnowOwlRestClient {
 			}
 			return null;
 		} catch (Exception e) {
-			throw new SnowOwlRestClientException("Failed to retrieve list of classifications.", e);
+			throw new RestClientException("Failed to retrieve list of classifications.", e);
 		}
 	}
 
-	public void saveClassification(String branchPath, String classificationId) throws SnowOwlRestClientException,
+
+	public void saveClassification(String branchPath, String classificationId) throws RestClientException,
 			InterruptedException {
-		String classificationUrl = getClassificationsUrl(branchPath) + "/" + classificationId;
+		String classifyURL = urlHelper.getClassificationsUrl(branchPath);
 		try {
-			logger.debug("Saving classification via {}", classificationUrl);
+			logger.debug("Saving classification via {}", classifyURL);
 			JSONObject jsonObj = new JSONObject().put("status", "SAVED");
-			resty.put(classificationUrl, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
+			resty.put(classifyURL, jsonObj, SNOWOWL_CONTENT_TYPE);
 			//We'll wait the same time for saving as we do for the classification
-			boolean savingCompleted = waitForStatus(classificationUrl, getTimeoutDate(classificationTimeoutMinutes),
+			boolean savingCompleted = waitForStatus(classifyURL, getTimeoutDate(classificationTimeoutMinutes),
 					ProcessingStatus.SAVED, "classifier result saving");
 			if (!savingCompleted) {
 				throw new IOException("Classifier reported non-saved status when saving");
 			}
 		} catch (IOException | JSONException e) {
-			throw new SnowOwlRestClientException("Failed to save classification via URL " + classificationUrl, e);
+			throw new RestClientException("Failed to save classification via URL " + classifyURL, e);
 		}
 	}
 
@@ -288,39 +308,25 @@ public class SnowOwlRestClient {
 		return items;
 	}
 
-	public File exportBranch(String branchName, ExtractType extractType, String deltaStartEffectiveTime) throws Exception {
-		return export(null, branchName, extractType, deltaStartEffectiveTime);
-	}
-
-	public File exportVersion(String version, ExtractType extractType) throws Exception {
-		// Note that version could be "MAIN" to extract latest unversioned content on the main branch
-		return export(version, null, extractType, null);
-	}
 	
-	private File export(String version, String branchName, ExtractType extractType, String deltaStartEffectiveTime) throws Exception {
+	public File exportTask(String projectName, String taskName, ExtractType extractType) throws Exception {
+		return export(projectName, taskName, extractType);
+	}
 
-		String exportURL = snowOwlUrl + SNOMED_TERMINOLOGY_URL + EXPORTS_URL;
+	public File exportProject(String projectName, ExtractType extractType) throws Exception {
+		return export(projectName, null, extractType);
+	}
+
+	private File export(String projectName, String branchName, ExtractType extractType) throws Exception {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("type", extractType);
 
-		if (version != null) {
-			jsonObj.put("version", version);
-		} else {
-			jsonObj.put("version", MAIN);
-		}
-
-		if (branchName != null) {
-			jsonObj.put("taskId", branchName);
-		}
-
-		if (deltaStartEffectiveTime != null) {
-			jsonObj.put("deltaStartEffectiveTime", deltaStartEffectiveTime);
-		}
-
+		String branchPath = urlHelper.getBranchPath(projectName, branchName);
+		jsonObj.put("branchPath", branchPath);
 		jsonObj.put("transientEffectiveTime", DateUtils.today(DateUtils.YYYYMMDD));
 
-		logger.info("Initiating export from {} with json: {}", exportURL, jsonObj.toString());
-		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
+		logger.info("Initiating export with json: {}", jsonObj.toString());
+		JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
 
@@ -332,13 +338,26 @@ public class SnowOwlRestClient {
 		logger.debug("Extract saved to {}", archive.getAbsolutePath());
 		return archive;
 	}
+	
+	public void rebaseTask(String projectName, String taskName) throws IOException, JSONException {
+		String taskPath = urlHelper.getBranchPath(projectName, taskName);
+		String projectPath = urlHelper.getBranchPath(projectName);
+		logger.info("Rebasing branch {} from parent {}", taskPath, projectPath);
+		merge(projectPath, taskPath);
+	}
 
-	public void promoteBranch(String branchName) throws IOException, JSONException {
-		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("state", BranchState.PROMOTED.name());
-		String promotionURL = snowOwlUrl + TASKS_URL + "/" + branchName;
-		logger.info("Promoting branch via URL: {} with JSON: {}", promotionURL, jsonObj.toString());
-		resty.put(promotionURL, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
+	public void mergeTaskToProject(String projectName, String taskName) throws IOException, JSONException {
+		String taskPath = urlHelper.getBranchPath(projectName, taskName);
+		String projectPath = urlHelper.getBranchPath(projectName);
+		logger.info("Promoting branch {} to {}", taskPath, projectPath);
+		merge(taskPath, projectPath);
+	}
+
+	private void merge(String sourcePath, String targetPath) throws JSONException, IOException {
+		JSONObject params = new JSONObject();
+		params.put("source", sourcePath);
+		params.put("target", targetPath);
+		resty.put(urlHelper.getMergesUrl(), params, SNOWOWL_CONTENT_TYPE);
 	}
 
 	/**
@@ -362,7 +381,7 @@ public class SnowOwlRestClient {
 	}
 
 	private boolean waitForStatus(String url, Date timeoutDate, ProcessingStatus targetStatus, final String waitingFor)
-			throws SnowOwlRestClientException, InterruptedException {
+			throws RestClientException, InterruptedException {
 		String status = "";
 		boolean finalStateAchieved = false;
 		while (!finalStateAchieved) {
@@ -370,11 +389,11 @@ public class SnowOwlRestClient {
 				Object statusObj = resty.json(url).get("status");
 				status = statusObj.toString() ;
 			} catch (Exception e) {
-				throw new SnowOwlRestClientException("Rest client error while checking status of " + waitingFor + ".", e);
+				throw new RestClientException("Rest client error while checking status of " + waitingFor + ".", e);
 			}
 			finalStateAchieved = !("RUNNING".equals(status) || "SCHEDULED".equals(status) || "SAVING_IN_PROGRESS".equals(status));
 			if (!finalStateAchieved && timeoutDate != null && new Date().after(timeoutDate)) {
-				throw new SnowOwlRestClientException("Client timeout waiting for " + waitingFor + ".");
+				throw new RestClientException("Client timeout waiting for " + waitingFor + ".");
 			}
 			
 			if (!finalStateAchieved) {
@@ -397,10 +416,6 @@ public class SnowOwlRestClient {
 		} 
 
 		return null;
-	}
-
-	private String getClassificationsUrl(String branchPath) throws SnowOwlRestClientException {
-		return snowOwlUrl + branchPath + CLASSIFICATIONS_URL;
 	}
 
 	private String toPrettyJson(String jsonString) {
