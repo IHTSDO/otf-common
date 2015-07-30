@@ -3,6 +3,7 @@ package org.ihtsdo.otf.dao.s3;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.*;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.utils.FileUtils;
 import org.slf4j.Logger;
@@ -293,6 +294,18 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	public ObjectListing listNextBatchOfObjects(ObjectListing objectListing) {
 		// This could be implemented for consistency with the online version.
 		throw new NotImplementedException("Offline S3 Client does not need batching.");
+	}
+
+	@Override
+	public String getString(String bucketName, String key) {
+		String result = null;
+		try {
+			File file = getFile(bucketName, key);
+			result = org.apache.commons.io.FileUtils.readFileToString(file);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
 	}
 
 }

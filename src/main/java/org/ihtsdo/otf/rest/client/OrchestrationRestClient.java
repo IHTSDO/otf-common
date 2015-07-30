@@ -1,12 +1,14 @@
 package org.ihtsdo.otf.rest.client;
 
-
 import java.io.IOException;
 
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
+import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+import us.monoid.web.JSONResource;
 
 public class OrchestrationRestClient {
 
@@ -23,10 +25,11 @@ public class OrchestrationRestClient {
 		resty.authenticate(orchestrationUrl, username, password.toCharArray());
 	}
 
-	public void validate(String branchPath) throws JSONException, IOException {
+	public void validate(String branchPath) throws JSONException, IOException, BusinessServiceException {
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("branchPath", branchPath);
-		resty.json(orchestrationUrl + VALIDATION_ENDPOINT, RestyHelper.content((jsonObject), JSON_CONTENT_TYPE));
+		JSONResource response = resty.json(orchestrationUrl + VALIDATION_ENDPOINT, RestyHelper.content((jsonObject), JSON_CONTENT_TYPE));
+		RestyServiceHelper.ensureSuccessfull(response);
 	}
 
 

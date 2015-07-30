@@ -85,7 +85,7 @@ public class SnowOwlRestClient {
 			jsonObject.put("parent", parentBranch);
 			jsonObject.put("name", newBranchName);
 			resty.json(urlHelper.getBranchesUrl(), RestyHelper.content((jsonObject), SNOWOWL_CONTENT_TYPE));
-		} catch (IOException | JSONException e) {
+		} catch (Exception e) {
 			throw new RestClientException("Failed to create branch " + newBranchName + ", parent branch " + parentBranch, e);
 		}
 	}
@@ -133,7 +133,7 @@ public class SnowOwlRestClient {
 	private void deleteBranch(String branchPathRelativeToMain) throws RestClientException {
 		try {
 			resty.json(urlHelper.getBranchUrlRelativeToMain(branchPathRelativeToMain), RestyHelper.delete());
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new RestClientException("Failed to delete branch " + branchPathRelativeToMain, e);
 		}
 	}
@@ -207,7 +207,7 @@ public class SnowOwlRestClient {
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
-		} catch (IOException | JSONException e) {
+		} catch (Exception e) {
 			throw new RestClientException("Create classification failed.", e);
 		}
 		return results;
@@ -304,7 +304,7 @@ public class SnowOwlRestClient {
 			if (!savingCompleted) {
 				throw new IOException("Classifier reported non-saved status when saving");
 			}
-		} catch (IOException | JSONException e) {
+		} catch (Exception e) {
 			throw new RestClientException("Failed to save classification via URL " + classifyURL, e);
 		}
 	}
@@ -352,25 +352,29 @@ public class SnowOwlRestClient {
 		return archive;
 	}
 	
-	public void rebaseTask(String projectName, String taskName) throws IOException, JSONException {
+	public void rebaseTask(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
 		logger.info("Rebasing branch {} from parent {}", taskPath, projectPath);
 		merge(projectPath, taskPath);
 	}
 
-	public void mergeTaskToProject(String projectName, String taskName) throws IOException, JSONException {
+	public void mergeTaskToProject(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
 		logger.info("Promoting branch {} to {}", taskPath, projectPath);
 		merge(taskPath, projectPath);
 	}
 
-	private void merge(String sourcePath, String targetPath) throws JSONException, IOException {
-		JSONObject params = new JSONObject();
-		params.put("source", sourcePath);
-		params.put("target", targetPath);
-		resty.put(urlHelper.getMergesUrl(), params, SNOWOWL_CONTENT_TYPE);
+	private void merge(String sourcePath, String targetPath) throws RestClientException {
+		try {
+			JSONObject params = new JSONObject();
+			params.put("source", sourcePath);
+			params.put("target", targetPath);
+			resty.put(urlHelper.getMergesUrl(), params, SNOWOWL_CONTENT_TYPE);
+		} catch (Exception e) {
+			throw new RestClientException("Failed to merge " + sourcePath + " to " + targetPath, e);
+		}
 	}
 
 	/**

@@ -30,4 +30,6 @@ public interface S3Client {
 
 	ObjectListing listNextBatchOfObjects(ObjectListing objectListing);
 
+	String getString(String bucketName, String key);
+
 }
