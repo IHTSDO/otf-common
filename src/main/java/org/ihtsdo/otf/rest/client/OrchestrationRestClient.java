@@ -1,6 +1,8 @@
 package org.ihtsdo.otf.rest.client;
 
 
+import java.io.IOException;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -17,6 +19,7 @@ import us.monoid.web.JSONResource;
 public class OrchestrationRestClient {
 
 	public static final String ANY_CONTENT_TYPE = "*/*";
+	public static final String VALIDATION_ENDPOINT = "/REST/ts/validate";
 
 	private final String orchestrationUrl;
 	private final RestyHelper resty;
@@ -29,6 +32,12 @@ public class OrchestrationRestClient {
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		resty.authenticate(orchestrationUrl, username, password.toCharArray());
 		gson = new GsonBuilder().setPrettyPrinting().create();
+	}
+
+	public void validate(String branchPath) throws JSONException, IOException {
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("branchPath", branchPath);
+		resty.json(VALIDATION_ENDPOINT, RestyHelper.content((jsonObject), ANY_CONTENT_TYPE));
 	}
 
 
