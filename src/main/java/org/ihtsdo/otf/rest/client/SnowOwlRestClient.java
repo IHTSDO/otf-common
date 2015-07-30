@@ -214,7 +214,9 @@ public class SnowOwlRestClient {
 	}
 
 	/**
-	 * Initiates a classification and waits for the results
+	 * Initiates a classification and waits for the results.
+	 * {@link #isClassificationInProgressOnBranch(String)} can be used to check that a classification is not already in progress
+	 * prior to calling this method.
 	 * @param branchPath
 	 * @return
 	 * @throws RestClientException
@@ -264,19 +266,30 @@ public class SnowOwlRestClient {
 	}
 
 	public String getLatestClassificationOnBranch(String branchPath) throws RestClientException {
+		return getLatestClassificationObjectOnBranch(branchPath).toString();
+	}
+
+	public boolean isClassificationInProgressOnBranch(String branchPath) throws RestClientException, JSONException {
+		final JSONObject classification = getLatestClassificationObjectOnBranch(branchPath);
+		if (classification != null) {
+			final String status = classification.getString("status");
+			return "SCHEDULED".equals(status) || "RUNNING".equals(status);
+		}
+		return false;
+	}
+
+	private JSONObject getLatestClassificationObjectOnBranch(String branchPath) throws RestClientException {
 		final String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
 		try {
 			final JSONArray items = getItems(classificationsUrl);
 			if (items != null) {
-				final JSONObject jsonObject = items.getJSONObject(items.length() - 1);
-				return jsonObject.toString();
+				return items.getJSONObject(items.length() - 1);
 			}
 			return null;
 		} catch (Exception e) {
 			throw new RestClientException("Failed to retrieve list of classifications.", e);
 		}
 	}
-
 
 	public void saveClassification(String branchPath, String classificationId) throws RestClientException,
 			InterruptedException {
