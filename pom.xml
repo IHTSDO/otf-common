@@ -86,8 +86,8 @@
 		</dependency>
 		<dependency>
 			<groupId>us.monoid.web</groupId>
-			<artifactId>resty</artifactId>
-			<version>0.3.5-IHTSDO-SNAPSHOT</version>
+			<artifactId>ihtsdo-resty</artifactId>
+			<version>0.3.5-SNAPSHOT</version>
 		</dependency>
 		<dependency> <!-- This would also be pulled in via the Jira client -->
 			<groupId>org.apache.httpcomponents</groupId>
