@@ -266,7 +266,8 @@ public class SnowOwlRestClient {
 	}
 
 	public String getLatestClassificationOnBranch(String branchPath) throws RestClientException {
-		return getLatestClassificationObjectOnBranch(branchPath).toString();
+		JSONObject obj = getLatestClassificationObjectOnBranch(branchPath);
+		return (obj==null) ? new JSONObject().toString() : obj.toString();
 	}
 
 	public boolean isClassificationInProgressOnBranch(String branchPath) throws RestClientException, JSONException {
