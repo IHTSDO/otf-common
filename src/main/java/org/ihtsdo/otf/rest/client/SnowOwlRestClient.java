@@ -324,18 +324,18 @@ public class SnowOwlRestClient {
 
 	
 	public File exportTask(String projectName, String taskName, ExtractType extractType) throws Exception {
-		return export(projectName, taskName, extractType);
+		String branchPath = urlHelper.getBranchPath(projectName, taskName);
+		return export(branchPath, extractType);
 	}
 
 	public File exportProject(String projectName, ExtractType extractType) throws Exception {
-		return export(projectName, null, extractType);
+		String branchPath = urlHelper.getBranchPath(projectName, null);
+		return export(branchPath, extractType);
 	}
 
-	private File export(String projectName, String branchName, ExtractType extractType) throws Exception {
+	public File export(String branchPath, ExtractType extractType) throws Exception {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("type", extractType);
-
-		String branchPath = urlHelper.getBranchPath(projectName, branchName);
 		jsonObj.put("branchPath", branchPath);
 		jsonObj.put("transientEffectiveTime", DateUtils.today(DateUtils.YYYYMMDD));
 
