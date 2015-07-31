@@ -3,12 +3,13 @@ package org.ihtsdo.otf.utils;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-//TODO When this class is mature, move it to OTF Common
 public class DateUtils {
 	
 	public static final String DATE_SEPARATOR = "-";
 
 	public static final String YYYYMMDD = "yyyyMMdd";
+
+	public static final String YYYYMMDD_HHMMSS = "yyyyMMdd_HHmmss";
 
 	public static String formatAsISO (String dateAsYYYYMMDD) {
 		if (dateAsYYYYMMDD == null || dateAsYYYYMMDD.length() != 8) {
