@@ -337,7 +337,7 @@ public class SnowOwlRestClient {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("type", extractType);
 		jsonObj.put("branchPath", branchPath);
-		jsonObj.put("transientEffectiveTime", DateUtils.today(DateUtils.YYYYMMDD));
+		jsonObj.put("transientEffectiveTime", DateUtils.now(DateUtils.YYYYMMDD));
 
 		logger.info("Initiating export with json: {}", jsonObj.toString());
 		JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));

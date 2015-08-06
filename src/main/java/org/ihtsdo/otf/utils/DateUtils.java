@@ -1,7 +1,7 @@
 package org.ihtsdo.otf.utils;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Date;
 
 public class DateUtils {
 	
@@ -24,9 +24,7 @@ public class DateUtils {
 		return buff.toString();
 	}
 
-	public static String today(String formatStr) {
-		Calendar cal = Calendar.getInstance();
-		SimpleDateFormat format = new SimpleDateFormat(formatStr);
-		return format.format(cal.getTime());
+	public static String now(String formatStr) {
+		return new SimpleDateFormat(formatStr).format(new Date());
 	}
 }
