@@ -3,11 +3,14 @@ package org.ihtsdo.otf.rest.client;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.web.JSONResource;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OrchestrationRestClient {
 
@@ -25,14 +28,40 @@ public class OrchestrationRestClient {
 	}
 
 	public String retrieveValidation(String branchPath) throws IOException, JSONException {
+		final String url = orchestrationUrl + VALIDATIONS_ENDPOINT + "/" + branchPath + "/latest";
+		return getResource(url).toObject().toString();
+	}
+
+	public List<String> retrieveValidationStatuses(List<String> branchPaths) throws IOException, JSONException {
+		StringBuilder url = new StringBuilder(orchestrationUrl + VALIDATIONS_ENDPOINT + "/bulk/latest/statuses");
+		url.append("?paths=");
+		boolean first = true;
+		for (String branchPath : branchPaths) {
+			if (!first) {
+				url.append(",");
+			} else {
+				first = false;
+			}
+			url.append(branchPath);
+		}
+		final JSONResource resource = getResource(url.toString());
+		final JSONArray array = resource.array();
+		List<String> statuses = new ArrayList<>();
+		for (int a = 0; a < array.length(); a++) {
+			final String string = array.getString(a);
+			statuses.add(!string.equals("null") ? string : null);
+		}
+		return statuses;
+	}
+
+	private JSONResource getResource(String url) throws IOException, JSONException {
 		try {
-			final String path = orchestrationUrl + VALIDATIONS_ENDPOINT + "/" + branchPath + "/latest";
-			logger.info("Path '{}'", path);
-			final JSONResource json = resty.json(path);
+			logger.info("URL '{}'", url);
+			final JSONResource json = resty.json(url);
 			final String httpStatus = json.getHTTPStatus().toString();
-			logger.info("Path '{}', response '{}'", path, httpStatus);
+			logger.info("URL '{}', response '{}'", url, httpStatus);
 			if (httpStatus.startsWith("2")) {
-				return json.toObject().toString();
+				return json;
 			}
 		} catch (FileNotFoundException e) {
 			// Swallowing this. Gulp
