@@ -24,13 +24,13 @@ public class MessagingHelper {
 	public static final String DEAD_LETTER_QUEUE = "dead-letter-queue";
 	public static final String AUTHENTICATION_TOKEN = "authenticationToken";
 	public static final String REQUEST_PROPERTY_NAME_PREFIX = "request.";
+	public static final String ERROR_FLAG = "error";
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-
 	public static final MessagePostProcessor postProcessorSetErrorFlag = new MessagePostProcessor() {
 		@Override
 		public Message postProcessMessage(Message message) throws JMSException {
-			message.setBooleanProperty("error", true);
+			message.setBooleanProperty(ERROR_FLAG, true);
 			return message;
 		}
 	};
@@ -42,7 +42,11 @@ public class MessagingHelper {
 	private ConnectionFactory connectionFactory;
 
 	public void send(String destinationQueueName, Object payload, String responseQueueName) throws JsonProcessingException, JMSException {
-		send(new ActiveMQQueue(destinationQueueName), payload, new ActiveMQQueue(responseQueueName));
+
+	}
+
+	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
+		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName));
 	}
 
 	public void send(String destinationQueueName, Object payload) throws JsonProcessingException, JMSException {
@@ -52,25 +56,30 @@ public class MessagingHelper {
 	public void sendResponse(final TextMessage incomingMessage, Object payload) {
 		sendResponse(incomingMessage, payload, null);
 	}
+
 	public void sendResponse(final TextMessage incomingMessage, Object payload, final Map<String, ? extends Object> messageProperties) {
 		final Destination replyToDestination = getReplyToDestination(incomingMessage);
 		sendWithQueueErrorHandling(replyToDestination, payload, new MessagePostProcessor() {
 			@Override
 			public Message postProcessMessage(Message message) throws JMSException {
 				copyProperties(incomingMessage, message, REQUEST_PROPERTY_NAME_PREFIX);
-				for (Map.Entry<String, ? extends Object> stringObjectEntry : messageProperties.entrySet()) {
-					message.setObjectProperty(stringObjectEntry.getKey(), stringObjectEntry.getValue());
-				}
+				setProperties(message, messageProperties);
 				return message;
 			}
 		});
 	}
 
-	public void send(Destination destination, Object payload) throws JsonProcessingException, JMSException {
-		send(destination, payload, null);
+	private void setProperties(Message message, Map<String, ? extends Object> messageProperties) throws JMSException {
+		for (Map.Entry<String, ? extends Object> stringObjectEntry : messageProperties.entrySet()) {
+			message.setObjectProperty(stringObjectEntry.getKey(), stringObjectEntry.getValue());
+		}
 	}
 
-	public void send(Destination destination, Object payload, final Destination responseDestination) throws JsonProcessingException, JMSException {
+	public void send(Destination destination, Object payload) throws JsonProcessingException, JMSException {
+		send(destination, payload, null, null);
+	}
+
+	public void send(Destination destination, Object payload, final Map<String, ? extends Object> messageProperties, final Destination responseDestination) throws JsonProcessingException, JMSException {
 		logger.info("Sending message - destination {}, payload {}, responseDestination {}", getDestinationLabel(destination), payload,
 				getDestinationLabel(responseDestination));
 
@@ -78,6 +87,7 @@ public class MessagingHelper {
 		getJmsTemplate().convertAndSend(destination, message, new MessagePostProcessor() {
 			@Override
 			public Message postProcessMessage(Message message) throws JMSException {
+				setProperties(message, messageProperties);
 				message.setJMSReplyTo(responseDestination);
 				return message;
 			}
@@ -131,6 +141,10 @@ public class MessagingHelper {
 
 	public JmsTemplate getJmsTemplate() {
 		return new JmsTemplate(connectionFactory);
+	}
+
+	public static boolean isError(Message message) throws JMSException {
+		return message.getBooleanProperty(ERROR_FLAG);
 	}
 
 	/**
