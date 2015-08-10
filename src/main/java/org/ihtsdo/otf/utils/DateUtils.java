@@ -1,14 +1,15 @@
 package org.ihtsdo.otf.utils;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Date;
 
-//TODO When this class is mature, move it to OTF Common
 public class DateUtils {
 	
 	public static final String DATE_SEPARATOR = "-";
 
 	public static final String YYYYMMDD = "yyyyMMdd";
+
+	public static final String YYYYMMDD_HHMMSS = "yyyyMMdd_HHmmss";
 
 	public static String formatAsISO (String dateAsYYYYMMDD) {
 		if (dateAsYYYYMMDD == null || dateAsYYYYMMDD.length() != 8) {
@@ -23,9 +24,7 @@ public class DateUtils {
 		return buff.toString();
 	}
 
-	public static String today(String formatStr) {
-		Calendar cal = Calendar.getInstance();
-		SimpleDateFormat format = new SimpleDateFormat(formatStr);
-		return format.format(cal.getTime());
+	public static String now(String formatStr) {
+		return new SimpleDateFormat(formatStr).format(new Date());
 	}
 }

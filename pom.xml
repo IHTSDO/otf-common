@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common</artifactId>
-	<version>0.0.13</version>
+	<version>0.0.14</version>
 	<name>OTF Common</name>
 	
 	<licenses>
@@ -37,6 +37,16 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 			<version>2.0.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jms</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-client</artifactId>
+			<version>5.10.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -87,7 +97,7 @@
 		<dependency>
 			<groupId>us.monoid.web</groupId>
 			<artifactId>resty</artifactId>
-			<version>0.3.3-IHTSDO</version>
+			<version>0.3.4.1-IHTSDO</version>
 		</dependency>
 		<dependency> <!-- This would also be pulled in via the Jira client -->
 			<groupId>org.apache.httpcomponents</groupId>
