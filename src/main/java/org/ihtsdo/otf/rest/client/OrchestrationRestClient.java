@@ -29,7 +29,12 @@ public class OrchestrationRestClient {
 
 	public String retrieveValidation(String branchPath) throws IOException, JSONException {
 		final String url = orchestrationUrl + VALIDATIONS_ENDPOINT + "/" + branchPath + "/latest";
-		return getResource(url).toObject().toString();
+		final JSONResource resource = getResource(url);
+		if (resource != null) {
+			return resource.toObject().toString();
+		} else {
+			return null;
+		}
 	}
 
 	public List<String> retrieveValidationStatuses(List<String> branchPaths) throws IOException, JSONException {
