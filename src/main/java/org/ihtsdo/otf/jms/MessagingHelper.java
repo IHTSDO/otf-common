@@ -45,6 +45,10 @@ public class MessagingHelper {
 
 	}
 
+	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties) throws JsonProcessingException, JMSException {
+		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, null);
+	}
+
 	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName));
 	}
@@ -88,7 +92,9 @@ public class MessagingHelper {
 			@Override
 			public Message postProcessMessage(Message message) throws JMSException {
 				setProperties(message, messageProperties);
-				message.setJMSReplyTo(responseDestination);
+				if (responseDestination != null) {
+					message.setJMSReplyTo(responseDestination);
+				}
 				return message;
 			}
 		});

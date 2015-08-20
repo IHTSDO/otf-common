@@ -50,6 +50,9 @@ public class OrchestrationRestClient {
 			url.append(branchPath);
 		}
 		final JSONResource resource = getResource(url.toString());
+		if (resource == null) {
+			return null;
+		}
 		final JSONArray array = resource.array();
 		List<String> statuses = new ArrayList<>();
 		for (int a = 0; a < array.length(); a++) {
@@ -63,9 +66,13 @@ public class OrchestrationRestClient {
 		try {
 			logger.info("URL '{}'", url);
 			final JSONResource json = resty.json(url);
-			final String httpStatus = json.getHTTPStatus().toString();
-			logger.info("URL '{}', response '{}'", url, httpStatus);
-			if (httpStatus.startsWith("2")) {
+			String httpStatusStr = "Unrecoverable";
+			Integer httpStatus = json.getHTTPStatus();
+			if (httpStatus != null) {
+				httpStatusStr = httpStatus.toString();
+			}
+			logger.info("URL '{}', response status '{}'", url, httpStatusStr);
+			if (httpStatusStr.startsWith("2")) {
 				return json;
 			}
 		} catch (FileNotFoundException e) {
