@@ -202,12 +202,18 @@ public class SnowOwlRestClient {
 		try {
 			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
 			String classifyURL = urlHelper.getClassificationsUrl(branchPath);
-			logger.debug("Initiating classification via {}", classifyURL);
+			logger.info("Initiating classification via {}", classifyURL);
 			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_CONTENT_TYPE);
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
+			if (classificationLocation == null) {
+				String errorMsg = "Failed to recover classificationLocation.  Call to " 
+						+ classifyURL + " returned httpStatus '" + jsonResponse.getHTTPStatus()
+ + "' and body '" + jsonResponse.toString() + "'.";
+				throw new RestClientException (errorMsg);
+			}
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
-		} catch (Exception e) {
+		} catch (JSONException | IOException e) {
 			throw new RestClientException("Create classification failed.", e);
 		}
 		return results;
