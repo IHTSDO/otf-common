@@ -331,19 +331,20 @@ public class SnowOwlRestClient {
 	
 	public File exportTask(String projectName, String taskName, ExtractType extractType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);
-		return export(branchPath, extractType);
+		return export(branchPath, null, extractType);
 	}
 
 	public File exportProject(String projectName, ExtractType extractType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, null);
-		return export(branchPath, extractType);
+		return export(branchPath, null,  extractType);
 	}
 
-	public File export(String branchPath, ExtractType extractType) throws Exception {
+	public File export(String branchPath, String effectiveDate, ExtractType extractType) throws Exception {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("type", extractType);
 		jsonObj.put("branchPath", branchPath);
-		jsonObj.put("transientEffectiveTime", DateUtils.now(DateUtils.YYYYMMDD));
+		String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
+		jsonObj.put("transientEffectiveTime", tet);
 
 		logger.info("Initiating export with json: {}", jsonObj.toString());
 		JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
