@@ -59,7 +59,7 @@ public class SnowOwlRestClient {
 	private final Gson gson;
 	private int importTimeoutMinutes;
 	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
-
+	private static final int INDENT = 2;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
@@ -208,7 +208,7 @@ public class SnowOwlRestClient {
 			if (classificationLocation == null) {
 				String errorMsg = "Failed to recover classificationLocation.  Call to " 
 						+ classifyURL + " returned httpStatus '" + jsonResponse.getHTTPStatus()
- + "' and body '" + jsonResponse.toString() + "'.";
+						+ "' and body '" + jsonResponse.toObject().toString(INDENT) + "'.";
 				throw new RestClientException (errorMsg);
 			}
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
@@ -346,9 +346,12 @@ public class SnowOwlRestClient {
 		String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
 		jsonObj.put("transientEffectiveTime", tet);
 
-		logger.info("Initiating export with json: {}", jsonObj.toString());
+		logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), jsonObj.toString());
 		JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
+		if (exportLocationURLObj == null) {
+			throw new Exception ("Failed to obtain location of export, instead got status '" + jsonResponse.getHTTPStatus() + "' and body: " + jsonResponse.toObject().toString(INDENT));
+		}
 		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
 
 		logger.debug("Recovering exported archive from {}", exportLocationURL);
