@@ -207,8 +207,13 @@ public class SnowOwlRestClient {
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (classificationLocation == null) {
 				String errorMsg = "Failed to recover classificationLocation.  Call to " 
-						+ classifyURL + " returned httpStatus '" + jsonResponse.getHTTPStatus()
-						+ "' and body '" + jsonResponse.toObject().toString(INDENT) + "'.";
+						+ classifyURL + " returned httpStatus '"
+						+ jsonResponse.getHTTPStatus() + "'";
+				try {
+					errorMsg += " and body '" + jsonResponse.toObject().toString(INDENT) + "'.";
+				} catch (Exception e) {
+					errorMsg += ". Also failed to parse response object.";
+				}
 				throw new RestClientException (errorMsg);
 			}
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));

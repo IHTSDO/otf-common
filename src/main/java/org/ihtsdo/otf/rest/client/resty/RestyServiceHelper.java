@@ -61,7 +61,7 @@ public class RestyServiceHelper {
 		try {
 			jsonObj = response.object();
 			exceptionMessage = jsonObj.toString(2);
-		} catch (IOException|JSONException e) {
+		} catch (Exception e) {
 			exceptionMessage += " due to " + e.getMessage();
 		}
 
