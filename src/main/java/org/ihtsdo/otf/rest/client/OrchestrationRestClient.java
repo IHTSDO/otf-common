@@ -27,7 +27,7 @@ public class OrchestrationRestClient {
 		resty.authenticate(orchestrationUrl, username, password.toCharArray());
 	}
 
-	public String retrieveValidation(String branchPath) throws IOException, JSONException {
+	public String retrieveValidation(String branchPath) throws Exception {
 		final String url = orchestrationUrl + VALIDATIONS_ENDPOINT + "/" + branchPath + "/latest";
 		final JSONResource resource = getResource(url);
 		if (resource != null) {
@@ -37,7 +37,7 @@ public class OrchestrationRestClient {
 		}
 	}
 
-	public List<String> retrieveValidationStatuses(List<String> branchPaths) throws IOException, JSONException {
+	public List<String> retrieveValidationStatuses(List<String> branchPaths) throws Exception {
 		StringBuilder url = new StringBuilder(orchestrationUrl + VALIDATIONS_ENDPOINT + "/bulk/latest/statuses");
 		url.append("?paths=");
 		boolean first = true;

@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common</artifactId>
-	<version>0.0.19</version>
+	<version>0.0.20</version>
 	<name>OTF Common</name>
 	
 	<licenses>
@@ -96,8 +96,8 @@
 		</dependency>
 		<dependency>
 			<groupId>us.monoid.web</groupId>
-			<artifactId>resty</artifactId>
-			<version>0.3.4.1-IHTSDO</version>
+			<artifactId>ihtsdo-resty</artifactId>
+			<version>0.3.4.2</version>
 		</dependency>
 		<dependency> <!-- This would also be pulled in via the Jira client -->
 			<groupId>org.apache.httpcomponents</groupId>
