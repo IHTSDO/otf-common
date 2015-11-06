@@ -326,7 +326,8 @@ public class SnowOwlRestClient {
 		JSONArray items = null;
 		try {
 			items = (JSONArray) jsonResource.get("items");
-		} catch (JSONException e) {
+		} catch (Exception e) {
+			// TODO Change this back to JSONException when Resty handles that.
 			// this gets thrown when the attribute does not exist
 			logger.info("No items property of resource at '{}'", url);
 		}
