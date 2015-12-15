@@ -1,6 +1,5 @@
 package org.ihtsdo.otf.rest.client;
 
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -15,6 +14,9 @@ import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
+import org.ihtsdo.otf.rest.exception.BadRequestException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,10 @@ public class SnowOwlRestClient {
 
 	public enum ProcessingStatus {
 		COMPLETED, SAVED
+	}
+
+	public enum ExportType {
+		PUBLISHED, UNPUBLISHED;
 	}
 
 	private final RestyHelper resty;
@@ -337,38 +343,81 @@ public class SnowOwlRestClient {
 	
 	public File exportTask(String projectName, String taskName, ExtractType extractType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);
-		return export(branchPath, null, extractType);
+		return export(branchPath, null, ExportType.UNPUBLISHED, extractType);
 	}
 
 	public File exportProject(String projectName, ExtractType extractType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, null);
-		return export(branchPath, null,  extractType);
+		return export(branchPath, null, ExportType.UNPUBLISHED, extractType);
 	}
 
-	public File export(String branchPath, String effectiveDate, ExtractType extractType) throws Exception {
-		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("type", extractType);
-		jsonObj.put("branchPath", branchPath);
-		String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
-		jsonObj.put("transientEffectiveTime", tet);
+	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+			throws BusinessServiceException {
 
-		logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), jsonObj.toString());
-		JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
-		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
-		if (exportLocationURLObj == null) {
-			throw new Exception ("Failed to obtain location of export, instead got status '" + jsonResponse.getHTTPStatus() + "' and body: " + jsonResponse.toObject().toString(INDENT));
-		}
-		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
+		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
 
-		logger.debug("Recovering exported archive from {}", exportLocationURL);
-		resty.withHeader("Accept", ANY_CONTENT_TYPE);
-		BinaryResource archiveResource = resty.bytes(exportLocationURL);
-		File archive = File.createTempFile("ts-extract", ".zip");
-		archiveResource.save(archive);
-		logger.debug("Extract saved to {}", archive.getAbsolutePath());
-		return archive;
+		String exportLocationURL = initiateExport(jsonObj);
+
+		return recoverExportedArchive(exportLocationURL);
 	}
 	
+	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+			throws BusinessServiceException {
+		JSONObject jsonObj = new JSONObject();
+		try {
+			jsonObj.put("type", extractType);
+			jsonObj.put("branchPath", branchPath);
+			switch (exportType) {
+				case UNPUBLISHED:
+					String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
+					jsonObj.put("transientEffectiveTime", tet);
+					break;
+				case PUBLISHED:
+					if (effectiveDate == null) {
+						throw new ProcessingException("Cannot export published data without an effective date");
+					}
+					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+					break;
+				default:
+					throw new BadRequestException("Export type " + exportType + " not recognised");
+			}
+		} catch (JSONException e) {
+			throw new ProcessingException("Failed to prepare JSON for export request.", e);
+		}
+		return jsonObj;
+	}
+
+	private String initiateExport(JSONObject jsonObj) throws BusinessServiceException {
+		try {
+			logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), jsonObj.toString());
+			JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
+			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
+			if (exportLocationURLObj == null) {
+				throw new ProcessingException("Failed to obtain location of export, instead got status '" + jsonResponse.getHTTPStatus()
+						+ "' and body: " + jsonResponse.toObject().toString(INDENT));
+			}
+			return exportLocationURLObj.toString() + "/archive";
+		} catch (Exception e) {
+			// TODO Change this to catch JSONException once Resty no longer throws Exceptions
+			throw new ProcessingException("Failed to initiate export", e);
+		}
+	}
+
+	private File recoverExportedArchive(String exportLocationURL) throws BusinessServiceException {
+		try {
+			logger.debug("Recovering exported archive from {}", exportLocationURL);
+			resty.withHeader("Accept", ANY_CONTENT_TYPE);
+			BinaryResource archiveResource = resty.bytes(exportLocationURL);
+			File archive = File.createTempFile("ts-extract", ".zip");
+			archiveResource.save(archive);
+			logger.debug("Extract saved to {}", archive.getAbsolutePath());
+			return archive;
+		} catch (IOException e) {
+			throw new BusinessServiceException("Unable to recover exported archive from " + exportLocationURL, e);
+		}
+	}
+
 	public void rebaseTask(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
