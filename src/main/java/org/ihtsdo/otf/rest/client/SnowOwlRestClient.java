@@ -378,6 +378,7 @@ public class SnowOwlRestClient {
 					}
 					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
 					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+					jsonObj.put("transientEffectiveTime", effectiveDate);
 					break;
 				default:
 					throw new BadRequestException("Export type " + exportType + " not recognised");
