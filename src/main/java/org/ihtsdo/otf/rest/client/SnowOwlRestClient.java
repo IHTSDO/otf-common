@@ -335,7 +335,7 @@ public class SnowOwlRestClient {
 		} catch (Exception e) {
 			// TODO Change this back to JSONException when Resty handles that.
 			// this gets thrown when the attribute does not exist
-			logger.info("No items property of resource at '{}'", url);
+			logger.debug("No items property of resource at '{}'", url);
 		}
 		return items;
 	}
