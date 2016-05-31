@@ -55,7 +55,7 @@ public class SnowOwlRestClient {
 	}
 
 	public enum ExportType {
-		PUBLISHED, UNPUBLISHED;
+		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
 	}
 
 	private final RestyHelper resty;
@@ -378,6 +378,13 @@ public class SnowOwlRestClient {
 					}
 					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
 					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+					jsonObj.put("transientEffectiveTime", effectiveDate);
+					break;
+				case FEEDBACK_FIX:
+					if (effectiveDate == null) {
+						throw new ProcessingException("Cannot export feedback-fix data without an effective date");
+					}
+					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
 					jsonObj.put("transientEffectiveTime", effectiveDate);
 					break;
 				default:
