@@ -300,7 +300,7 @@ public class SnowOwlRestClient {
 		final String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
 		try {
 			final JSONArray items = getItems(classificationsUrl);
-			if (items != null) {
+			if (items != null && items.length() > 0) {
 				return items.getJSONObject(items.length() - 1);
 			}
 			return null;
