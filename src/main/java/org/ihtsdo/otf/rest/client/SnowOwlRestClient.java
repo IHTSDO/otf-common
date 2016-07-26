@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client;
 
+import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -37,9 +38,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Set;
 
 public class SnowOwlRestClient {
 
+	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
+	
 	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
@@ -68,11 +72,17 @@ public class SnowOwlRestClient {
 	private static final int INDENT = 2;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
+	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey) {
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		urlHelper = new SnowOwlRestUrlHelper(snowOwlUrl);
-		resty.authenticate(snowOwlUrl, username, password.toCharArray());
+		resty.authenticate(snowOwlUrl, clientId, apiKey.toCharArray());
 		gson = new GsonBuilder().setPrettyPrinting().create();
+	}
+	
+	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey, String userName, Set<String> userRoles) {
+		this(snowOwlUrl, clientId, apiKey);
+		resty.withHeader("X-AUTH-username", userName);
+		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
 	}
 
 	public void createProjectBranch(String branchName) throws RestClientException {
