@@ -74,8 +74,10 @@ public class MessagingHelper {
 	}
 
 	private void setProperties(Message message, Map<String, ? extends Object> messageProperties) throws JMSException {
-		for (Map.Entry<String, ? extends Object> stringObjectEntry : messageProperties.entrySet()) {
-			message.setObjectProperty(stringObjectEntry.getKey(), stringObjectEntry.getValue());
+		if (messageProperties != null) {
+			for (Map.Entry<String, ? extends Object> stringObjectEntry : messageProperties.entrySet()) {
+				message.setObjectProperty(stringObjectEntry.getKey(), stringObjectEntry.getValue());
+			}
 		}
 	}
 
