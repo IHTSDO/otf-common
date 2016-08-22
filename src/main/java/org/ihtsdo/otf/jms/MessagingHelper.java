@@ -195,6 +195,9 @@ public class MessagingHelper {
 	}
 
 	private String getDestinationLabel(Destination destination) {
+		if (destination == null) {
+			return "null";
+		}
 		try {
 			if (destination instanceof Queue) {
 				return "queue " +((Queue) destination).getQueueName();
