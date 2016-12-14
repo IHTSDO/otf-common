@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client;
+package org.ihtsdo.otf.rest.client.snowowl;
 
 public class SnowOwlRestUrlHelper {
 
@@ -12,6 +12,10 @@ public class SnowOwlRestUrlHelper {
 
 	public String getBranchesUrl() {
 		return snomedUrl + "/branches";
+	}
+
+	public String getBranchUrl(String branchPath) {
+		return snomedUrl + "/branches/" + branchPath;
 	}
 
 	public String getBranchChildrenUrl(String branchPath) {

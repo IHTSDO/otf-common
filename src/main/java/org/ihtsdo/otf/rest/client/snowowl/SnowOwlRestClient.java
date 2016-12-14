@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client;
+package org.ihtsdo.otf.rest.client.snowowl;
 
 import com.google.common.base.Joiner;
 import com.google.gson.Gson;
@@ -6,13 +6,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -33,12 +32,7 @@ import us.monoid.web.JSONResource;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class SnowOwlRestClient {
 
@@ -83,6 +77,24 @@ public class SnowOwlRestClient {
 		this(snowOwlUrl, clientId, apiKey);
 		resty.withHeader("X-AUTH-username", userName);
 		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
+	}
+
+	public void createConcept(String branchPath, ISnomedBrowserConcept newConcept) {
+	}
+
+	public Branch getBranch(String branchPath) throws RestClientException {
+		try {
+			final JSONResource jsonResource = resty.json(urlHelper.getBranchUrl(branchPath));
+			final Integer httpStatus = jsonResource.getHTTPStatus();
+			if (httpStatus == 404) {
+				return null;
+			}
+			return gson.fromJson(jsonResource.toObject().toString(), Branch.class);
+		} catch (Exception e) {
+			final String message = "Failed to retrieve branch " + branchPath;
+			logger.error(message, e);
+			throw new RestClientException(message);
+		}
 	}
 
 	public void createProjectBranch(String branchName) throws RestClientException {

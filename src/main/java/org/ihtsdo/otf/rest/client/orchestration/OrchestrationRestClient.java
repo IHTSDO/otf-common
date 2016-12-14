@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client;
+package org.ihtsdo.otf.rest.client.orchestration;
 
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client;
+package org.ihtsdo.otf.rest.client.snowowl;
 
 import java.io.File;
 

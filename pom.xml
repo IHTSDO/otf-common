@@ -94,6 +94,11 @@
 			<artifactId>ihtsdo-resty</artifactId>
 			<version>0.3.4.2</version>
 		</dependency>
+		<dependency>
+			<groupId>com.mashape.unirest</groupId>
+			<artifactId>unirest-java</artifactId>
+			<version>1.4.9</version>
+		</dependency>
 		<dependency> <!-- This would also be pulled in via the Jira client -->
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpmime</artifactId>
