@@ -2,6 +2,7 @@ package org.ihtsdo.otf.jms;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.springframework.jms.core.MessagePostProcessor;
 
 import java.util.Enumeration;
 import java.util.Map;
+
 import javax.jms.*;
 
 /**
@@ -46,15 +48,19 @@ public class MessagingHelper {
 	}
 
 	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties) throws JsonProcessingException, JMSException {
-		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, null);
+		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, null, 0);
 	}
 
 	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
-		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName));
+		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName), 0);
 	}
 
 	public void send(String destinationQueueName, Object payload) throws JsonProcessingException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload);
+	}
+	
+	public void publish(String destinationTopicName, Object payload, final Map<String, ? extends Object> messageProperties, int timeToLive) throws JsonProcessingException, JMSException {
+		send(new ActiveMQTopic(destinationTopicName), payload, messageProperties, null, timeToLive);
 	}
 
 	public void sendResponse(final TextMessage incomingMessage, Object payload) {
@@ -82,15 +88,24 @@ public class MessagingHelper {
 	}
 
 	public void send(Destination destination, Object payload) throws JsonProcessingException, JMSException {
-		send(destination, payload, null, null);
+		send(destination, payload, null, null, 0);
 	}
 
-	public void send(Destination destination, Object payload, final Map<String, ? extends Object> messageProperties, final Destination responseDestination) throws JsonProcessingException, JMSException {
-		logger.info("Sending message - destination {}, payload {}, responseDestination {}", getDestinationLabel(destination), payload,
-				getDestinationLabel(responseDestination));
+	public void send(Destination destination, Object payload, 
+			final Map<String, ? extends Object> messageProperties, 
+			final Destination responseDestination,
+			final int timeToLive
+			) throws JsonProcessingException, JMSException {
+		logger.info("Sending message - destination {}, payload {}, properties {}, responseDestination {}", 
+				getDestinationLabel(destination), limitSize(payload), messageProperties, getDestinationLabel(responseDestination));
 
 		final String message = objectMapper.writeValueAsString(payload);
-		getJmsTemplate().convertAndSend(destination, message, new MessagePostProcessor() {
+		JmsTemplate template = getJmsTemplate();
+		if (timeToLive > 0) {
+			template.setExplicitQosEnabled(true);
+			template.setTimeToLive(timeToLive * 1000); 
+		}		
+		template.convertAndSend(destination, message, new MessagePostProcessor() {
 			@Override
 			public Message postProcessMessage(Message message) throws JMSException {
 				setProperties(message, messageProperties);
@@ -100,6 +115,14 @@ public class MessagingHelper {
 				return message;
 			}
 		});
+	}
+
+	private String limitSize(Object obj) {
+		if (obj == null) {
+			return "";
+		}
+		String str = obj.toString();
+		return str.length() > 1024 ? str.substring(0,1024) + "...":str;
 	}
 
 	/**
