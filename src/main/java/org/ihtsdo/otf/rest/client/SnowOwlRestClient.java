@@ -42,13 +42,10 @@ import java.util.Set;
 
 public class SnowOwlRestClient {
 
-	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
-	
 	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
-	private final SnowOwlRestUrlHelper urlHelper;
 
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
@@ -64,12 +61,15 @@ public class SnowOwlRestClient {
 
 	private final RestyHelper resty;
 	private String reasonerId;
+	private boolean flatIndexExportStyle = true;
 	private String logPath;
 	private String rolloverLogPath;
 	private final Gson gson;
 	private int importTimeoutMinutes;
 	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
 	private static final int INDENT = 2;
+	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
+	private final SnowOwlRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey) {
@@ -381,20 +381,34 @@ public class SnowOwlRestClient {
 				case UNPUBLISHED:
 					String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
 					jsonObj.put("transientEffectiveTime", tet);
+					if (flatIndexExportStyle) {
+						jsonObj.put("type", ExtractType.DELTA);
+					}
 					break;
 				case PUBLISHED:
 					if (effectiveDate == null) {
 						throw new ProcessingException("Cannot export published data without an effective date");
 					}
-					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
-					jsonObj.put("transientEffectiveTime", effectiveDate);
+					if (flatIndexExportStyle) {
+						jsonObj.put("startEffectiveTime", effectiveDate);
+
+					} else {
+						jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+						jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+						jsonObj.put("transientEffectiveTime", effectiveDate);
+					}
 					break;
 				case FEEDBACK_FIX:
 					if (effectiveDate == null) {
 						throw new ProcessingException("Cannot export feedback-fix data without an effective date");
 					}
-					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+					if (flatIndexExportStyle) {
+						jsonObj.put("startEffectiveTime", effectiveDate);
+						jsonObj.put("includeUnpublished", true);
+
+					} else {
+						jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+					}
 					jsonObj.put("transientEffectiveTime", effectiveDate);
 					break;
 				default:
@@ -555,5 +569,9 @@ public class SnowOwlRestClient {
 	@Required
 	public void setClassificationTimeoutMinutes(int classificationTimeoutMinutes) {
 		this.classificationTimeoutMinutes = classificationTimeoutMinutes;
+	}
+
+	public void setFlatIndexExportStyle(boolean flatIndexExportStyle) {
+		this.flatIndexExportStyle = flatIndexExportStyle;
 	}
 }
