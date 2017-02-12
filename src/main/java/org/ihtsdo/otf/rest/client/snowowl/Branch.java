@@ -10,7 +10,7 @@ public class Branch {
 	private boolean deleted;
 	private long baseTimestamp;
 	private long headTimestamp;
-	private Map<String, String> metadata;
+	private Map<String, Object> metadata;
 
 	public Branch() {
 	}
@@ -63,11 +63,11 @@ public class Branch {
 		this.headTimestamp = headTimestamp;
 	}
 
-	public Map<String, String> getMetadata() {
+	public Map<String, Object> getMetadata() {
 		return metadata;
 	}
 
-	public void setMetadata(Map<String, String> metadata) {
+	public void setMetadata(Map<String, Object> metadata) {
 		this.metadata = metadata;
 	}
 }
