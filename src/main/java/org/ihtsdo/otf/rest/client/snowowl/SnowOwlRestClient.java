@@ -15,6 +15,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptPojo;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -43,17 +44,20 @@ public class SnowOwlRestClient {
 
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
+
 	};
 
+
 	public enum ProcessingStatus {
-		COMPLETED, SAVED
+		COMPLETED, SAVED;
 	}
+
 
 	public enum ExportType {
-		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
+		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX;
 	}
-
 	private final RestyHelper resty;
+
 	private String reasonerId;
 	private boolean flatIndexExportStyle = true;
 	private String logPath;
@@ -79,7 +83,14 @@ public class SnowOwlRestClient {
 		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
 	}
 
-	public void createConcept(String branchPath, ISnomedBrowserConcept newConcept) {
+	public void createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
+		try {
+			resty.json(urlHelper.getConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
+		} catch (IOException e) {
+			final String message = "Failed to create concept";
+			logger.error(message, e);
+			throw new RestClientException(message);
+		}
 	}
 
 	public Branch getBranch(String branchPath) throws RestClientException {
@@ -105,6 +116,10 @@ public class SnowOwlRestClient {
 		if (!listProjectBranches().contains(projectName)) {
 			createProjectBranch(projectName);
 		}
+	}
+
+	public void createBranch(String branchPath) throws RestClientException {
+		createBranch(PathHelper.getParentPath(branchPath), PathHelper.getName(branchPath));
 	}
 
 	private void createBranch(String parentBranch, String newBranchName) throws RestClientException {

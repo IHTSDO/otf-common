@@ -3,6 +3,19 @@ package org.ihtsdo.otf.rest.client.snowowl;
 import java.io.File;
 
 public class ClassificationResults {
+
+	public enum ClassificationStatus {
+		SCHEDULED,
+		RUNNING,
+		COMPLETED,
+		FAILED,
+		CANCELED,
+		STALE,
+		SAVING_IN_PROGRESS,
+		SAVED,
+		SAVE_FAILED
+	}
+
 	private boolean equivalentConceptsFound;
 	private int relationshipChangesCount;
 	private String classificationId;

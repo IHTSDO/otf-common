@@ -88,4 +88,8 @@ public class SnowOwlRestUrlHelper {
 		}
 		return snowOwlUrl;
 	}
+
+	public String getConceptsUrl(String branchPath) {
+		return "/browser/" + branchPath + "/concepts";
+	}
 }
