@@ -113,18 +113,32 @@ public class SnowOwlRestClient {
 	}
 
 	public Branch getBranch(String branchPath) throws RestClientException {
+		return getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
+	}
+
+	private <T> T getEntity(URI uri, Class<T> responseType) throws RestClientException {
+		RequestEntity<Void> get = RequestEntity.get(uri)
+				.header("Cookie", singleSignOnCookie)
+				.build();
+
+		HttpStatus statusCode;
+		ResponseEntity<T> responseEntity = null;
 		try {
-			final JSONResource jsonResource = resty.json(urlHelper.getBranchUrl(branchPath));
-			final Integer httpStatus = jsonResource.getHTTPStatus();
-			if (httpStatus == 404) {
-				return null;
-			}
-			return gson.fromJson(jsonResource.toObject().toString(), Branch.class);
-		} catch (Exception e) {
-			final String message = "Failed to retrieve branch " + branchPath;
-			logger.error(message, e);
-			throw new RestClientException(message);
+			responseEntity = restTemplate.exchange(get, responseType);
+			statusCode = responseEntity.getStatusCode();
+		} catch (HttpClientErrorException e) {
+			statusCode = e.getStatusCode();
 		}
+
+		if (statusCode.value() == 404) {
+			return null;
+		} else if (!statusCode.is2xxSuccessful()) {
+			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + " URI:" + responseType.toString();
+			logger.error(errorMessage + ", status code {}", statusCode);
+			throw new RestClientException(errorMessage);
+		}
+
+		return responseEntity.getBody();
 	}
 
 	public void createProjectBranch(String branchName) throws RestClientException {

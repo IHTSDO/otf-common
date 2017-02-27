@@ -1,5 +1,8 @@
 package org.ihtsdo.otf.rest.client.snowowl;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class SnowOwlRestUrlHelper {
 
 	private static final String MAIN = "MAIN";
@@ -16,6 +19,18 @@ public class SnowOwlRestUrlHelper {
 
 	public String getBranchUrl(String branchPath) {
 		return snomedUrl + "/branches/" + branchPath;
+	}
+
+	public URI getBranchUri(String branchPath) {
+		return getUri(snomedUrl + "/branches/" + branchPath);
+	}
+
+	private URI getUri(String uri) {
+		try {
+			return new URI(uri);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException("URI Syntax Error '" + uri + "'", e);
+		}
 	}
 
 	public String getBranchChildrenUrl(String branchPath) {
