@@ -23,7 +23,12 @@ import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -31,6 +36,7 @@ import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -43,20 +49,22 @@ public class SnowOwlRestClient {
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
 
 	public enum ExtractType {
-		DELTA, SNAPSHOT, FULL;
+		DELTA, SNAPSHOT, FULL
 
-	};
-
+	}
 
 	public enum ProcessingStatus {
-		COMPLETED, SAVED;
+		COMPLETED, SAVED
 	}
 
 
 	public enum ExportType {
-		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX;
+		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
 	}
+
 	private final RestyHelper resty;
+	private String singleSignOnCookie;
+	private RestTemplate restTemplate;
 
 	private String reasonerId;
 	private boolean flatIndexExportStyle = true;
@@ -70,11 +78,22 @@ public class SnowOwlRestClient {
 	private final SnowOwlRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey) {
+	private SnowOwlRestClient(String snowOwlUrl) {
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		urlHelper = new SnowOwlRestUrlHelper(snowOwlUrl);
-		resty.authenticate(snowOwlUrl, clientId, apiKey.toCharArray());
 		gson = new GsonBuilder().setPrettyPrinting().create();
+		restTemplate = new RestTemplate();
+	}
+
+	public SnowOwlRestClient(String snowOwlUrl, String singleSignOnCookie) {
+		this(snowOwlUrl);
+		this.singleSignOnCookie = singleSignOnCookie;
+		resty.withHeader("Cookie", singleSignOnCookie);
+	}
+
+	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey) {
+		this(snowOwlUrl);
+		resty.authenticate(snowOwlUrl, clientId, apiKey.toCharArray());
 	}
 	
 	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey, String userName, Set<String> userRoles) {
