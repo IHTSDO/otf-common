@@ -91,13 +91,13 @@ public class SnowOwlRestClient {
 		resty.withHeader("Cookie", singleSignOnCookie);
 	}
 
-	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey) {
+	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword) {
 		this(snowOwlUrl);
-		resty.authenticate(snowOwlUrl, clientId, apiKey.toCharArray());
+		resty.authenticate(snowOwlUrl, apiUsername, apiPassword.toCharArray());
 	}
 	
-	public SnowOwlRestClient(String snowOwlUrl, String clientId, String apiKey, String userName, Set<String> userRoles) {
-		this(snowOwlUrl, clientId, apiKey);
+	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword, String userName, Set<String> userRoles) {
+		this(snowOwlUrl, apiUsername, apiPassword);
 		resty.withHeader("X-AUTH-username", userName);
 		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
 	}
