@@ -113,7 +113,11 @@ public class SnowOwlRestClient {
 	}
 
 	public Branch getBranch(String branchPath) throws RestClientException {
-		return getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
+		Branch branch = getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
+		if (branch != null && branch.getMetadata() == null) {
+			branch.setMetadata(new HashMap<String, Object>());
+		}
+		return branch;
 	}
 
 	private <T> T getEntity(URI uri, Class<T> responseType) throws RestClientException {
