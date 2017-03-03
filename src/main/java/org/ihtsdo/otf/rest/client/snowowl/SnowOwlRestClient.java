@@ -1,5 +1,9 @@
 package org.ihtsdo.otf.rest.client.snowowl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,7 +52,7 @@ public class SnowOwlRestClient {
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
 
-	public enum ExtractType {
+	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
 
 	}
@@ -58,7 +62,7 @@ public class SnowOwlRestClient {
 	}
 
 
-	public enum ExportType {
+	public enum ExportCategory {
 		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
 	}
 
@@ -75,6 +79,7 @@ public class SnowOwlRestClient {
 	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
 	private static final int INDENT = 2;
 	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
+	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	private final SnowOwlRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -100,6 +105,10 @@ public class SnowOwlRestClient {
 		this(snowOwlUrl, apiUsername, apiPassword);
 		resty.withHeader("X-AUTH-username", userName);
 		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
+	}
+
+	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
+		return getEntity(urlHelper.getConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
 
 	public void createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
@@ -415,38 +424,50 @@ public class SnowOwlRestClient {
 	}
 
 	
-	public File exportTask(String projectName, String taskName, ExtractType extractType) throws Exception {
+	public File exportTask(String projectName, String taskName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);
-		return export(branchPath, null, ExportType.UNPUBLISHED, extractType);
+		return export(branchPath, null, ExportCategory.UNPUBLISHED, exportType);
 	}
 
-	public File exportProject(String projectName, ExtractType extractType) throws Exception {
+	public File exportProject(String projectName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, null);
-		return export(branchPath, null, ExportType.UNPUBLISHED, extractType);
+		return export(branchPath, null, ExportCategory.UNPUBLISHED, exportType);
 	}
 
-	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+	public File export(ExportConfigurationBuilder exportConfigurationBuilder)
+			throws BusinessServiceException {
+		String exportConfigString = null;
+		try {
+			exportConfigString = mapper.writeValueAsString(exportConfigurationBuilder);
+		} catch (JsonProcessingException e) {
+			throw new BusinessServiceException("Failed to create export configuration.", e);
+		}
+		String exportUrl = initiateExport(exportConfigString);
+		return recoverExportedArchive(exportUrl);
+	}
+
+	public File export(String branchPath, String effectiveDate, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 
-		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
+		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportCategory, exportType);
 
-		String exportLocationURL = initiateExport(jsonObj);
+		String exportLocationURL = initiateExport(jsonObj.toString());
 
 		return recoverExportedArchive(exportLocationURL);
 	}
 	
-	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 		JSONObject jsonObj = new JSONObject();
 		try {
-			jsonObj.put("type", extractType);
+			jsonObj.put("type", exportType);
 			jsonObj.put("branchPath", branchPath);
-			switch (exportType) {
+			switch (exportCategory) {
 				case UNPUBLISHED:
 					String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
 					jsonObj.put("transientEffectiveTime", tet);
 					if (flatIndexExportStyle) {
-						jsonObj.put("type", ExtractType.DELTA);
+						jsonObj.put("type", ExportType.DELTA);
 					}
 					break;
 				case PUBLISHED:
@@ -476,7 +497,7 @@ public class SnowOwlRestClient {
 					jsonObj.put("transientEffectiveTime", effectiveDate);
 					break;
 				default:
-					throw new BadRequestException("Export type " + exportType + " not recognised");
+					throw new BadRequestException("Export type " + exportCategory + " not recognised");
 			}
 		} catch (JSONException e) {
 			throw new ProcessingException("Failed to prepare JSON for export request.", e);
@@ -484,10 +505,10 @@ public class SnowOwlRestClient {
 		return jsonObj;
 	}
 
-	private String initiateExport(JSONObject jsonObj) throws BusinessServiceException {
+	private String initiateExport(String exportJsonString) throws BusinessServiceException {
 		try {
-			logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), jsonObj.toString());
-			JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
+			logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
+			JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.contentJSON(exportJsonString));
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
 				throw new ProcessingException("Failed to obtain location of export, instead got status '" + jsonResponse.getHTTPStatus()
@@ -637,5 +658,94 @@ public class SnowOwlRestClient {
 
 	public void setFlatIndexExportStyle(boolean flatIndexExportStyle) {
 		this.flatIndexExportStyle = flatIndexExportStyle;
+	}
+
+	public static class ExportConfigurationBuilder {
+
+		private String branchPath = "MAIN";
+		private Set<String> moduleIds = new HashSet<>();
+		private String startEffectiveTime;
+		private String endEffectiveTime;
+		private String namespaceId;
+		private String transientEffectiveTime;
+		private boolean includeUnpublished = true;
+		private ExportType type = ExportType.DELTA;
+
+		public String getBranchPath() {
+			return branchPath;
+		}
+
+		public ExportConfigurationBuilder setBranchPath(String branchPath) {
+			this.branchPath = branchPath;
+			return this;
+		}
+
+		public Set<String> getModuleIds() {
+			return moduleIds;
+		}
+
+		public ExportConfigurationBuilder addModuleIds(Set<String> moduleIds) {
+			this.moduleIds.addAll(moduleIds);
+			return this;
+		}
+
+		public ExportConfigurationBuilder addModuleId(String moduleId) {
+			this.moduleIds.add(moduleId);
+			return this;
+		}
+
+		public String getStartEffectiveTime() {
+			return startEffectiveTime;
+		}
+
+		public ExportConfigurationBuilder setStartEffectiveTime(String startEffectiveTime) {
+			this.startEffectiveTime = startEffectiveTime;
+			return this;
+		}
+
+		public String getEndEffectiveTime() {
+			return endEffectiveTime;
+		}
+
+		public ExportConfigurationBuilder setEndEffectiveTime(String endEffectiveTime) {
+			this.endEffectiveTime = endEffectiveTime;
+			return this;
+		}
+
+		public String getNamespaceId() {
+			return namespaceId;
+		}
+
+		public ExportConfigurationBuilder setNamespaceId(String namespaceId) {
+			this.namespaceId = namespaceId;
+			return this;
+		}
+
+		public String getTransientEffectiveTime() {
+			return transientEffectiveTime;
+		}
+
+		public ExportConfigurationBuilder setTransientEffectiveTime(String transientEffectiveTime) {
+			this.transientEffectiveTime = transientEffectiveTime;
+			return this;
+		}
+
+		public boolean isIncludeUnpublished() {
+			return includeUnpublished;
+		}
+
+		public ExportConfigurationBuilder setIncludeUnpublished(boolean includeUnpublished) {
+			this.includeUnpublished = includeUnpublished;
+			return this;
+		}
+
+		public ExportType getType() {
+			return type;
+		}
+
+		public ExportConfigurationBuilder setType(ExportType type) {
+			this.type = type;
+			return this;
+		}
 	}
 }

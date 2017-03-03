@@ -6,6 +6,7 @@ import us.monoid.web.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 
 public class RestyHelper extends RestyMod {
 
@@ -38,4 +39,7 @@ public class RestyHelper extends RestyMod {
 		return json(url, content(jsonObj, contentType));
 	}
 
+	public static Content contentJSON(String jsonString) {
+		return new Content("application/json; charset=UTF-8", jsonString.getBytes(Charset.forName("UTF-8")));
+	}
 }
