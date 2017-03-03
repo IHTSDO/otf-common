@@ -16,7 +16,7 @@ public class ConceptPojo {
 
 	private String moduleId;
 
-	private String definitionStatus;
+	private DefinitionStatus definitionStatus;
 
 	private String inactivationIndicator;
 
@@ -73,11 +73,11 @@ public class ConceptPojo {
 		this.moduleId = moduleId;
 	}
 
-	public String getDefinitionStatus() {
+	public DefinitionStatus getDefinitionStatus() {
 		return definitionStatus;
 	}
 
-	public void setDefinitionStatus(String definitionStatus) {
+	public void setDefinitionStatus(DefinitionStatus definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
 
