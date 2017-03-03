@@ -24,6 +24,14 @@ public class RelationshipPojo {
 		active = true;
 	}
 
+	public RelationshipPojo(int groupId, String typeId, String targetId, String characteristicType) {
+		this();
+		this.groupId = groupId;
+		this.type = new ConceptMiniPojo(typeId);
+		this.target = new ConceptMiniPojo(targetId);
+		this.characteristicType = characteristicType;
+	}
+
 	public String getRelationshipId() {
 		return relationshipId;
 	}

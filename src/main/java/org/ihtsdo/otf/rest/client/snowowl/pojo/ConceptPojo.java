@@ -2,6 +2,7 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +40,20 @@ public class ConceptPojo {
 			}
 		}
 		return null;
+	}
+
+	public void add(RelationshipPojo relationship) {
+		if (relationships == null) {
+			relationships = new HashSet<>();
+		}
+		relationships.add(relationship);
+	}
+
+	public void add(DescriptionPojo description) {
+		if (descriptions == null) {
+			descriptions = new HashSet<>();
+		}
+		descriptions.add(description);
 	}
 
 	public String getConceptId() {
