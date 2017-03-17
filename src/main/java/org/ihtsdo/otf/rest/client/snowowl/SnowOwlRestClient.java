@@ -3,8 +3,8 @@ package org.ihtsdo.otf.rest.client.snowowl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -19,11 +19,15 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.Branch;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ClassificationResults;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptPojo;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.utils.DateUtils;
+import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
@@ -154,6 +158,37 @@ public class SnowOwlRestClient {
 		return responseEntity.getBody();
 	}
 
+	private String createEntity(URI uri, Object request) throws RestClientException {
+		RequestEntity<Object> post = RequestEntity.post(uri)
+				.header("Cookie", singleSignOnCookie)
+				.body(request);
+
+		HttpStatus statusCode;
+		ResponseEntity<String> responseEntity = null;
+		try {
+			responseEntity = restTemplate.exchange(post, String.class);
+			statusCode = responseEntity.getStatusCode();
+		} catch (HttpClientErrorException e) {
+			statusCode = e.getStatusCode();
+		}
+
+		if (statusCode.value() == 404) {
+			return null;
+		} else if (!statusCode.is2xxSuccessful()) {
+			String errorMessage = "Failed to create entity URI:" + uri.toString();
+			logger.error(errorMessage + ", status code {}", statusCode);
+			throw new RestClientException(errorMessage);
+		}
+
+		String location = responseEntity.getHeaders().getFirst("Location");
+		if (Strings.isNullOrEmpty(location)) {
+			String errorMessage = "Failed to create entity, location header missing from response. URI:" + uri.toString();
+			logger.error(errorMessage + ", status code {}", statusCode);
+			throw new RestClientException(errorMessage);
+		}
+		return location.substring(location.lastIndexOf("/") + 1);
+	}
+
 	public void createProjectBranch(String branchName) throws RestClientException {
 		createBranch(urlHelper.getMainBranchPath(), branchName);
 	}
@@ -237,8 +272,27 @@ public class SnowOwlRestClient {
 		}
 	}
 
+	public String startMerge(String sourceBranchPath, String targetBranchPath) throws RestClientException {
+		return startMerge(sourceBranchPath, targetBranchPath, null);
+	}
+
+	public String startMerge(String sourceBranchPath, String targetBranchPath, String mergeReviewId) throws RestClientException {
+		Map<String, String> request = new HashMap<>();
+		request.put("source", sourceBranchPath);
+		request.put("target", targetBranchPath);
+		if (!Strings.isNullOrEmpty(mergeReviewId)) {
+			request.put("reviewId", mergeReviewId);
+		}
+		request.put("commitComment", "" + SecurityUtil.getUsername() + " performed merge of " + sourceBranchPath + " to " + targetBranchPath);
+		return createEntity(urlHelper.getMergesUri(), request);
+	}
+
+	public Merge getMerge(String mergeId) throws RestClientException {
+		return getEntity(urlHelper.getMergeUri(mergeId), Merge.class);
+	}
+
 	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
- throws RestClientException {
+			throws RestClientException {
 		Assert.notNull(rf2ZipFileStream, "Archive to import should not be null.");
 
 		try {
@@ -535,21 +589,29 @@ public class SnowOwlRestClient {
 		}
 	}
 
+	/**
+	 * Task rebase should be performed via the authoring-services API
+	 */
+	@Deprecated()
 	public void rebaseTask(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
 		logger.info("Rebasing branch {} from parent {}", taskPath, projectPath);
-		merge(projectPath, taskPath);
+		doMerge(projectPath, taskPath);
 	}
 
+	/**
+	 * Task promotion should be performed via the authoring-services API
+	 */
+	@Deprecated()
 	public void mergeTaskToProject(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
 		logger.info("Promoting branch {} to {}", taskPath, projectPath);
-		merge(taskPath, projectPath);
+		doMerge(taskPath, projectPath);
 	}
 
-	private void merge(String sourcePath, String targetPath) throws RestClientException {
+	private void doMerge(String sourcePath, String targetPath) throws RestClientException {
 		try {
 			JSONObject params = new JSONObject();
 			params.put("source", sourcePath);

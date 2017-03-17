@@ -77,6 +77,15 @@ public class SnowOwlRestUrlHelper {
 		return snomedUrl + "/merges";
 	}
 
+	public URI getMergesUri() {
+		return getUri(getMergesUrl());
+	}
+
+
+	public URI getMergeUri(String mergeId) {
+		return getUri(getMergesUrl() + "/" + mergeId);
+	}
+
 	public String getMainBranchPath() {
 		return MAIN;
 	}
