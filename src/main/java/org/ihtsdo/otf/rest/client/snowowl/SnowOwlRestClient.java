@@ -19,10 +19,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.Branch;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ClassificationResults;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptPojo;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -36,7 +33,9 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -133,17 +132,47 @@ public class SnowOwlRestClient {
 		return branch;
 	}
 
+	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit);
+		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
+		return conceptIdsResponse.getConceptIds();
+	}
+
+	public boolean eclQueryHasAnyMatches(String branchPath, String ecl) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 1);
+		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
+		return conceptIdsResponse.getTotal() > 0;
+	}
+
+	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
+		String authenticationToken = SecurityUtil.getAuthenticationToken();
+		URI uri = UriComponentsBuilder.fromHttpUrl(urlHelper.getConceptsUrl(branchPath))
+				.queryParam("ecl", ecl)
+				.queryParam("active", true)
+				.queryParam("offset", 0)
+				.queryParam("limit", limit)
+				.build().toUri();
+		logger.debug("URI {}", uri);
+		return RequestEntity.get(uri)
+				.header("Cookie", authenticationToken)
+				.build();
+	}
+
 	private <T> T getEntity(URI uri, Class<T> responseType) throws RestClientException {
 		RequestEntity<Void> get = RequestEntity.get(uri)
 				.header("Cookie", singleSignOnCookie)
 				.build();
 
+		return doExchange(get, responseType);
+	}
+
+	private <T, R> T doExchange(RequestEntity<R> request, Class<T> responseType) throws RestClientException {
 		HttpStatus statusCode;
 		ResponseEntity<T> responseEntity = null;
 		try {
-			responseEntity = restTemplate.exchange(get, responseType);
+			responseEntity = restTemplate.exchange(request, responseType);
 			statusCode = responseEntity.getStatusCode();
-		} catch (HttpClientErrorException e) {
+		} catch (HttpStatusCodeException e) {
 			statusCode = e.getStatusCode();
 		}
 
@@ -154,7 +183,6 @@ public class SnowOwlRestClient {
 			logger.error(errorMessage + ", status code {}", statusCode);
 			throw new RestClientException(errorMessage);
 		}
-
 		return responseEntity.getBody();
 	}
 
