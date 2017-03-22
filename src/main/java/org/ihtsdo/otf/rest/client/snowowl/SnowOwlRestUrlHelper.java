@@ -114,7 +114,7 @@ public class SnowOwlRestUrlHelper {
 	}
 
 	public String getConceptsUrl(String branchPath) {
-		return "/browser/" + branchPath + "/concepts";
+		return snomedUrl + "/browser/" + branchPath + "/concepts";
 	}
 
 	public URI getConceptUri(String branchPath, String conceptId) {
