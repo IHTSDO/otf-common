@@ -508,12 +508,12 @@ public class SnowOwlRestClient {
 	
 	public File exportTask(String projectName, String taskName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);
-		return export(branchPath, null, ExportCategory.UNPUBLISHED, exportType);
+		return export(branchPath, null, null, ExportCategory.UNPUBLISHED, exportType);
 	}
 
 	public File exportProject(String projectName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, null);
-		return export(branchPath, null, ExportCategory.UNPUBLISHED, exportType);
+		return export(branchPath, null, null, ExportCategory.UNPUBLISHED, exportType);
 	}
 
 	public File export(ExportConfigurationBuilder exportConfigurationBuilder)
@@ -528,22 +528,25 @@ public class SnowOwlRestClient {
 		return recoverExportedArchive(exportUrl);
 	}
 
-	public File export(String branchPath, String effectiveDate, ExportCategory exportCategory, ExportType exportType)
+	public File export(String branchPath, String effectiveDate, Set<String> moduleIds, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 
-		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportCategory, exportType);
+		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, moduleIds, exportCategory, exportType);
 
 		String exportLocationURL = initiateExport(jsonObj.toString());
 
 		return recoverExportedArchive(exportLocationURL);
 	}
 	
-	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportCategory exportCategory, ExportType exportType)
+	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, Set<String> moduleIds, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 		JSONObject jsonObj = new JSONObject();
 		try {
 			jsonObj.put("type", exportType);
 			jsonObj.put("branchPath", branchPath);
+			if (moduleIds != null) {
+				jsonObj.put("moduleIds", moduleIds);
+			}
 			switch (exportCategory) {
 				case UNPUBLISHED:
 					String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
