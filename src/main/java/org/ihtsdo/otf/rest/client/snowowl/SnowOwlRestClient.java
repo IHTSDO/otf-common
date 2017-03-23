@@ -23,6 +23,7 @@ import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
@@ -111,12 +112,12 @@ public class SnowOwlRestClient {
 	}
 
 	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
-		return getEntity(urlHelper.getConceptUri(branchPath, conceptId), ConceptPojo.class);
+		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
 
 	public void createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
 		try {
-			resty.json(urlHelper.getConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
+			resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
 		} catch (IOException e) {
 			final String message = "Failed to create concept";
 			logger.error(message, e);
@@ -135,18 +136,24 @@ public class SnowOwlRestClient {
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
 		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
+		if (conceptIdsResponse == null) {
+			throw new ResourceNotFoundException("ECL query returned null result.");
+		}
 		return conceptIdsResponse.getConceptIds();
 	}
 
 	public boolean eclQueryHasAnyMatches(String branchPath, String ecl) throws RestClientException {
 		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 1);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
+		if (conceptIdsResponse == null) {
+			throw new ResourceNotFoundException("ECL query returned null result.");
+		}
 		return conceptIdsResponse.getTotal() > 0;
 	}
 
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
 		String authenticationToken = SecurityUtil.getAuthenticationToken();
-		URI uri = UriComponentsBuilder.fromHttpUrl(urlHelper.getConceptsUrl(branchPath))
+		URI uri = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("ecl", ecl)
 				.queryParam("active", true)
 				.queryParam("offset", 0)
@@ -179,7 +186,7 @@ public class SnowOwlRestClient {
 		if (statusCode.value() == 404) {
 			return null;
 		} else if (!statusCode.is2xxSuccessful()) {
-			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + " URI:" + responseType.toString();
+			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + " URI:" + request.getUrl().toString();
 			logger.error(errorMessage + ", status code {}", statusCode);
 			throw new RestClientException(errorMessage);
 		}

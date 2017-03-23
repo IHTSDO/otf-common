@@ -113,11 +113,19 @@ public class SnowOwlRestUrlHelper {
 		return snowOwlUrl;
 	}
 
-	public String getConceptsUrl(String branchPath) {
+	public String getBrowserConceptsUrl(String branchPath) {
 		return snomedUrl + "/browser/" + branchPath + "/concepts";
 	}
 
-	public URI getConceptUri(String branchPath, String conceptId) {
-		return getUri(getConceptsUrl(branchPath + "/" + conceptId));
+	public URI getBrowserConceptUri(String branchPath, String conceptId) {
+		return getUri(getBrowserConceptsUrl(branchPath) + "/" + conceptId);
+	}
+
+	public String getSimpleConceptsUrl(String branchPath) {
+		return snomedUrl + "/" + branchPath + "/concepts";
+	}
+
+	public URI getSimpleConceptUri(String branchPath, String conceptId) {
+		return getUri(getSimpleConceptsUrl(branchPath) + "/" + conceptId);
 	}
 }
