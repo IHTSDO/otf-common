@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client.snowowl;
 
+import javax.servlet.http.Cookie;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,13 +59,11 @@ public class SnowOwlRestClient {
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
-
 	}
 
 	public enum ProcessingStatus {
 		COMPLETED, SAVED
 	}
-
 
 	public enum ExportCategory {
 		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
@@ -98,6 +97,13 @@ public class SnowOwlRestClient {
 		this(snowOwlUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
 		resty.withHeader("Cookie", singleSignOnCookie);
+	}
+	
+	public SnowOwlRestClient(String snowOwlUrl, Cookie[] cookies) {
+		this(snowOwlUrl);
+		for (Cookie cookie : cookies) {
+			resty.withHeader("Cookie", cookie.getValue());
+		}
 	}
 
 	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword) {
@@ -186,8 +192,9 @@ public class SnowOwlRestClient {
 		if (statusCode.value() == 404) {
 			return null;
 		} else if (!statusCode.is2xxSuccessful()) {
-			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + " URI:" + request.getUrl().toString();
-			logger.error(errorMessage + ", status code {}", statusCode);
+			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + 
+					", status code: " + statusCode + 
+					" URI: " + request.getUrl().toString();
 			throw new RestClientException(errorMessage);
 		}
 		return responseEntity.getBody();
@@ -258,9 +265,13 @@ public class SnowOwlRestClient {
 	}
 
 	private List<String> listBranchDirectChildren(String branchPath) throws RestClientException {
+		String url = "";
+		int status = -1;
 		try {
 			List<String> projectNames = new ArrayList<>();
-			JSONResource json = resty.json(urlHelper.getBranchChildrenUrl(branchPath));
+			url = urlHelper.getBranchChildrenUrl(branchPath);
+			JSONResource json = resty.json(url);
+			status = json.getHTTPStatus();
 			try {
 				@SuppressWarnings("unchecked")
 				List<String> childBranchPaths = (List<String>) json.get("items.path");
@@ -275,9 +286,9 @@ public class SnowOwlRestClient {
 			}
 			return projectNames;
 		} catch (IOException e) {
-			throw new RestClientException("Failed to retrieve branch list.", e);
+			throw new RestClientException("Failed to retrieve branch list, status: " + status + ", from " + url, e);
 		} catch (Exception e) {
-			throw new RestClientException("Failed to parse branch list.", e);
+			throw new RestClientException("Failed to parse branch list from, status: " + status + ", from " + url, e);
 		}
 	}
 
