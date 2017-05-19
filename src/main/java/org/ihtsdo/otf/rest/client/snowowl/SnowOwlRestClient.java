@@ -99,13 +99,6 @@ public class SnowOwlRestClient {
 		this.singleSignOnCookie = singleSignOnCookie;
 		resty.withHeader("Cookie", singleSignOnCookie);
 	}
-	
-	public SnowOwlRestClient(String snowOwlUrl, Cookie[] cookies) {
-		this(snowOwlUrl);
-		for (Cookie cookie : cookies) {
-			resty.withHeader("Cookie", cookie.getValue());
-		}
-	}
 
 	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword) {
 		this(snowOwlUrl);
