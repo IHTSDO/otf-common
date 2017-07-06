@@ -21,6 +21,7 @@ import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults.MergeReviewStatus;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -336,6 +337,14 @@ public class SnowOwlRestClient {
 	public Merge getMerge(String mergeId) throws RestClientException {
 		return getEntity(urlHelper.getMergeUri(mergeId), Merge.class);
 	}
+	
+	public MergeReviewsResults getMergeReviewsResult(String mergeId) throws RestClientException {
+		return getEntity(urlHelper.getMergeReviewsUri(mergeId), MergeReviewsResults.class);
+	}
+	
+	public boolean isNoMergeConflict(String mergeId) throws RestClientException{
+		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class).isEmpty();
+	}
 
 	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
 			throws RestClientException {
@@ -384,6 +393,44 @@ public class SnowOwlRestClient {
 		} catch (Exception e) {
 			throw new RestClientException("Import failed.", e);
 		}
+	}
+	
+	public String createBranchMergeReviews(String sourceBranchPath, String targetBranchPath) throws RestClientException{
+		Map<String, String> request = new HashMap<>();
+		request.put("source", sourceBranchPath);
+		request.put("target", targetBranchPath);
+		return createMergeReviewsBranch(urlHelper.getMergeReviewsUri(), request);
+	}
+	
+	private String createMergeReviewsBranch(URI uri, Object request) throws RestClientException {
+		RequestEntity<Object> post = RequestEntity.post(uri)
+				.header("Cookie", singleSignOnCookie)
+				.body(request);
+
+		HttpStatus statusCode;
+		ResponseEntity<String> responseEntity = null;
+		try {
+			responseEntity = restTemplate.exchange(post, String.class);
+			statusCode = responseEntity.getStatusCode();
+		} catch (HttpClientErrorException e) {
+			statusCode = e.getStatusCode();
+		}
+
+		if (statusCode.value() == 404) {
+			return null;
+		} else if (!statusCode.is2xxSuccessful()) {
+			String errorMessage = "Failed to create entity URI:" + uri.toString();
+			logger.error(errorMessage + ", status code {}", statusCode);
+			throw new RestClientException(errorMessage);
+		}
+
+		String location = responseEntity.getHeaders().getFirst("Location");
+		if (Strings.isNullOrEmpty(location)) {
+			String errorMessage = "Failed to create entity, location header missing from response. URI:" + uri.toString();
+			logger.error(errorMessage + ", status code {}", statusCode);
+			throw new RestClientException(errorMessage);
+		}
+		return location.substring(location.lastIndexOf("/") + 1);
 	}
 	
 	public ClassificationResults startClassification (String branchPath) throws RestClientException {

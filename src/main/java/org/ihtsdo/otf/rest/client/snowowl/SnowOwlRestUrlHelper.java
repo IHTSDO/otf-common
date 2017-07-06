@@ -76,11 +76,26 @@ public class SnowOwlRestUrlHelper {
 	public String getMergesUrl() {
 		return snomedUrl + "/merges";
 	}
+	
+	public String getMergeReviewsUrl() {
+		return snomedUrl + "/merge-reviews";
+	}
 
 	public URI getMergesUri() {
 		return getUri(getMergesUrl());
 	}
 
+	public URI getMergeReviewsUri() {
+		return getUri(getMergeReviewsUrl());
+	}
+	
+	public URI getMergeReviewsUri(String mergeId) {
+		return getUri(getMergeReviewsUrl() + "/" + mergeId);
+	}
+	
+	public URI getMergeReviewsDetailsUri(String mergeId) {
+		return getUri(getMergeReviewsUrl() + "/" + mergeId + "/details");
+	}
 
 	public URI getMergeUri(String mergeId) {
 		return getUri(getMergesUrl() + "/" + mergeId);
