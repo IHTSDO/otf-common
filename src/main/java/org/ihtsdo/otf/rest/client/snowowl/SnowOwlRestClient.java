@@ -115,9 +115,16 @@ public class SnowOwlRestClient {
 		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
 
-	public void createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
+	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
 		try {
-			resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
+			JSONResource response = resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
+			ConceptPojo savedConcept = null;
+			try {
+				savedConcept = mapper.readValue(response.stream(), ConceptPojo.class);
+			} catch (Exception e){
+				logger.error("Failed to recover save result",e);
+			}
+			return savedConcept;
 		} catch (IOException e) {
 			final String message = "Failed to create concept";
 			logger.error(message, e);
