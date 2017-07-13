@@ -3,6 +3,9 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DescriptionPojo {
 
 	private String descriptionId;

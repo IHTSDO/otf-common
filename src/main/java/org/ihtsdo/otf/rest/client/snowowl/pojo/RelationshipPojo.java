@@ -1,5 +1,8 @@
 package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RelationshipPojo {
 
 	private String relationshipId;

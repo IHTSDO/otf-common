@@ -117,8 +117,18 @@ public class SnowOwlRestClient {
 
 	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
 		try {
-			JSONResource response = resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.content(gson.toJson(newConcept)));
+			JSONResource response = resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.contentJSON(gson.toJson(newConcept)));
 			ConceptPojo savedConcept = null;
+			//Check successful creation (NB Receiving 200 rather than 201 currently)
+			if (!response.getHTTPStatus().toString().startsWith("2")) {
+				String msg = "<unparsable>";
+				try {
+					msg = response.toObject().toString(1);
+				} catch (Exception e) {
+					logger.error("Unable to parse response",e);
+				}
+				throw new IOException ("Received HTTPStatus: " + response.getHTTPStatus() + ": " + msg);
+			}
 			try {
 				savedConcept = mapper.readValue(response.stream(), ConceptPojo.class);
 			} catch (Exception e){
@@ -128,7 +138,7 @@ public class SnowOwlRestClient {
 		} catch (IOException e) {
 			final String message = "Failed to create concept";
 			logger.error(message, e);
-			throw new RestClientException(message);
+			throw new RestClientException(message, e);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.HashSet;
@@ -7,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 @JsonPropertyOrder({"conceptId", "effectiveTime", "active", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "relationships"})
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptPojo {
 
 	private String conceptId;
@@ -26,7 +28,7 @@ public class ConceptPojo {
 	private Set<DescriptionPojo> descriptions;
 
 	private Set<RelationshipPojo> relationships;
-
+	
 	public ConceptPojo() {
 		active = true;
 	}
