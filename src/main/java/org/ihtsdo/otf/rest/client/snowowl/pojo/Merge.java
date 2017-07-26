@@ -10,7 +10,8 @@ public class Merge {
 		IN_PROGRESS,
 		COMPLETED,
 		FAILED,
-		CANCEL_REQUESTED;
+		CANCEL_REQUESTED,
+		CONFLICTS
 	}
 
 	private UUID id;
