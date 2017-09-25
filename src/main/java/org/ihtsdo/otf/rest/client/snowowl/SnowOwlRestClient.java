@@ -409,38 +409,7 @@ public class SnowOwlRestClient {
 		Map<String, String> request = new HashMap<>();
 		request.put("source", sourceBranchPath);
 		request.put("target", targetBranchPath);
-		return createMergeReviewsBranch(urlHelper.getMergeReviewsUri(), request);
-	}
-	
-	private String createMergeReviewsBranch(URI uri, Object request) throws RestClientException {
-		RequestEntity<Object> post = RequestEntity.post(uri)
-				.header("Cookie", singleSignOnCookie)
-				.body(request);
-
-		HttpStatus statusCode;
-		ResponseEntity<String> responseEntity = null;
-		try {
-			responseEntity = restTemplate.exchange(post, String.class);
-			statusCode = responseEntity.getStatusCode();
-		} catch (HttpClientErrorException e) {
-			statusCode = e.getStatusCode();
-		}
-
-		if (statusCode.value() == 404) {
-			return null;
-		} else if (!statusCode.is2xxSuccessful()) {
-			String errorMessage = "Failed to create entity URI:" + uri.toString();
-			logger.error(errorMessage + ", status code {}", statusCode);
-			throw new RestClientException(errorMessage);
-		}
-
-		String location = responseEntity.getHeaders().getFirst("Location");
-		if (Strings.isNullOrEmpty(location)) {
-			String errorMessage = "Failed to create entity, location header missing from response. URI:" + uri.toString();
-			logger.error(errorMessage + ", status code {}", statusCode);
-			throw new RestClientException(errorMessage);
-		}
-		return location.substring(location.lastIndexOf("/") + 1);
+		return createEntity(urlHelper.getMergeReviewsUri(), request);
 	}
 	
 	public ClassificationResults startClassification (String branchPath) throws RestClientException {
