@@ -75,6 +75,7 @@ public class SnowOwlRestClient {
 	private RestTemplate restTemplate;
 
 	private String reasonerId;
+	private boolean useExternalClassificationService;
 	private boolean flatIndexExportStyle = true;
 	private String logPath;
 	private String rolloverLogPath;
@@ -412,12 +413,12 @@ public class SnowOwlRestClient {
 		return createEntity(urlHelper.getMergeReviewsUri(), request);
 	}
 	
-	public ClassificationResults startClassification (String branchPath) throws RestClientException {
+	public ClassificationResults startClassification(String branchPath) throws RestClientException {
 		ClassificationResults results = new ClassificationResults();
 		try {
-			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
+			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId).put("useExternalService", useExternalClassificationService);
 			String classifyURL = urlHelper.getClassificationsUrl(branchPath);
-			logger.info("Initiating classification via {}", classifyURL);
+			logger.info("Initiating classification via {}, reasonerId:{}, useExternalService:{}", classifyURL, reasonerId, useExternalClassificationService);
 			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_CONTENT_TYPE);
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (classificationLocation == null) {
@@ -773,6 +774,14 @@ public class SnowOwlRestClient {
 
 	public String getReasonerId() {
 		return reasonerId;
+	}
+
+	public boolean isUseExternalClassificationService() {
+		return useExternalClassificationService;
+	}
+
+	public void setUseExternalClassificationService(boolean useExternalClassificationService) {
+		this.useExternalClassificationService = useExternalClassificationService;
 	}
 
 	public void setLogPath(String logPath) {

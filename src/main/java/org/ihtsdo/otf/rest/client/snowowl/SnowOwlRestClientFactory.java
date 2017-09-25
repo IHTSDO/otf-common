@@ -10,11 +10,13 @@ public class SnowOwlRestClientFactory {
 
 	private String snowOwlUrl;
 	private String snowOwlReasonerId;
+	private boolean snowOwlUseExternalClassificationService;
 	private final Cache<String, SnowOwlRestClient> clientCache;
 
-	public SnowOwlRestClientFactory(String snowOwlUrl, String snowOwlReasonerId) {
+	public SnowOwlRestClientFactory(String snowOwlUrl, String snowOwlReasonerId, boolean snowOwlUseExternalClassificationService) {
 		this.snowOwlUrl = snowOwlUrl;
 		this.snowOwlReasonerId = snowOwlReasonerId;
+		this.snowOwlUseExternalClassificationService = snowOwlUseExternalClassificationService;
 		clientCache = CacheBuilder.newBuilder()
 				.expireAfterAccess(5, TimeUnit.MINUTES)
 				.build();
@@ -33,6 +35,7 @@ public class SnowOwlRestClientFactory {
 				if (client == null) {
 					client = new SnowOwlRestClient(snowOwlUrl, authenticationToken);
 					client.setReasonerId(snowOwlReasonerId);
+					client.setUseExternalClassificationService(snowOwlUseExternalClassificationService);
 					clientCache.put(authenticationToken, client);
 				}
 			}
