@@ -1,6 +1,5 @@
 package org.ihtsdo.otf.rest.client.snowowl;
 
-import javax.servlet.http.Cookie;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +20,6 @@ import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults.MergeReviewStatus;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -151,6 +149,16 @@ public class SnowOwlRestClient {
 		return branch;
 	}
 
+	public MembersResponse getMembers(String branchPath, String referenceSet, int limit) throws RestClientException {
+		//MembersResponse entries = getEntity(urlHelper.getMembersUrl(branchPath, referenceSet, limit), MembersResponse.class);
+		RequestEntity<Void> countRequest = createRefsetRequest(branchPath, referenceSet, limit);
+		MembersResponse entries = doExchange(countRequest, MembersResponse.class);
+		if (entries == null) {
+			throw new ResourceNotFoundException("No refset entries found.");
+		}
+		return entries;
+	}
+
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
 		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
@@ -179,6 +187,13 @@ public class SnowOwlRestClient {
 				.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
+				.header("Cookie", authenticationToken)
+				.build();
+	}
+
+	private RequestEntity<Void> createRefsetRequest(final String branchPath, String refset, int limit) {
+		String authenticationToken = SecurityUtil.getAuthenticationToken();
+		return RequestEntity.get(urlHelper.getMembersUrl(branchPath, refset, limit))
 				.header("Cookie", authenticationToken)
 				.build();
 	}

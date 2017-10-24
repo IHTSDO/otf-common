@@ -33,6 +33,10 @@ public class SnowOwlRestUrlHelper {
 		}
 	}
 
+	public URI getMembersUrl(String branchPath, String referenceSet, int limit) {
+		return getUri (snomedUrl + "/" + branchPath + "/members" + "?referenceSet=" + referenceSet + "&limit=" + limit);
+	}
+
 	public String getBranchChildrenUrl(String branchPath) {
 		return snomedUrl + "/branches/" + branchPath + "/children";
 	}
