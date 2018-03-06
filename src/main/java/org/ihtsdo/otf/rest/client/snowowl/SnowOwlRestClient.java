@@ -1,15 +1,25 @@
 package org.ihtsdo.otf.rest.client.snowowl;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -19,7 +29,13 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
-import org.ihtsdo.otf.rest.client.snowowl.pojo.*;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.Branch;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ClassificationResults;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptIdsResponse;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptPojo;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.MembersResponse;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -37,17 +53,23 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonWriter;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
-
-import java.io.*;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
 
 public class SnowOwlRestClient {
 
@@ -111,7 +133,7 @@ public class SnowOwlRestClient {
 	}
 
 	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
-		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
+		return getEntity(urlHelper.getSimpleConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
 
 	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
@@ -150,7 +172,6 @@ public class SnowOwlRestClient {
 	}
 
 	public MembersResponse getMembers(String branchPath, String referenceSet, int limit) throws RestClientException {
-		//MembersResponse entries = getEntity(urlHelper.getMembersUrl(branchPath, referenceSet, limit), MembersResponse.class);
 		RequestEntity<Void> countRequest = createRefsetRequest(branchPath, referenceSet, limit);
 		MembersResponse entries = doExchange(countRequest, MembersResponse.class);
 		if (entries == null) {
@@ -178,7 +199,7 @@ public class SnowOwlRestClient {
 	}
 
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
-		String authenticationToken = SecurityUtil.getAuthenticationToken();
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		URI uri = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("ecl", ecl)
 				.queryParam("active", true)
@@ -192,7 +213,7 @@ public class SnowOwlRestClient {
 	}
 
 	private RequestEntity<Void> createRefsetRequest(final String branchPath, String refset, int limit) {
-		String authenticationToken = SecurityUtil.getAuthenticationToken();
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		return RequestEntity.get(urlHelper.getMembersUrl(branchPath, refset, limit))
 				.header("Cookie", authenticationToken)
 				.build();

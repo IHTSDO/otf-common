@@ -2,14 +2,9 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import org.json.JSONObject;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 @JsonPropertyOrder({"effectiveTime", "released", "releasedEffectiveTime", "active", "moduleId", "refsetId", "referencedComponentId", "additionalFields"})
-@JsonIgnoreProperties(ignoreUnknown = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RefsetPojo {
 
 	private boolean released;
@@ -90,7 +85,16 @@ public class RefsetPojo {
 		return released;
 	}
 
-	public void setReleased(boolean release) {
+	public void setReleased(boolean released) {
 		this.released = released;
 	}
+
+	@Override
+	public String toString() {
+		return "RefsetPojo [released=" + released + ", effectiveTime=" + effectiveTime + ", active=" + active
+				+ ", moduleId=" + moduleId + ", releasedEffectiveTime=" + releasedEffectiveTime
+				+ ", referencedComponentId=" + referencedComponentId + ", refsetId=" + refsetId + ", additionalFields="
+				+ additionalFields + "]";
+	}
+	
 }
