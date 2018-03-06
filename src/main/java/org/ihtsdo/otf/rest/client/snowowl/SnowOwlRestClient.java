@@ -36,6 +36,7 @@ import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptPojo;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.MembersResponse;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleConceptPojo;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -132,10 +133,15 @@ public class SnowOwlRestClient {
 		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
 	}
 
+	/**
+	 * Note: This APi uses browser endpoint  and returns the full information about the concept 
+	 * However it is very slow.
+	 * 
+	 */
 	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
-		return getEntity(urlHelper.getSimpleConceptUri(branchPath, conceptId), ConceptPojo.class);
+		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
-
+	
 	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
 		try {
 			JSONResource response = resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.contentJSON(gson.toJson(newConcept)));
@@ -178,6 +184,19 @@ public class SnowOwlRestClient {
 			throw new ResourceNotFoundException("No refset entries found.");
 		}
 		return entries;
+	}
+	
+	public String getFsn(String branchPath, String conceptId) throws RestClientException {
+		 SimpleConceptPojo pojo = getEntity(urlHelper.getConceptFsnUrl(branchPath, conceptId), SimpleConceptPojo.class);
+		 if (pojo == null) {
+			 throw new ResourceNotFoundException("No concept found on branch:" 
+					 + branchPath + " for conceptId:" + conceptId);
+		 }
+		 
+		 if (pojo.getFsn() == null) {
+			 throw new ResourceNotFoundException("No FSN found for conceptId:" + conceptId);
+		 }
+		 return pojo.getFsn().getTerm();
 	}
 
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
