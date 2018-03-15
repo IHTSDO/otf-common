@@ -147,8 +147,4 @@ public class SnowOwlRestUrlHelper {
 	public URI getSimpleConceptUri(String branchPath, String conceptId) {
 		return getUri(getSimpleConceptsUrl(branchPath) + "/" + conceptId);
 	}
-
-	public URI getConceptFsnUrl(String branchPath, String conceptId) {
-		return getUri(getSimpleConceptsUrl(branchPath) + "/" + conceptId + "?expand=fsn()");
-	}
 }

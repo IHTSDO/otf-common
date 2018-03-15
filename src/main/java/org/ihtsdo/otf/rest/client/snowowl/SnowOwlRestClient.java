@@ -11,7 +11,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import org.ihtsdo.otf.rest.client.snowowl.pojo.MembersResponse;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleConceptPojo;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleConceptResponse;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -187,16 +190,40 @@ public class SnowOwlRestClient {
 	}
 	
 	public String getFsn(String branchPath, String conceptId) throws RestClientException {
-		 SimpleConceptPojo pojo = getEntity(urlHelper.getConceptFsnUrl(branchPath, conceptId), SimpleConceptPojo.class);
-		 if (pojo == null) {
-			 throw new ResourceNotFoundException("No concept found on branch:" 
-					 + branchPath + " for conceptId:" + conceptId);
-		 }
-		 
-		 if (pojo.getFsn() == null) {
-			 throw new ResourceNotFoundException("No FSN found for conceptId:" + conceptId);
-		 }
-		 return pojo.getFsn().getTerm();
+		return getFsns(branchPath, Arrays.asList(conceptId)).get(conceptId);
+	}
+	
+	public Map<String, String> getFsns(String branchPath, Collection<String> conceptIds) throws RestClientException {
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, conceptIds);
+		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
+		if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
+			throw new ResourceNotFoundException("Can't find concepts from branch:" + branchPath);
+		}
+		Map<String, String> result = new HashMap<>();
+		for (SimpleConceptPojo pojo : simpleConceptResp.getItems()) {
+			result.put(pojo.getId(), pojo.getFsn().getTerm());
+		}
+		return result;
+	}
+	
+
+	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl, List<String> concepts) throws RestClientException {
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, concepts);
+		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
+		if (simpleConceptResp == null) {
+			throw new ResourceNotFoundException("ECL query returned null result.");
+		}
+		return simpleConceptResp.getItems();
+	}
+	
+	
+	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl, String termPrefix, int limit) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclAndTermRequest(branchPath, ecl, termPrefix, limit);
+		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
+		if (simpleConceptResp == null) {
+			throw new ResourceNotFoundException("ECL query returned null result.");
+		}
+		return simpleConceptResp.getItems();
 	}
 
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
@@ -216,15 +243,53 @@ public class SnowOwlRestClient {
 		}
 		return conceptIdsResponse.getTotal() > 0;
 	}
-
-	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
+	
+	
+	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl, Collection<String> concepts) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		URI uri = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
+				.queryParam("active", true)
+				.queryParam("offset", 0)
+				.queryParam("conceptIds", concepts.toArray())
+				.queryParam("expand", "fsn()")
+				.queryParam("termActive", true)
+				.queryParam("limit", concepts.size());
+		
+		if (ecl != null) {
+			queryBuilder.queryParam("ecl", ecl);
+		}
+		URI uri = queryBuilder.build().toUri();
+		logger.debug("URI {}", uri);
+		return RequestEntity.get(uri)
+				.header("Cookie", authenticationToken)
+				.build();
+	}
+
+	private RequestEntity<Void> createEclAndTermRequest(final String branchPath, String ecl, String termPrefix, int limit) {
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("ecl", ecl)
 				.queryParam("active", true)
 				.queryParam("offset", 0)
-				.queryParam("limit", limit)
-				.build().toUri();
+				.queryParam("expand", "fsn()")
+				.queryParam("term", termPrefix)
+				.queryParam("termActive", true)
+				.queryParam("limit", limit);
+		URI uri = queryBuilder.build().toUri();
+		logger.debug("URI {}", uri);
+		return RequestEntity.get(uri)
+				.header("Cookie", authenticationToken)
+				.build();
+	}
+
+	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
+				.queryParam("ecl", ecl)
+				.queryParam("active", true)
+				.queryParam("offset", 0)
+				.queryParam("limit", limit);
+		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
 				.header("Cookie", authenticationToken)
