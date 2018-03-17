@@ -194,7 +194,7 @@ public class SnowOwlRestClient {
 	}
 	
 	public Map<String, String> getFsns(String branchPath, Collection<String> conceptIds) throws RestClientException {
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, conceptIds);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, conceptIds, conceptIds.size());
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
 			throw new ResourceNotFoundException("Can't find concepts from branch:" + branchPath);
@@ -206,19 +206,10 @@ public class SnowOwlRestClient {
 		return result;
 	}
 	
-
-	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl, List<String> concepts) throws RestClientException {
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, concepts);
-		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
-		if (simpleConceptResp == null) {
-			throw new ResourceNotFoundException("ECL query returned null result.");
-		}
-		return simpleConceptResp.getItems();
-	}
-	
-	
-	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl, String termPrefix, int limit) throws RestClientException {
-		RequestEntity<Void> countRequest = createEclAndTermRequest(branchPath, ecl, termPrefix, limit);
+	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
+			String termPrefix, List<String> concepts, int limit) throws RestClientException {
+		
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, limit);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -245,36 +236,29 @@ public class SnowOwlRestClient {
 	}
 	
 	
-	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl, Collection<String> concepts) {
-		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
+	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
+			String termPrefix, Collection<String> concepts, int limit) {
+		String authenticationToken = singleSignOnCookie != null ?
+				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl
+				(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("active", true)
 				.queryParam("offset", 0)
-				.queryParam("conceptIds", concepts.toArray())
 				.queryParam("expand", "fsn()")
 				.queryParam("termActive", true)
-				.queryParam("limit", concepts.size());
+				.queryParam("limit", limit);
 		
 		if (ecl != null) {
 			queryBuilder.queryParam("ecl", ecl);
 		}
-		URI uri = queryBuilder.build().toUri();
-		logger.debug("URI {}", uri);
-		return RequestEntity.get(uri)
-				.header("Cookie", authenticationToken)
-				.build();
-	}
-
-	private RequestEntity<Void> createEclAndTermRequest(final String branchPath, String ecl, String termPrefix, int limit) {
-		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
-				.queryParam("ecl", ecl)
-				.queryParam("active", true)
-				.queryParam("offset", 0)
-				.queryParam("expand", "fsn()")
-				.queryParam("term", termPrefix)
-				.queryParam("termActive", true)
-				.queryParam("limit", limit);
+		
+		if (termPrefix != null && !termPrefix.isEmpty()) {
+			queryBuilder.queryParam("term", termPrefix);
+		}
+		
+		if (concepts != null && !concepts.isEmpty()) {
+			queryBuilder.queryParam("conceptIds", concepts.toArray());
+		}
 		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
