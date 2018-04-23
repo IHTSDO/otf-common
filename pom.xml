@@ -17,7 +17,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j.version>1.7.5</slf4j.version>
-		<spring.version>4.3.5.RELEASE</spring.version>
+		<spring.version>4.3.10.RELEASE</spring.version>
+		<spring-cloud.version>1.2.2.RELEASE</spring-cloud.version>
 	</properties>
 
 	<scm>
@@ -28,22 +29,18 @@
 	</scm>
 
 	<dependencies>
+		<!-- Snomed International -->
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>ihtsdo-spring-sso</artifactId>
 			<version>2.0.0</version>
 		</dependency>
+
+		<!-- Spring -->
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<version>${spring.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>2.0.5</version>
-			<scope>provided</scope>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-aws-core</artifactId>
+			<version>${spring-cloud.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -57,24 +54,16 @@
 			<version>${spring.version}</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- Messaging -->
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>activemq-client</artifactId>
 			<version>5.10.0</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-			<version>1.10.0</version>
-			<scope>provided</scope>
-		</dependency>
+
+		<!-- Commons -->
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
@@ -91,6 +80,8 @@
 			<version>1.10</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- JSON -->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
@@ -106,11 +97,15 @@
 			<artifactId>gson</artifactId>
 			<version>2.2.4</version>
 		</dependency>
+
+		<!-- JIRA client -->
 		<dependency>
 			<groupId>us.monoid.web</groupId>
 			<artifactId>ihtsdo-resty</artifactId>
 			<version>0.3.4.2</version>
 		</dependency>
+
+		<!-- Not sure -->
 		<dependency>
 			<groupId>com.mashape.unirest</groupId>
 			<artifactId>unirest-java</artifactId>
@@ -121,6 +116,15 @@
 			<artifactId>httpmime</artifactId>
 			<version>4.5</version>
 		</dependency>
+
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- Test -->
 		<dependency>
 			<groupId>junit</groupId>
@@ -128,7 +132,7 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
-    </dependencies>
+	</dependencies>
 
 	<build>
 		<plugins>
