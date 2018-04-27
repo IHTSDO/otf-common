@@ -4,9 +4,9 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common</artifactId>
-	<version>1.6.0-SNAPSHOT</version>
+	<version>1.6.0</version>
 	<name>OTF Common</name>
-	
+
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -172,7 +172,7 @@
 				<execution>
 					<id>attach-sources</id>
 					<phase>install</phase>
-					<goals><goal>jar-no-fork</goal></goals> 
+					<goals><goal>jar-no-fork</goal></goals>
 				</execution>
 				</executions>
 			</plugin>
