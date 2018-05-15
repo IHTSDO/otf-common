@@ -40,6 +40,7 @@ import org.ihtsdo.otf.rest.client.snowowl.pojo.Merge;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.MergeReviewsResults;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleConceptPojo;
 import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleConceptResponse;
+import org.ihtsdo.otf.rest.client.snowowl.pojo.SimpleDescriptionPojo;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -193,6 +194,40 @@ public class SnowOwlRestClient {
 		return getFsns(branchPath, Arrays.asList(conceptId)).get(conceptId);
 	}
 	
+	public Map<String, Set<SimpleDescriptionPojo>> getDescriptions(String branchPath, Collection<String> conceptIds) throws RestClientException {
+		RequestEntity<Void> countRequest = createDescriptionsByConceptsSearchRequest(branchPath, conceptIds, conceptIds.size());
+		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
+		if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
+			throw new ResourceNotFoundException("Can't find concepts from branch " + branchPath);
+		}
+		Map<String, Set<SimpleDescriptionPojo>> result = new HashMap<>();
+		for (SimpleConceptPojo pojo : simpleConceptResp.getItems()) {
+			result.put(pojo.getId(), pojo.getDescriptions().getItems());
+		}
+		return result;
+	}
+	
+	private RequestEntity<Void> createDescriptionsByConceptsSearchRequest(String branchPath, Collection<String> conceptIds, int limit) {
+		if (conceptIds == null || conceptIds.isEmpty()) {
+			throw new IllegalArgumentException("Concept ids must be specified");
+		}
+		String authenticationToken = singleSignOnCookie != null ?
+				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl
+				(urlHelper.getSimpleConceptsUrl(branchPath))
+				.queryParam("active", true)
+				.queryParam("offset", 0)
+				.queryParam("expand", "descriptions()")
+				.queryParam("termActive", true)
+				.queryParam("limit", limit)
+				.queryParam("conceptIds", conceptIds.toArray());
+		URI uri = queryBuilder.build().toUri();
+		logger.debug("URI {}", uri);
+		return RequestEntity.get(uri)
+				.header("Cookie", authenticationToken)
+				.build();
+	}
+
 	public Map<String, String> getFsns(String branchPath, Collection<String> conceptIds) throws RestClientException {
 		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, conceptIds, conceptIds.size());
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);

@@ -11,6 +11,7 @@ public final class SimpleConceptResponse {
 	private SimpleConceptResponse() {
 		
 	}
+	
 	public long getTotal() {
 		return total;
 	}

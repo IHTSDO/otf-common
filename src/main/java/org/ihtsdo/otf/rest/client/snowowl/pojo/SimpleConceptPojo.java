@@ -3,7 +3,7 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({"id", "active", "fsn"})
+@JsonPropertyOrder({"id", "active", "fsn", "descriptions"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SimpleConceptPojo {
 
@@ -20,6 +20,8 @@ public class SimpleConceptPojo {
 	private String definitionStatus;
 	
 	private FsnPojo fsn;	
+	
+	private SimpleDescriptionResponse descriptions;
 
 	public String getId() {
 		return id;
@@ -59,6 +61,14 @@ public class SimpleConceptPojo {
 
 	public void setFsn(FsnPojo fsn) {
 		this.fsn = fsn;
+	}
+
+	public SimpleDescriptionResponse getDescriptions() {
+		return descriptions;
+	}
+
+	public void setDescriptions(SimpleDescriptionResponse descriptionsResponse) {
+		this.descriptions = descriptionsResponse;
 	}
 
 	@Override
@@ -132,4 +142,3 @@ public class SimpleConceptPojo {
 		}
 	}
 }
-
