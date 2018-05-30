@@ -112,6 +112,7 @@ public class SnowOwlRestClient {
 	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	private final SnowOwlRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final int BATCH_SIZE = 200;
 
 	private SnowOwlRestClient(String snowOwlUrl) {
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
@@ -195,14 +196,26 @@ public class SnowOwlRestClient {
 	}
 	
 	public Map<String, Set<SimpleDescriptionPojo>> getDescriptions(String branchPath, Collection<String> conceptIds) throws RestClientException {
-		RequestEntity<Void> countRequest = createDescriptionsByConceptsSearchRequest(branchPath, conceptIds, conceptIds.size());
-		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
-		if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
-			throw new ResourceNotFoundException("Can't find concepts from branch " + branchPath);
-		}
 		Map<String, Set<SimpleDescriptionPojo>> result = new HashMap<>();
-		for (SimpleConceptPojo pojo : simpleConceptResp.getItems()) {
-			result.put(pojo.getId(), pojo.getDescriptions().getItems());
+		List<String> batchJob = null;
+		int counter=0;
+		for (String conceptId : conceptIds) {
+			if (batchJob == null) {
+				batchJob = new ArrayList<>();
+			}
+			batchJob.add(conceptId);
+			counter++;
+			if (counter % BATCH_SIZE == 0 || counter == conceptIds.size()) {
+				RequestEntity<Void> countRequest = createDescriptionsByConceptsSearchRequest(branchPath, batchJob, batchJob.size());
+				SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
+				if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
+					throw new ResourceNotFoundException("Can't find concepts from branch " + branchPath);
+				}
+				for (SimpleConceptPojo pojo : simpleConceptResp.getItems()) {
+					result.put(pojo.getId(), pojo.getDescriptions().getItems());
+				}
+				batchJob = null;
+			}
 		}
 		return result;
 	}
@@ -229,7 +242,7 @@ public class SnowOwlRestClient {
 	}
 
 	public Map<String, String> getFsns(String branchPath, Collection<String> conceptIds) throws RestClientException {
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, conceptIds, conceptIds.size());
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath,conceptIds, conceptIds.size());
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null || simpleConceptResp.getItems().isEmpty()) {
 			throw new ResourceNotFoundException("Can't find concepts from branch:" + branchPath);
@@ -241,10 +254,20 @@ public class SnowOwlRestClient {
 		return result;
 	}
 	
+	private RequestEntity<Void> createConceptsRequest(String branchPath, Collection<String> conceptIds, int size) {
+		return createConceptsRequest(branchPath, null, null, conceptIds, size, false);
+	}
+
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, limit);
+		return getConcepts(branchPath, ecl, termPrefix, concepts, limit, false);
+	}
+	
+	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
+			String termPrefix, List<String> concepts, int limit, boolean stated) throws RestClientException {
+		
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, limit, stated);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -253,7 +276,12 @@ public class SnowOwlRestClient {
 	}
 
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
-		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit);
+		return eclQuery(branchPath, ecl, limit, false);
+	}
+	
+	
+	public Set<String> eclQuery(String branchPath, String ecl, int limit, boolean stated) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit, stated);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
 		if (conceptIdsResponse == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -262,7 +290,11 @@ public class SnowOwlRestClient {
 	}
 
 	public boolean eclQueryHasAnyMatches(String branchPath, String ecl) throws RestClientException {
-		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 1);
+		return eclQueryHasAnyMatches(branchPath, ecl, false);
+	}
+	
+	public boolean eclQueryHasAnyMatches(String branchPath, String ecl, boolean stated) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 1, stated);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
 		if (conceptIdsResponse == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -272,7 +304,7 @@ public class SnowOwlRestClient {
 	
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
-			String termPrefix, Collection<String> concepts, int limit) {
+			String termPrefix, Collection<String> concepts, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl
@@ -284,7 +316,11 @@ public class SnowOwlRestClient {
 				.queryParam("limit", limit);
 		
 		if (ecl != null) {
-			queryBuilder.queryParam("ecl", ecl);
+			if (stated) {
+				queryBuilder.queryParam("statedEcl", ecl);
+			} else {
+				queryBuilder.queryParam("ecl", ecl);
+			}
 		}
 		
 		if (termPrefix != null && !termPrefix.isEmpty()) {
@@ -301,13 +337,17 @@ public class SnowOwlRestClient {
 				.build();
 	}
 
-	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit) {
+	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
-				.queryParam("ecl", ecl)
 				.queryParam("active", true)
 				.queryParam("offset", 0)
 				.queryParam("limit", limit);
+		if (stated) {
+			queryBuilder.queryParam("statedEcl", ecl);
+		} else {
+			queryBuilder.queryParam("ecl", ecl);
+		}
 		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
