@@ -26,6 +26,8 @@ public class DescriptionPojo {
 
 	private Map<String, String> acceptabilityMap;
 
+	private String inactivationIndicator;
+	
 	public DescriptionPojo() {
 		active = true;
 		acceptabilityMap = new HashMap<>();
@@ -101,5 +103,13 @@ public class DescriptionPojo {
 
 	public void setAcceptabilityMap(Map<String, String> acceptabilityMap) {
 		this.acceptabilityMap = acceptabilityMap;
+	}
+
+	public String getInactivationIndicator() {
+		return inactivationIndicator;
+	}
+
+	public void setInactivationIndicator(String inactivationIndicator) {
+		this.inactivationIndicator = inactivationIndicator;
 	}
 }
