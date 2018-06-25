@@ -147,4 +147,12 @@ public class SnowOwlRestUrlHelper {
 	public URI getSimpleConceptUri(String branchPath, String conceptId) {
 		return getUri(getSimpleConceptsUrl(branchPath) + "/" + conceptId);
 	}
+	
+	public String getBulkConceptsUrl(String branchPath) {
+		return snomedUrl + "/browser/" + branchPath + "/concepts/bulk-load";
+	}
+	
+	public URI getBulkConceptsUri(String branchPath) {
+		return getUri(getBulkConceptsUrl(branchPath));
+	}
 }

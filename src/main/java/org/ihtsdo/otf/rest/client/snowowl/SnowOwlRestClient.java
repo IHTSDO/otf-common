@@ -50,7 +50,9 @@ import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -78,6 +80,7 @@ import us.monoid.web.JSONResource;
 
 public class SnowOwlRestClient {
 
+	private static final String COOKIE = "Cookie";
 	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
@@ -124,7 +127,7 @@ public class SnowOwlRestClient {
 	public SnowOwlRestClient(String snowOwlUrl, String singleSignOnCookie) {
 		this(snowOwlUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
-		resty.withHeader("Cookie", singleSignOnCookie);
+		resty.withHeader(COOKIE, singleSignOnCookie);
 	}
 
 	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword) {
@@ -237,7 +240,7 @@ public class SnowOwlRestClient {
 		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
-				.header("Cookie", authenticationToken)
+				.header(COOKIE, authenticationToken)
 				.build();
 	}
 
@@ -333,7 +336,7 @@ public class SnowOwlRestClient {
 		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
-				.header("Cookie", authenticationToken)
+				.header(COOKIE, authenticationToken)
 				.build();
 	}
 
@@ -351,20 +354,20 @@ public class SnowOwlRestClient {
 		URI uri = queryBuilder.build().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
-				.header("Cookie", authenticationToken)
+				.header(COOKIE, authenticationToken)
 				.build();
 	}
 
 	private RequestEntity<Void> createRefsetRequest(final String branchPath, String refset, int limit) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		return RequestEntity.get(urlHelper.getMembersUrl(branchPath, refset, limit))
-				.header("Cookie", authenticationToken)
+				.header(COOKIE, authenticationToken)
 				.build();
 	}
 
 	private <T> T getEntity(URI uri, Class<T> responseType) throws RestClientException {
 		RequestEntity<Void> get = RequestEntity.get(uri)
-				.header("Cookie", singleSignOnCookie)
+				.header(COOKIE, singleSignOnCookie)
 				.build();
 
 		return doExchange(get, responseType);
@@ -393,7 +396,7 @@ public class SnowOwlRestClient {
 
 	private String createEntity(URI uri, Object request) throws RestClientException {
 		RequestEntity<Object> post = RequestEntity.post(uri)
-				.header("Cookie", singleSignOnCookie)
+				.header(COOKIE, singleSignOnCookie)
 				.body(request);
 
 		HttpStatus statusCode;
@@ -1071,6 +1074,28 @@ public class SnowOwlRestClient {
 		public ExportConfigurationBuilder setType(ExportType type) {
 			this.type = type;
 			return this;
+		}
+	}
+
+	public List<ConceptPojo> searchConcepts(String branchPath, List<String> conceptIds) throws RestClientException {
+		try {
+			Map<String,Object> request = new HashMap<>();
+			request.put("conceptIds", conceptIds);			
+			URI uri = urlHelper.getBulkConceptsUri(branchPath);
+			
+			RequestEntity<?> post = RequestEntity.post(uri)
+					.header(COOKIE, singleSignOnCookie)
+					.accept(MediaType.APPLICATION_JSON)
+					.body(request);
+			ResponseEntity<List<ConceptPojo>> response = null;
+			ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<List<ConceptPojo>>() {};
+			response = restTemplate.exchange(post, typeRef);
+			if (response == null) {
+				throw new ResourceNotFoundException("Bulk search returned null result on branch " + branchPath);
+			}
+			return response.getBody();
+		} catch (Exception e) {
+			throw new RestClientException("Failed to bulk search concepts on branch " + branchPath, e);
 		}
 	}
 }
