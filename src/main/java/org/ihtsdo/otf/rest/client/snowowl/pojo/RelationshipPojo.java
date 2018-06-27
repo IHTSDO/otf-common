@@ -106,4 +106,89 @@ public class RelationshipPojo {
 	public void setModifier(String modifier) {
 		this.modifier = modifier;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (active ? 1231 : 1237);
+		result = prime * result + ((characteristicType == null) ? 0 : characteristicType.hashCode());
+		result = prime * result + groupId;
+		result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
+		result = prime * result + ((relationshipId == null) ? 0 : relationshipId.hashCode());
+		result = prime * result + ((sourceId == null) ? 0 : sourceId.hashCode());
+		result = prime * result + ((target == null) ? 0 : target.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RelationshipPojo other = (RelationshipPojo) obj;
+		if (active != other.active)
+			return false;
+		if (characteristicType == null) {
+			if (other.characteristicType != null)
+				return false;
+		} else if (!characteristicType.equals(other.characteristicType))
+			return false;
+		if (groupId != other.groupId)
+			return false;
+		if (moduleId == null) {
+			if (other.moduleId != null)
+				return false;
+		} else if (!moduleId.equals(other.moduleId))
+			return false;
+		if (relationshipId == null) {
+			if (other.relationshipId != null)
+				return false;
+		} else if (!relationshipId.equals(other.relationshipId))
+			return false;
+		if (sourceId == null) {
+			if (other.sourceId != null)
+				return false;
+		} else if (!sourceId.equals(other.sourceId))
+			return false;
+		if (target == null) {
+			if (other.target != null)
+				return false;
+		} else if (!target.equals(other.target))
+			return false;
+		if (type == null) {
+			if (other.type != null)
+				return false;
+		} else if (!type.equals(other.type))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("RelationshipPojo [");
+		if (relationshipId != null)
+			builder.append("relationshipId=").append(relationshipId).append(", ");
+		builder.append("active=").append(active).append(", ");
+		if (moduleId != null)
+			builder.append("moduleId=").append(moduleId).append(", ");
+		if (sourceId != null)
+			builder.append("sourceId=").append(sourceId).append(", ");
+		if (target != null)
+			builder.append("target=").append(target).append(", ");
+		builder.append("groupId=").append(groupId).append(", ");
+		if (type != null)
+			builder.append("type=").append(type).append(", ");
+		if (characteristicType != null)
+			builder.append("characteristicType=").append(characteristicType);
+		builder.append("]");
+		return builder.toString();
+	}
+	
+	
 }
