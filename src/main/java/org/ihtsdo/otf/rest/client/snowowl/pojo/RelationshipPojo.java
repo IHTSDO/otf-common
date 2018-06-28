@@ -8,6 +8,10 @@ public class RelationshipPojo {
 	private String relationshipId;
 
 	private boolean active;
+	
+	private String effectiveTime;
+	
+	private boolean released;
 
 	private String moduleId;
 
@@ -49,6 +53,23 @@ public class RelationshipPojo {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
+
+	public void setEffectiveTime(String effectiveTime) {
+		this.effectiveTime = effectiveTime;
+	}
+
+	public boolean isReleased() {
+		return released;
+	}
+
+	public void setReleased(boolean released) {
+		this.released = released;
 	}
 
 	public String getModuleId() {

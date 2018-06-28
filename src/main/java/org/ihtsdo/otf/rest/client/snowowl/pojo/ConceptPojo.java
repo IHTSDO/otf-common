@@ -1,22 +1,24 @@
 package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "relationships"})
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "relationships"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptPojo {
 
 	private String conceptId;
 
 	private String effectiveTime;
+	
+	private boolean released;
 
 	private boolean active;
-
+	
 	private String moduleId;
 
 	private DefinitionStatus definitionStatus;
@@ -72,6 +74,14 @@ public class ConceptPojo {
 
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
+	}
+	
+	public boolean isReleased() {
+		return released;
+	}
+
+	public void setReleased(boolean released) {
+		this.released = released;
 	}
 
 	public boolean isActive() {

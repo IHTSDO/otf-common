@@ -11,7 +11,11 @@ public class DescriptionPojo {
 	private String descriptionId;
 
 	private boolean active;
-
+	
+	private String effectiveTime;
+	
+	private boolean released;
+	
 	private String term;
 
 	private String conceptId;
@@ -47,6 +51,22 @@ public class DescriptionPojo {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+	
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
+
+	public void setEffectiveTime(String effectiveTime) {
+		this.effectiveTime = effectiveTime;
+	}
+
+	public boolean isReleased() {
+		return released;
+	}
+
+	public void setReleased(boolean released) {
+		this.released = released;
 	}
 
 	public String getTerm() {
