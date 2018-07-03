@@ -139,4 +139,74 @@ public class ConceptPojo {
 	public void setRelationships(Set<RelationshipPojo> relationships) {
 		this.relationships = relationships;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (active ? 1231 : 1237);
+		result = prime * result + ((associationTargets == null) ? 0 : associationTargets.hashCode());
+		result = prime * result + ((conceptId == null) ? 0 : conceptId.hashCode());
+		result = prime * result + ((definitionStatus == null) ? 0 : definitionStatus.hashCode());
+		result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+		result = prime * result + ((effectiveTime == null) ? 0 : effectiveTime.hashCode());
+		result = prime * result + ((inactivationIndicator == null) ? 0 : inactivationIndicator.hashCode());
+		result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
+		result = prime * result + ((relationships == null) ? 0 : relationships.hashCode());
+		result = prime * result + (released ? 1231 : 1237);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ConceptPojo other = (ConceptPojo) obj;
+		if (active != other.active)
+			return false;
+		if (associationTargets == null) {
+			if (other.associationTargets != null)
+				return false;
+		} else if (!associationTargets.equals(other.associationTargets))
+			return false;
+		if (conceptId == null) {
+			if (other.conceptId != null)
+				return false;
+		} else if (!conceptId.equals(other.conceptId))
+			return false;
+		if (definitionStatus != other.definitionStatus)
+			return false;
+		if (descriptions == null) {
+			if (other.descriptions != null)
+				return false;
+		} else if (!descriptions.equals(other.descriptions))
+			return false;
+		if (effectiveTime == null) {
+			if (other.effectiveTime != null)
+				return false;
+		} else if (!effectiveTime.equals(other.effectiveTime))
+			return false;
+		if (inactivationIndicator == null) {
+			if (other.inactivationIndicator != null)
+				return false;
+		} else if (!inactivationIndicator.equals(other.inactivationIndicator))
+			return false;
+		if (moduleId == null) {
+			if (other.moduleId != null)
+				return false;
+		} else if (!moduleId.equals(other.moduleId))
+			return false;
+		if (relationships == null) {
+			if (other.relationships != null)
+				return false;
+		} else if (!relationships.equals(other.relationships))
+			return false;
+		if (released != other.released)
+			return false;
+		return true;
+	}
 }
