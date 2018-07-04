@@ -1,14 +1,21 @@
 package org.snomed.otf.scheduler.domain;
 
 import java.net.URL;
-import java.util.List;
+import java.util.*;
 
 public class Job {
 	String name;
 	String description;
+	JobCategory category;
 	List<String> parameterNames;
 	URL jobRun;
 	List<JobSchedule> schedules;
+	
+	public Job(String name, String description, String[] params) {
+		this.name = name;
+		this.description = description;
+		parameterNames = Arrays.asList(params);
+	}
 	
 	public String getName() {
 		return name;
@@ -21,6 +28,12 @@ public class Job {
 	}
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	public JobCategory getCategory() {
+		return category;
+	}
+	public void setCategory(JobCategory category) {
+		this.category = category;
 	}
 	public List<String> getParameterNames() {
 		return parameterNames;
@@ -40,4 +53,16 @@ public class Job {
 	public void setSchedules(List<JobSchedule> schedules) {
 		this.schedules = schedules;
 	}
+	@Override
+	public boolean equals (Object other) {
+		if (other instanceof Job) {
+			Job otherJob = (Job)other;
+			if (category.equals(otherJob.getCategory())) {
+				return name.equals(otherJob.getName());
+			}
+		}
+		return false;
+	}
+
+
 }
