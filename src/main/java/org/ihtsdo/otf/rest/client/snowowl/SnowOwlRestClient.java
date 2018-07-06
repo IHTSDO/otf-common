@@ -1078,24 +1078,38 @@ public class SnowOwlRestClient {
 	}
 
 	public List<ConceptPojo> searchConcepts(String branchPath, List<String> conceptIds) throws RestClientException {
-		try {
-			Map<String,Object> request = new HashMap<>();
-			request.put("conceptIds", conceptIds);			
-			URI uri = urlHelper.getBulkConceptsUri(branchPath);
-			
-			RequestEntity<?> post = RequestEntity.post(uri)
-					.header(COOKIE, singleSignOnCookie)
-					.accept(MediaType.APPLICATION_JSON)
-					.body(request);
-			ResponseEntity<List<ConceptPojo>> response = null;
-			ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<List<ConceptPojo>>() {};
-			response = restTemplate.exchange(post, typeRef);
-			if (response == null) {
-				throw new ResourceNotFoundException("Bulk search returned null result on branch " + branchPath);
+		List<ConceptPojo> result = new ArrayList<>();
+		List<String> batchJob = null;
+		int counter=0;
+		for (String conceptId : conceptIds) {
+			if (batchJob == null) {
+				batchJob = new ArrayList<>();
 			}
-			return response.getBody();
-		} catch (Exception e) {
-			throw new RestClientException("Failed to bulk search concepts on branch " + branchPath, e);
+			batchJob.add(conceptId);
+			counter++;
+			if (counter % 1000 == 0 || counter == conceptIds.size()) {
+				try {
+					Map<String,Object> request = new HashMap<>();
+					request.put("conceptIds", batchJob);			
+					URI uri = urlHelper.getBulkConceptsUri(branchPath);
+					
+					RequestEntity<?> post = RequestEntity.post(uri)
+							.header(COOKIE, singleSignOnCookie)
+							.accept(MediaType.APPLICATION_JSON)
+							.body(request);
+					ResponseEntity<List<ConceptPojo>> response = null;
+					ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<List<ConceptPojo>>() {};
+					response = restTemplate.exchange(post, typeRef);
+					if (response == null) {
+						throw new ResourceNotFoundException("Bulk search returned null result on branch " + branchPath);
+					}
+					result.addAll(response.getBody());
+				} catch (Exception e) {
+					throw new RestClientException("Failed to bulk search concepts on branch " + branchPath, e);
+				}
+				batchJob = null;
+			}
 		}
+		return result;
 	}
 }
