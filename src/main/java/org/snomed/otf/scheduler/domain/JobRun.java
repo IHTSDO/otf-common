@@ -4,12 +4,12 @@ import java.net.URL;
 import java.util.*;
 
 public class JobRun {
-	int run;
+	UUID id;
 	String jobName;
 	List<JobParameter> parameters;
 	URL terminologyServer;
 	Date requestTime;
-	String author;
+	String user;
 	String authToken;
 	JobStatus status;
 	String debugInfo;
@@ -17,11 +17,15 @@ public class JobRun {
 	int issuesReported;
 	URL result;
 	
-	public int getRun() {
-		return run;
-	}
-	public void setRun(int run) {
-		this.run = run;
+	private JobRun () {}
+	
+	static public JobRun create (String jobName, String user) {
+		JobRun j = new JobRun();
+		j.id = UUID.randomUUID();
+		j.jobName = jobName;
+		j.user = user;
+		j.requestTime = new Date();
+		return j;
 	}
 	public String getJobName() {
 		return jobName;
@@ -47,11 +51,8 @@ public class JobRun {
 	public void setRequestTime(Date requestTime) {
 		this.requestTime = requestTime;
 	}
-	public String getAuthor() {
-		return author;
-	}
-	public void setAuthor(String author) {
-		this.author = author;
+	public String getUser() {
+		return user;
 	}
 	public String getAuthToken() {
 		return authToken;
@@ -88,5 +89,17 @@ public class JobRun {
 	}
 	public void setResult(URL result) {
 		this.result = result;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
 	}
 }
