@@ -191,25 +191,18 @@ public class RelationshipPojo {
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("RelationshipPojo [");
-		if (relationshipId != null)
-			builder.append("relationshipId=").append(relationshipId).append(", ");
-		builder.append("active=").append(active).append(", ");
-		if (moduleId != null)
-			builder.append("moduleId=").append(moduleId).append(", ");
-		if (sourceId != null)
-			builder.append("sourceId=").append(sourceId).append(", ");
-		if (target != null)
-			builder.append("target=").append(target).append(", ");
-		builder.append("groupId=").append(groupId).append(", ");
-		if (type != null)
-			builder.append("type=").append(type).append(", ");
-		if (characteristicType != null)
-			builder.append("characteristicType=").append(characteristicType);
-		builder.append("]");
-		return builder.toString();
+		return "RelationshipPojo{" +
+				"relationshipId='" + relationshipId + '\'' +
+				", active=" + active +
+				", effectiveTime='" + effectiveTime + '\'' +
+				", released=" + released +
+				", moduleId='" + moduleId + '\'' +
+				", sourceId='" + sourceId + '\'' +
+				", target=" + target +
+				", groupId=" + groupId +
+				", type=" + type +
+				", characteristicType='" + characteristicType + '\'' +
+				", modifier='" + modifier + '\'' +
+				'}';
 	}
-	
-	
 }

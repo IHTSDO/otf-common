@@ -217,4 +217,22 @@ public class DescriptionPojo {
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "DescriptionPojo{" +
+				"descriptionId='" + descriptionId + '\'' +
+				", active=" + active +
+				", effectiveTime='" + effectiveTime + '\'' +
+				", released=" + released +
+				", term='" + term + '\'' +
+				", conceptId='" + conceptId + '\'' +
+				", moduleId='" + moduleId + '\'' +
+				", lang='" + lang + '\'' +
+				", type='" + type + '\'' +
+				", caseSignificance='" + caseSignificance + '\'' +
+				", acceptabilityMap=" + acceptabilityMap +
+				", inactivationIndicator='" + inactivationIndicator + '\'' +
+				'}';
+	}
 }

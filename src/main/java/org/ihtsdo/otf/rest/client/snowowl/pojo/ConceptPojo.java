@@ -209,4 +209,20 @@ public class ConceptPojo {
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "ConceptPojo{" +
+				"conceptId='" + conceptId + '\'' +
+				", effectiveTime='" + effectiveTime + '\'' +
+				", released=" + released +
+				", active=" + active +
+				", moduleId='" + moduleId + '\'' +
+				", definitionStatus=" + definitionStatus +
+				", inactivationIndicator='" + inactivationIndicator + '\'' +
+				", associationTargets=" + associationTargets +
+				", descriptions=" + descriptions +
+				", relationships=" + relationships +
+				'}';
+	}
 }
