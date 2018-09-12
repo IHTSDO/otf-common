@@ -2,13 +2,23 @@ package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
 
+import javax.persistence.*;
+
+@Entity
 public class JobSchedule {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	UUID id;
+	
 	String jobName;
 	String user;
 	String schedule;
-	List<JobParameter> parameters;
 	
+	@ElementCollection
+	@CollectionTable(name = "job_schedule_parameters")
+	@MapKeyColumn(name="key")
+	@Column(name="value")
+	Map<String, String> parameters;
 
 	public String getJobName() {
 		return jobName;
@@ -22,10 +32,10 @@ public class JobSchedule {
 	public void setSchedule(String schedule) {
 		this.schedule = schedule;
 	}
-	public List<JobParameter> getParameters() {
+	public Map<String, String> getParameters() {
 		return parameters;
 	}
-	public void setParameters(List<JobParameter> parameters) {
+	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
 	}
 	public UUID getId() {

@@ -1,10 +1,26 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class JobCategory {
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+
+@Entity
+public class JobCategory implements Serializable {
+
+	private static final long serialVersionUID = -3051153469536899317L;
+
+	@Id
 	String name;
+	
+	@Id
+	@ManyToOne
 	JobType type;
+	
+	@OneToMany(mappedBy = "category")
 	List<Job> jobs = new ArrayList<>();
 	
 	public JobCategory(String name) {
@@ -41,5 +57,10 @@ public class JobCategory {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		return type + ":" + name;
 	}
 }

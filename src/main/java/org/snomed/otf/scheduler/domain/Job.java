@@ -3,12 +3,28 @@ package org.snomed.otf.scheduler.domain;
 import java.net.URL;
 import java.util.*;
 
+import javax.persistence.*;
+
+@Entity
 public class Job {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private long id;
+	
 	String name;
 	String description;
+	
+	@ManyToOne
 	JobCategory category;
+	
+	@ElementCollection
+	@CollectionTable(name="ParameterNames", joinColumns=@JoinColumn(name="job_id"))
+	@Column(name="parameterName")
 	List<String> parameterNames;
+	
 	URL jobRun;
+	
+	@OneToMany
 	List<JobSchedule> schedules;
 	
 	public Job(String name, String description, String[] params) {
@@ -63,6 +79,4 @@ public class Job {
 		}
 		return false;
 	}
-
-
 }

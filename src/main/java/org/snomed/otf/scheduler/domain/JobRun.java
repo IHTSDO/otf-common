@@ -3,10 +3,21 @@ package org.snomed.otf.scheduler.domain;
 import java.net.URL;
 import java.util.*;
 
+import javax.persistence.*;
+
+@Entity
 public class JobRun {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	UUID id;
 	String jobName;
-	List<JobParameter> parameters;
+	
+	@ElementCollection
+	@CollectionTable(name = "job_run_parameters")
+	@MapKeyColumn(name="key")
+	@Column(name="value")
+	Map<String, String> parameters;
+	
 	URL terminologyServer;
 	Date requestTime;
 	String user;
@@ -14,7 +25,7 @@ public class JobRun {
 	JobStatus status;
 	String debugInfo;
 	Date resultTime;
-	int issuesReported;
+	Integer issuesReported;
 	URL result;
 	
 	private JobRun () {}
@@ -27,16 +38,26 @@ public class JobRun {
 		j.requestTime = new Date();
 		return j;
 	}
+	
+	static public JobRun create (JobSchedule jobSchedule) {
+		JobRun j = new JobRun();
+		j.id = UUID.randomUUID();
+		j.jobName = jobSchedule.getJobName();
+		j.user = jobSchedule.getUser();
+		j.setParameters(new HashMap<>(jobSchedule.getParameters()));
+		j.requestTime = new Date();
+		return j;
+	}
 	public String getJobName() {
 		return jobName;
 	}
 	public void setJobName(String jobName) {
 		this.jobName = jobName;
 	}
-	public List<JobParameter> getParameters() {
+	public Map<String, String> getParameters() {
 		return parameters;
 	}
-	public void setParameters(List<JobParameter> parameters) {
+	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
 	}
 	public URL getTerminologyServer() {
@@ -90,15 +111,12 @@ public class JobRun {
 	public void setResult(URL result) {
 		this.result = result;
 	}
-
 	public UUID getId() {
 		return id;
 	}
-
 	public void setId(UUID id) {
 		this.id = id;
 	}
-
 	public void setUser(String user) {
 		this.user = user;
 	}

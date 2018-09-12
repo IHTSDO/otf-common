@@ -2,8 +2,16 @@ package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+
+@Entity
 public class JobType {
+	@Id
 	String name;
+	
+	@OneToMany(mappedBy = "type")
 	List<JobCategory> categories = new ArrayList<>();
 	
 	public JobType(String name) {
@@ -32,5 +40,10 @@ public class JobType {
 			return name.equals(otherType.getName());
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		return name;
 	}
 }
