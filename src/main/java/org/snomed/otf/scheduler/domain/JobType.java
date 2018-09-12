@@ -2,6 +2,7 @@ package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
@@ -9,6 +10,7 @@ import javax.persistence.OneToMany;
 @Entity
 public class JobType {
 	@Id
+	@Column(length = 50)
 	String name;
 	
 	@OneToMany(mappedBy = "type")

@@ -16,7 +16,7 @@ public class JobSchedule {
 	
 	@ElementCollection
 	@CollectionTable(name = "job_schedule_parameters")
-	@MapKeyColumn(name="key")
+	@MapKeyColumn(name="param_name", length=25)
 	@Column(name="value")
 	Map<String, String> parameters;
 

@@ -3,6 +3,7 @@ package org.snomed.otf.scheduler.domain;
 import java.io.Serializable;
 import java.util.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -14,6 +15,7 @@ public class JobCategory implements Serializable {
 	private static final long serialVersionUID = -3051153469536899317L;
 
 	@Id
+	@Column(length=50)
 	String name;
 	
 	@Id

@@ -1,6 +1,5 @@
 package org.snomed.otf.scheduler.domain;
 
-import java.net.URL;
 import java.util.*;
 
 import javax.persistence.*;
@@ -14,11 +13,11 @@ public class JobRun {
 	
 	@ElementCollection
 	@CollectionTable(name = "job_run_parameters")
-	@MapKeyColumn(name="key")
+	@MapKeyColumn(name="param_name", length=25)
 	@Column(name="value")
 	Map<String, String> parameters;
 	
-	URL terminologyServer;
+	String terminologyServerUrl;
 	Date requestTime;
 	String user;
 	String authToken;
@@ -26,11 +25,11 @@ public class JobRun {
 	String debugInfo;
 	Date resultTime;
 	Integer issuesReported;
-	URL result;
+	String resultUrl;
 	
 	private JobRun () {}
 	
-	static public JobRun create (String jobName, String user) {
+	static public JobRun create(String jobName, String user) {
 		JobRun j = new JobRun();
 		j.id = UUID.randomUUID();
 		j.jobName = jobName;
@@ -39,7 +38,7 @@ public class JobRun {
 		return j;
 	}
 	
-	static public JobRun create (JobSchedule jobSchedule) {
+	static public JobRun create(JobSchedule jobSchedule) {
 		JobRun j = new JobRun();
 		j.id = UUID.randomUUID();
 		j.jobName = jobSchedule.getJobName();
@@ -60,11 +59,11 @@ public class JobRun {
 	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
 	}
-	public URL getTerminologyServer() {
-		return terminologyServer;
+	public String getTerminologyServerUrl() {
+		return terminologyServerUrl;
 	}
-	public void setTerminologyServer(URL terminologyServer) {
-		this.terminologyServer = terminologyServer;
+	public void setTerminologyServerUrl(String terminologyServerUrl) {
+		this.terminologyServerUrl = terminologyServerUrl;
 	}
 	public Date getRequestTime() {
 		return requestTime;
@@ -99,17 +98,17 @@ public class JobRun {
 	public void setResultTime(Date resultTime) {
 		this.resultTime = resultTime;
 	}
-	public int getIssuesReported() {
+	public Integer getIssuesReported() {
 		return issuesReported;
 	}
-	public void setIssuesReported(int issuesReported) {
+	public void setIssuesReported(Integer issuesReported) {
 		this.issuesReported = issuesReported;
 	}
-	public URL getResult() {
-		return result;
+	public String getResultUrl() {
+		return resultUrl;
 	}
-	public void setResult(URL result) {
-		this.result = result;
+	public void setResultUrl(String resultUrl) {
+		this.resultUrl = resultUrl;
 	}
 	public UUID getId() {
 		return id;
