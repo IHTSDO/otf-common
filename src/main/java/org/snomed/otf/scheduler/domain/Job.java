@@ -22,17 +22,14 @@ public class Job {
 	@Column(name="parameterName")
 	List<String> parameterNames;
 	
-	URL jobRun;
-	
 	@OneToMany
 	List<JobSchedule> schedules;
-	
+	public Job() {};
 	public Job(String name, String description, String[] params) {
 		this.name = name;
 		this.description = description;
 		parameterNames = Arrays.asList(params);
 	}
-	
 	public String getName() {
 		return name;
 	}
@@ -56,12 +53,6 @@ public class Job {
 	}
 	public void setParameterNames(List<String> parameterNames) {
 		this.parameterNames = parameterNames;
-	}
-	public URL getJobRun() {
-		return jobRun;
-	}
-	public void setJobRun(URL jobRun) {
-		this.jobRun = jobRun;
 	}
 	public List<JobSchedule> getSchedules() {
 		return schedules;

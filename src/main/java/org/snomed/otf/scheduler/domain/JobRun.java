@@ -119,4 +119,10 @@ public class JobRun {
 	public void setUser(String user) {
 		this.user = user;
 	}
+	public String toString() {
+		return jobName + " (" + id + ")"
+				+ " for user '" + user + "' in status: "
+				+ status 
+				+ debugInfo == null? "" : " (" + debugInfo + ")";
+	}
 }
