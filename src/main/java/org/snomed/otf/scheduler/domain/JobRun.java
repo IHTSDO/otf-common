@@ -15,7 +15,7 @@ public class JobRun {
 	@CollectionTable(name = "job_run_parameters")
 	@MapKeyColumn(name="param_name", length=25)
 	@Column(name="value")
-	Map<String, String> parameters;
+	Map<String, String> parameters = new HashMap<>();
 	
 	String terminologyServerUrl;
 	Date requestTime;
@@ -56,8 +56,17 @@ public class JobRun {
 	public Map<String, String> getParameters() {
 		return parameters;
 	}
+	public String getParameter(String key) {
+		if (parameters.containsKey(key)) {
+			return parameters.get(key);
+		}
+		return null;
+	}
 	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
+	}
+	public void setParameter(String key, String value) {
+		this.parameters.put(key, value);
 	}
 	public String getTerminologyServerUrl() {
 		return terminologyServerUrl;
@@ -125,4 +134,5 @@ public class JobRun {
 				+ status 
 				+ debugInfo == null? "" : " (" + debugInfo + ")";
 	}
+
 }
