@@ -65,8 +65,8 @@ public class JobRun {
 	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
 	}
-	public void setParameter(String key, String value) {
-		this.parameters.put(key, value);
+	public void setParameter(String key, Object value) {
+		this.parameters.put(key, value.toString());
 	}
 	public String getTerminologyServerUrl() {
 		return terminologyServerUrl;
