@@ -5,27 +5,42 @@ import java.util.*;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 public class JobCategory implements Serializable {
 
 	private static final long serialVersionUID = -3051153469536899317L;
-
-	@Id
-	@Column(length=50)
-	String name;
+	
+	public static final String GENERAL_QA = "General QA";
+	public static final String ADHOC_QUERIES = "Ad-Hoc Queries";
+	public static final String QI = "Quality Improvement";
+	public static final String DRUGS = "Drugs and Substances";
+	public static final String RELEASE_VALIDATION = "Release Validation";
 	
 	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private long id;
+	
+	@Column(length=50)
+	String name;
+
 	@ManyToOne
 	JobType type;
 	
 	@OneToMany(mappedBy = "category")
 	List<Job> jobs = new ArrayList<>();
 	
-	public JobCategory(String name) {
+	public JobCategory() {}
+	
+	public JobCategory(@JsonProperty("name") String name) {
 		this.name = name;
 	}
 	public String getName() {
@@ -64,5 +79,11 @@ public class JobCategory implements Serializable {
 	@Override
 	public String toString() {
 		return type + ":" + name;
+	}
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
 	}
 }

@@ -1,6 +1,5 @@
 package org.snomed.otf.scheduler.domain;
 
-import java.net.URL;
 import java.util.*;
 
 import javax.persistence.*;
@@ -25,7 +24,8 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	public Job() {};
-	public Job(String name, String description, String[] params) {
+	public Job(JobCategory category, String name, String description, String[] params) {
+		this.category = category;
 		this.name = name;
 		this.description = description;
 		parameterNames = Arrays.asList(params);
@@ -69,5 +69,16 @@ public class Job {
 			}
 		}
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		return getCategory() + "/" + getName();
+	}
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
 	}
 }

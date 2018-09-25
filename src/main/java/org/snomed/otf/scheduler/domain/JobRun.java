@@ -22,6 +22,8 @@ public class JobRun {
 	String user;
 	String authToken;
 	JobStatus status;
+	
+	@Column(length = 65535,columnDefinition="Text")
 	String debugInfo;
 	Date resultTime;
 	Integer issuesReported;
@@ -128,11 +130,12 @@ public class JobRun {
 	public void setUser(String user) {
 		this.user = user;
 	}
+	@Override
 	public String toString() {
-		return jobName + " (" + id + ")"
+		return jobName + " (id: " + id + ")"
 				+ " for user '" + user + "' in status: "
 				+ status 
-				+ debugInfo == null? "" : " (" + debugInfo + ")";
+				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
 	}
 
 }
