@@ -2,12 +2,7 @@ package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
+import javax.persistence.*;
 
 @Entity
 public class JobType {
@@ -42,6 +37,15 @@ public class JobType {
 		this.categories.add(category);
 		return this;
 	}
+	public JobCategory getCategory(String name) {
+		for (JobCategory thisCategory : categories) {
+			if (thisCategory.getName().equals(name)) {
+				return thisCategory;
+			}
+		}
+		return null;
+	}
+	
 	@Override
 	public boolean equals (Object other) {
 		if (other instanceof JobType) {

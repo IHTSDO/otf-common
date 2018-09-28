@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JobMetadata {
-	List<Job> jobs = new ArrayList<>();
+	List<JobType> jobTypes = new ArrayList<>();
 
-	public List<Job> getJobs() {
-		return jobs;
+	public List<JobType> getJobTypes() {
+		return jobTypes;
 	}
 
-	public void setJobs(List<Job> jobs) {
-		this.jobs = jobs;
+	public void setJobTypes(List<JobType> jobTypes) {
+		this.jobTypes = jobTypes;
 	}
 	
 }

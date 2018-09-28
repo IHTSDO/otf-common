@@ -4,16 +4,20 @@ import java.util.*;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Job {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
+	@JsonIgnore
 	private long id;
 	
 	String name;
 	String description;
 	
 	@ManyToOne
+	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
 	JobCategory category;
 	
 	@ElementCollection

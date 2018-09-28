@@ -8,6 +8,7 @@ import javax.persistence.*;
 public class JobRun {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
+	@Column(columnDefinition = "BINARY(16)")
 	UUID id;
 	String jobName;
 	
@@ -136,6 +137,24 @@ public class JobRun {
 				+ " for user '" + user + "' in status: "
 				+ status 
 				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
+	}
+	
+	@Override 
+	public JobRun clone() {
+		JobRun clone = new JobRun();
+		clone.setAuthToken(getAuthToken());
+		clone.setDebugInfo(getDebugInfo());
+		clone.setId(getId());
+		clone.setIssuesReported(getIssuesReported());
+		clone.setJobName(getJobName());
+		clone.setParameters(getParameters());
+		clone.setRequestTime(getRequestTime());
+		clone.setResultTime(getResultTime());
+		clone.setResultUrl(getResultUrl());
+		clone.setStatus(getStatus());
+		clone.setTerminologyServerUrl(getTerminologyServerUrl());
+		clone.setUser(getUser());
+		return clone;
 	}
 
 }

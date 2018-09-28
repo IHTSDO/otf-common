@@ -3,16 +3,9 @@ package org.snomed.otf.scheduler.domain;
 import java.io.Serializable;
 import java.util.*;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 @Entity
 public class JobCategory implements Serializable {
@@ -27,12 +20,14 @@ public class JobCategory implements Serializable {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
+	@JsonIgnore
 	private long id;
 	
 	@Column(length=50)
 	String name;
 
 	@ManyToOne
+	@JsonIgnore
 	JobType type;
 	
 	@OneToMany(mappedBy = "category")
