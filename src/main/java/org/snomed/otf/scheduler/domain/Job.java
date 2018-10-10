@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class Job {
 	
-	enum ProductionStatus {TESTING, PROD_READY, HIDEME}
+	public enum ProductionStatus {TESTING, PROD_READY, HIDEME}
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
