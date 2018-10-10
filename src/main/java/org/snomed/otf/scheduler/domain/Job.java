@@ -8,6 +8,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Job {
+	
+	enum ProductionStatus {TESTING, PROD_READY, HIDEME}
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@JsonIgnore
@@ -15,6 +18,7 @@ public class Job {
 	
 	String name;
 	String description;
+	ProductionStatus productionStatus;
 	
 	@ManyToOne
 	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
@@ -28,11 +32,16 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	public Job() {};
-	public Job(JobCategory category, String name, String description, String[] params) {
+	public Job(JobCategory category, String name, String description, String[] params, ProductionStatus prodStatus) {
 		this.category = category;
 		this.name = name;
 		this.description = description;
 		parameterNames = Arrays.asList(params);
+		this.productionStatus = prodStatus;
+	}
+	
+	public Job(JobCategory category, String name, String description, String[] params) {
+		this(category, name, description, params, ProductionStatus.PROD_READY);
 	}
 	public String getName() {
 		return name;
@@ -84,5 +93,11 @@ public class Job {
 	}
 	public void setId(long id) {
 		this.id = id;
+	}
+	public ProductionStatus getProductionStatus() {
+		return productionStatus;
+	}
+	public void setProductionStatus(ProductionStatus productionStatus) {
+		this.productionStatus = productionStatus;
 	}
 }
