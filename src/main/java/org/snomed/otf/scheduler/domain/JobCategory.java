@@ -2,8 +2,11 @@ package org.snomed.otf.scheduler.domain;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.persistence.*;
+
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.fasterxml.jackson.annotation.*;
 
@@ -51,7 +54,11 @@ public class JobCategory implements Serializable {
 		this.type = type;
 	}
 	public List<Job> getJobs() {
-		return jobs;
+		//This is the simpliest place to hide jobs that have been "deleted" or withdrawn, but we 
+		//want them to remain in the database
+		return jobs.stream()
+				.filter(j -> !j.getProductionStatus().equals(ProductionStatus.HIDEME))
+				.collect(Collectors.toList());
 	}
 	public void setJobs(List<Job> jobs) {
 		this.jobs = jobs;
