@@ -69,6 +69,9 @@ public class JobRun {
 		this.parameters = parameters;
 	}
 	public void setParameter(String key, Object value) {
+		if (parameters == null) {
+			parameters = new HashMap<>();
+		}
 		this.parameters.put(key, value.toString());
 	}
 	public String getTerminologyServerUrl() {
