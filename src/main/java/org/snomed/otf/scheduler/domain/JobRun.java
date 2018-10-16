@@ -60,7 +60,7 @@ public class JobRun {
 		return parameters;
 	}
 	public String getParameter(String key) {
-		if (parameters.containsKey(key)) {
+		if (parameters!= null && parameters.containsKey(key)) {
 			return parameters.get(key);
 		}
 		return null;
