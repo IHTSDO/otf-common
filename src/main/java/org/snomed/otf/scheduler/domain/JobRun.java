@@ -72,7 +72,11 @@ public class JobRun {
 		if (parameters == null) {
 			parameters = new HashMap<>();
 		}
-		this.parameters.put(key, value.toString());
+		if (value != null) {
+			this.parameters.put(key, value.toString());
+		} else {
+			this.parameters.remove(key);
+		}
 	}
 	public String getTerminologyServerUrl() {
 		return terminologyServerUrl;
