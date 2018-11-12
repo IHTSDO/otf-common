@@ -116,6 +116,7 @@ public class SnowOwlRestClient {
 	private final SnowOwlRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final int BATCH_SIZE = 200;
+	private final int MAX_PAGE_SIZE = 10_000;
 
 	private SnowOwlRestClient(String snowOwlUrl) {
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
@@ -283,8 +284,34 @@ public class SnowOwlRestClient {
 	}
 	
 	
-	public Set<String> eclQuery(String branchPath, String ecl, int limit, boolean stated) throws RestClientException {
-		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, limit, stated);
+	public Set<String> eclQuery(String branchPath, String ecl, int totalLimit, boolean stated) throws RestClientException {
+		if (totalLimit > MAX_PAGE_SIZE) {
+			Set<String> all = new HashSet<>();
+			int pageOffset = 0;
+			int pageLimit = MAX_PAGE_SIZE;
+			boolean complete = false;
+			while (!complete) {
+				Set<String> pageResults = doEclQueryWithoutPaging(branchPath, ecl, pageOffset, pageLimit, stated);
+				if (!pageResults.isEmpty()) {
+					all.addAll(pageResults);
+				}
+				if (pageResults.size() == MAX_PAGE_SIZE) {
+					pageOffset += MAX_PAGE_SIZE;
+					if ((pageOffset + pageLimit) > totalLimit) {
+						pageLimit = totalLimit - pageOffset;
+					}
+				} else {
+					complete = true;
+				}
+			}
+			return all;
+		} else {
+			return doEclQueryWithoutPaging(branchPath, ecl, 0, totalLimit, stated);
+		}
+	}
+
+	private Set<String> doEclQueryWithoutPaging(String branchPath, String ecl, int offset, int limit, boolean stated) throws RestClientException {
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, offset, limit, stated);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
 		if (conceptIdsResponse == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -297,7 +324,7 @@ public class SnowOwlRestClient {
 	}
 	
 	public boolean eclQueryHasAnyMatches(String branchPath, String ecl, boolean stated) throws RestClientException {
-		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 1, stated);
+		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 0, 1, stated);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
 		if (conceptIdsResponse == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -340,11 +367,11 @@ public class SnowOwlRestClient {
 				.build();
 	}
 
-	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int limit, boolean stated) {
+	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int offset, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("active", true)
-				.queryParam("offset", 0)
+				.queryParam("offset", offset)
 				.queryParam("limit", limit);
 		if (stated) {
 			queryBuilder.queryParam("statedEcl", ecl);
