@@ -1,12 +1,14 @@
 package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptMiniPojo {
 
 	private String conceptId;
-	
+
+	@JsonDeserialize(using = DescriptionDeserializer.class)
 	private String fsn;
 	
 	private String moduleId;
