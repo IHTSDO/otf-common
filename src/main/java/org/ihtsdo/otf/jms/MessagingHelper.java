@@ -44,7 +44,7 @@ public class MessagingHelper {
 	private ConnectionFactory connectionFactory;
 
 	public void send(String destinationQueueName, Object payload, String responseQueueName) throws JsonProcessingException, JMSException {
-
+		send(new ActiveMQQueue(destinationQueueName), payload, null, new ActiveMQQueue(responseQueueName), 0);
 	}
 
 	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties) throws JsonProcessingException, JMSException {
