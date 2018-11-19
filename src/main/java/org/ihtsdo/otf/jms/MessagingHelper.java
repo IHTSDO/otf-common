@@ -2,7 +2,6 @@ package org.ihtsdo.otf.jms;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
 import org.slf4j.Logger;
@@ -11,10 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessagePostProcessor;
 
-import java.util.Enumeration;
-import java.util.Map;
-
 import javax.jms.*;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Provides easy message sending methods while encapsulating OTF JMS strategy with regards
@@ -47,11 +46,11 @@ public class MessagingHelper {
 		send(new ActiveMQQueue(destinationQueueName), payload, null, new ActiveMQQueue(responseQueueName), 0);
 	}
 
-	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties) throws JsonProcessingException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, null, 0);
 	}
 
-	public void send(String destinationQueueName, Object payload, final Map<String, ? extends Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName), 0);
 	}
 
@@ -59,7 +58,7 @@ public class MessagingHelper {
 		send(new ActiveMQQueue(destinationQueueName), payload);
 	}
 	
-	public void publish(String destinationTopicName, Object payload, final Map<String, ? extends Object> messageProperties, int timeToLive) throws JsonProcessingException, JMSException {
+	public void publish(String destinationTopicName, Object payload, final Map<String, Object> messageProperties, int timeToLive) throws JsonProcessingException, JMSException {
 		send(new ActiveMQTopic(destinationTopicName), payload, messageProperties, null, timeToLive);
 	}
 
@@ -67,7 +66,7 @@ public class MessagingHelper {
 		sendResponse(incomingMessage, payload, null);
 	}
 
-	public void sendResponse(final TextMessage incomingMessage, Object payload, final Map<String, ? extends Object> messageProperties) {
+	public void sendResponse(final TextMessage incomingMessage, Object payload, final Map<String, Object> messageProperties) {
 		final Destination replyToDestination = getReplyToDestination(incomingMessage);
 		sendWithQueueErrorHandling(replyToDestination, payload, new MessagePostProcessor() {
 			@Override
@@ -79,9 +78,9 @@ public class MessagingHelper {
 		});
 	}
 
-	private void setProperties(Message message, Map<String, ? extends Object> messageProperties) throws JMSException {
+	private void setProperties(Message message, Map<String, Object> messageProperties) throws JMSException {
 		if (messageProperties != null) {
-			for (Map.Entry<String, ? extends Object> stringObjectEntry : messageProperties.entrySet()) {
+			for (Map.Entry<String, Object> stringObjectEntry : messageProperties.entrySet()) {
 				message.setObjectProperty(stringObjectEntry.getKey(), stringObjectEntry.getValue());
 			}
 		}
@@ -92,23 +91,36 @@ public class MessagingHelper {
 	}
 
 	public void send(Destination destination, Object payload, 
-			final Map<String, ? extends Object> messageProperties, 
+			Map<String, Object> messageProperties,
 			final Destination responseDestination,
 			final int timeToLive
 			) throws JsonProcessingException, JMSException {
 		logger.info("Sending message - destination {}, payload {}, properties {}, responseDestination {}", 
 				getDestinationLabel(destination), limitSize(payload), messageProperties, getDestinationLabel(responseDestination));
 
-		final String message = objectMapper.writeValueAsString(payload);
+		String message = null;
+		if (payload instanceof String) {
+			message = (String) payload;
+		} else if (payload != null) {
+			message = objectMapper.writeValueAsString(payload);
+			if (messageProperties == null) {
+				messageProperties = new HashMap<>();
+			}
+			// Required for automatic deserialisation by Spring
+			messageProperties.put("_type", payload.getClass().getName());
+		}
+
 		JmsTemplate template = getJmsTemplate();
 		if (timeToLive > 0) {
 			template.setExplicitQosEnabled(true);
 			template.setTimeToLive(timeToLive * 1000); 
-		}		
+		}
+
+		final Map<String, Object> finalMessageProperties = messageProperties;
 		template.convertAndSend(destination, message, new MessagePostProcessor() {
 			@Override
 			public Message postProcessMessage(Message message) throws JMSException {
-				setProperties(message, messageProperties);
+				setProperties(message, finalMessageProperties);
 				if (responseDestination != null) {
 					message.setJMSReplyTo(responseDestination);
 				}
