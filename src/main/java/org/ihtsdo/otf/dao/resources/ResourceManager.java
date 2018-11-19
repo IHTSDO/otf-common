@@ -43,6 +43,16 @@ public class ResourceManager {
 		}
 	}
 
+	public InputStream readResourceStreamOrNullIfNotExists(String resourcePath) throws IOException {
+		try {
+			String fullPath = getFullPath(resourcePath);
+			Resource resource = resourceLoader.getResource(fullPath);
+			return resource.exists() ? resource.getInputStream() : null;
+		} catch (AmazonS3Exception e) {
+			throw new IOException("Failed to load resource '" + resourcePath + "'.", e);
+		}
+	}
+
 	public void writeResource(String resourcePath, InputStream resourceInputStream) throws IOException {
 		try {
 			try (OutputStream outputStream = writeResourceStream(resourcePath);
