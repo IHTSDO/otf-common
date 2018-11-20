@@ -1,7 +1,6 @@
-package org.ihtsdo.otf.dao.resources;
+package org.ihtsdo.otf.resourcemanager;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import org.springframework.cloud.aws.core.io.s3.PathMatchingSimpleStorageResourcePatternResolver;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -14,7 +13,7 @@ import java.io.OutputStream;
 
 /**
  * Service to read and write file resources from S3 or local disk.
- * Use spring-cloud-aws-autoconfigure dependency autowire an S3 capable ResourceLoader into your configuration.
+ * Use spring-cloud-aws-autoconfigure dependency to autowire an S3 capable ResourceLoader into your configuration.
  */
 public class ResourceManager {
 

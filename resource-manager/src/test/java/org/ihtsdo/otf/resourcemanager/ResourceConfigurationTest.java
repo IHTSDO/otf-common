@@ -1,9 +1,8 @@
-package org.ihtsdo.otf.dao.resources;
+package org.ihtsdo.otf.resourcemanager;
 
-import org.ihtsdo.otf.dao.resources.ResourceConfiguration;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ResourceConfigurationTest {
 	@Test

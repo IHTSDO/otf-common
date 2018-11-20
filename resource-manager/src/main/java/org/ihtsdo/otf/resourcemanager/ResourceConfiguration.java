@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.dao.resources;
+package org.ihtsdo.otf.resourcemanager;
 
 /**
  * Use this configuration class by extending it.
