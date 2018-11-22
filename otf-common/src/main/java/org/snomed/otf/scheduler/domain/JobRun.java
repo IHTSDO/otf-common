@@ -4,6 +4,8 @@ import java.util.*;
 
 import javax.persistence.*;
 
+import com.amazonaws.services.ec2.model.transform.TerminateInstancesRequestMarshaller;
+
 @Entity
 public class JobRun {
 	@Id
@@ -64,6 +66,13 @@ public class JobRun {
 			return parameters.get(key);
 		}
 		return null;
+	}
+	
+	public String getMandatoryParameter(String key) {
+		if (parameters!= null && parameters.containsKey(key)) {
+			return parameters.get(key);
+		}
+		throw new IllegalArgumentException("Madatory parameter '" + key + "' was not supplied");
 	}
 	public void setParameters(Map<String, String> parameters) {
 		this.parameters = parameters;
