@@ -86,9 +86,20 @@ public class ResourceManager {
 
 	private String getFullPath(String relativePath) {
 		if (resourceConfiguration.isUseCloud()) {
-			ResourceConfiguration.Cloud cloud = resourceConfiguration.getCloud();
-			return "s3://" + cloud.getBucketName() + "/" + cloud.getPath() + relativePath;
+			return "s3://" + resourceConfiguration.getCloud().getBucketName() + "/" +
+					getPathAndRelative(resourceConfiguration.getCloud().getPath(), relativePath);
 		}
-		return resourceConfiguration.getLocal().getPath() + relativePath;
+		return getPathAndRelative(resourceConfiguration.getLocal().getPath(), relativePath);
+	}
+
+	// Make sure we have a single slash between path and relative path
+	private String getPathAndRelative(String path, String relativePath) {
+		if (!path.isEmpty() && !path.endsWith("/")) {
+			path += "/";
+		}
+		if (relativePath.startsWith("/")) {
+			relativePath = relativePath.substring(1);
+		}
+		return path + relativePath;
 	}
 }
