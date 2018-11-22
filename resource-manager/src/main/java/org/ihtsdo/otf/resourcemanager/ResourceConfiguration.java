@@ -64,7 +64,15 @@ public abstract class ResourceConfiguration {
 	}
 
 	public static class Local {
+
 		private String path;
+
+		public Local() {
+		}
+
+		public Local(String path) {
+			this.path = path;
+		}
 
 		public String getPath() {
 			return path;
@@ -83,8 +91,17 @@ public abstract class ResourceConfiguration {
 	}
 
 	public static class Cloud {
+
 		private String bucketName;
 		private String path;
+
+		public Cloud() {
+		}
+
+		public Cloud(String bucketName, String path) {
+			this.bucketName = bucketName;
+			this.path = path;
+		}
 
 		public String getBucketName() {
 			return bucketName;
