@@ -93,9 +93,4 @@ public class JobParameters {
 		JobParameters clone = new JobParameters(new HashMap<>(this.getParameterMap()));
 		return clone;
 	}
-
-	protected void setParameters(JobParameters params) {
-		parameterMap = params.getParameterMap();
-	}
-	
 }
