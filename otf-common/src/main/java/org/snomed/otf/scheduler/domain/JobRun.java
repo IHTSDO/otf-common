@@ -149,7 +149,7 @@ public class JobRun {
 		parameters.setValue(key, value);
 	}
 
-	public String getValue(String key) {
+	public String getParamValue(String key) {
 		return parameters.getValue(key);
 	}
 	
