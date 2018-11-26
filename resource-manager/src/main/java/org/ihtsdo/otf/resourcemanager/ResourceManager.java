@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.resourcemanager;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.springframework.cloud.aws.core.io.s3.PathMatchingSimpleStorageResourcePatternResolver;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -24,8 +25,15 @@ public class ResourceManager {
 		this.resourceConfiguration = resourceConfiguration;
 		if (resourceConfiguration.isUseCloud()) {
 			// Check we can perform a get request to our S3 bucket and path
-			String s3Path = getFullPath("does-not-exist.txt");
-			cloudResourceLoader.getResource(s3Path).exists();
+			try {
+				String s3Path = getFullPath("does-not-exist.txt");
+				cloudResourceLoader.getResource(s3Path).exists();
+			} catch (AmazonS3Exception e) {
+				// Ignore the forbidden code because this we may be using an anonymous client to access a partially public bucket.
+				if (!e.getErrorCode().equals("403 Forbidden")) {
+					throw e;
+				}
+			}
 			resourceLoader = cloudResourceLoader;
 		} else {
 			resourceLoader = new FileSystemResourceLoader();
