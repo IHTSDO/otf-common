@@ -4,8 +4,6 @@ import java.util.*;
 
 import javax.persistence.*;
 
-import com.amazonaws.services.ec2.model.transform.TerminateInstancesRequestMarshaller;
-
 @Entity
 public class JobRun {
 	@Id
@@ -14,11 +12,8 @@ public class JobRun {
 	UUID id;
 	String jobName;
 	
-	@ElementCollection
-	@CollectionTable(name = "job_run_parameters")
-	@MapKeyColumn(name="param_name", length=25)
-	@Column(name="value")
-	Map<String, String> parameters = new HashMap<>();
+	@OneToOne(cascade = CascadeType.ALL)
+	JobRunParameters parameters;
 	
 	String terminologyServerUrl;
 	Date requestTime;
@@ -48,7 +43,7 @@ public class JobRun {
 		j.id = UUID.randomUUID();
 		j.jobName = jobSchedule.getJobName();
 		j.user = jobSchedule.getUser();
-		j.setParameters(new HashMap<>(jobSchedule.getParameters()));
+		j.setParameters(new JobRunParameters(jobSchedule.getParameters().getParameterMap()));
 		j.requestTime = new Date();
 		return j;
 	}
@@ -57,35 +52,6 @@ public class JobRun {
 	}
 	public void setJobName(String jobName) {
 		this.jobName = jobName;
-	}
-	public Map<String, String> getParameters() {
-		return parameters;
-	}
-	public String getParameter(String key) {
-		if (parameters!= null && parameters.containsKey(key)) {
-			return parameters.get(key);
-		}
-		return null;
-	}
-	
-	public String getMandatoryParameter(String key) {
-		if (parameters!= null && parameters.containsKey(key)) {
-			return parameters.get(key);
-		}
-		throw new IllegalArgumentException("Madatory parameter '" + key + "' was not supplied");
-	}
-	public void setParameters(Map<String, String> parameters) {
-		this.parameters = parameters;
-	}
-	public void setParameter(String key, Object value) {
-		if (parameters == null) {
-			parameters = new HashMap<>();
-		}
-		if (value != null) {
-			this.parameters.put(key, value.toString());
-		} else {
-			this.parameters.remove(key);
-		}
 	}
 	public String getTerminologyServerUrl() {
 		return terminologyServerUrl;
@@ -171,6 +137,22 @@ public class JobRun {
 		clone.setTerminologyServerUrl(getTerminologyServerUrl());
 		clone.setUser(getUser());
 		return clone;
+	}
+
+	public void setParameters(JobRunParameters parameters) {
+		this.parameters = parameters;
+	}
+
+	public void setParameter(String key, String value) {
+		parameters.setValue(key, value);
+	}
+
+	public String getValue(String key) {
+		return parameters.getValue(key);
+	}
+	
+	public JobRunParameters getParameters() {
+		return parameters;
 	}
 
 }

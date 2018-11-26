@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.*;
 
+import org.ihtsdo.otf.rest.exception.ApplicationWiringException;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.fasterxml.jackson.annotation.*;
@@ -41,6 +42,11 @@ public class JobCategory implements Serializable {
 	public JobCategory(@JsonProperty("name") String name) {
 		this.name = name;
 	}
+	
+	public JobCategory( String type, String name) {
+		this.type = new JobType(type);
+		this.name = name;
+	}
 	public String getName() {
 		return name;
 	}
@@ -71,8 +77,12 @@ public class JobCategory implements Serializable {
 	public boolean equals (Object other) {
 		if (other instanceof JobCategory) {
 			JobCategory otherCat = (JobCategory)other;
-			if (type.equals(otherCat.getType())) {
-				return name.equals(otherCat.getName());
+			if (type!=null) {
+				if (type.equals(otherCat.getType())) {
+					return name.equals(otherCat.getName());
+				}
+			} else {
+				throw new ApplicationWiringException("Job Category '" + this.getName() + "' doesn't know what type it is!"); 
 			}
 		}
 		return false;

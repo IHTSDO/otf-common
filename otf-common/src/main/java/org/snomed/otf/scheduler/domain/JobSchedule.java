@@ -14,11 +14,8 @@ public class JobSchedule {
 	String user;
 	String schedule;
 	
-	@ElementCollection
-	@CollectionTable(name = "job_schedule_parameters")
-	@MapKeyColumn(name="param_name", length=25)
-	@Column(name="value")
-	Map<String, String> parameters;
+	@OneToOne(cascade = CascadeType.ALL)
+	JobScheduleParameters parameters;
 
 	public String getJobName() {
 		return jobName;
@@ -32,10 +29,10 @@ public class JobSchedule {
 	public void setSchedule(String schedule) {
 		this.schedule = schedule;
 	}
-	public Map<String, String> getParameters() {
+	public JobParameters getParameters() {
 		return parameters;
 	}
-	public void setParameters(Map<String, String> parameters) {
+	public void setParameters(JobScheduleParameters parameters) {
 		this.parameters = parameters;
 	}
 	public UUID getId() {

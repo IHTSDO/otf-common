@@ -24,23 +24,21 @@ public class Job {
 	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
 	JobCategory category;
 	
-	@ElementCollection
-	@CollectionTable(name="ParameterNames", joinColumns=@JoinColumn(name="job_id"))
-	@Column(name="parameterName")
-	List<String> parameterNames;
+	@OneToOne(cascade = CascadeType.ALL)
+	JobParameters parameters;
 	
 	@OneToMany
 	List<JobSchedule> schedules;
 	public Job() {};
-	public Job(JobCategory category, String name, String description, String[] params, ProductionStatus prodStatus) {
+	public Job(JobCategory category, String name, String description, JobParameters params, ProductionStatus prodStatus) {
 		this.category = category;
 		this.name = name;
 		this.description = description;
-		parameterNames = Arrays.asList(params);
+		this.parameters = params;
 		this.productionStatus = prodStatus;
 	}
 	
-	public Job(JobCategory category, String name, String description, String[] params) {
+	public Job(JobCategory category, String name, String description, JobParameters params) {
 		this(category, name, description, params, ProductionStatus.PROD_READY);
 	}
 	public String getName() {
@@ -60,12 +58,6 @@ public class Job {
 	}
 	public void setCategory(JobCategory category) {
 		this.category = category;
-	}
-	public List<String> getParameterNames() {
-		return parameterNames;
-	}
-	public void setParameterNames(List<String> parameterNames) {
-		this.parameterNames = parameterNames;
 	}
 	public List<JobSchedule> getSchedules() {
 		return schedules;
@@ -99,5 +91,11 @@ public class Job {
 	}
 	public void setProductionStatus(ProductionStatus productionStatus) {
 		this.productionStatus = productionStatus;
+	}
+	public JobParameters getParameters() {
+		return parameters;
+	}
+	public void setParamters(JobParameters paramaters) {
+		this.parameters = paramaters;
 	}
 }
