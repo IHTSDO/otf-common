@@ -149,6 +149,14 @@ public class JobRun {
 		parameters.setValue(key, value);
 	}
 
+	public String getMandatoryParamValue(String key) {
+		String value = parameters.getValue(key);
+		if (value == null) {
+			throw new IllegalArgumentException("Mandatory parameter '" + key + "' was not supplied");
+		}
+		return value;
+	}
+	
 	public String getParamValue(String key) {
 		return parameters.getValue(key);
 	}
