@@ -6,6 +6,10 @@ import javax.persistence.Entity;
 
 @Entity
 public class JobRunParameters extends JobParameters {
+	
+	public JobRunParameters() {
+		super();
+	}
 
 	public JobRunParameters(Map<String, JobParameter> parameterMap) {
 		super(parameterMap);

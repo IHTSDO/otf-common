@@ -27,7 +27,9 @@ public class JobRun {
 	Integer issuesReported;
 	String resultUrl;
 	
-	private JobRun () {}
+	private JobRun () {
+		parameters = new JobRunParameters();
+	}
 	
 	static public JobRun create(String jobName, String user) {
 		JobRun j = new JobRun();
