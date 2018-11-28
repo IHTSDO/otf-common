@@ -152,5 +152,10 @@ public class JobParameter {
 	public void setValue(String value) {
 		this.value = value;
 	}
+
+	public JobParameter withMandatory() {
+		this.mandatory = true;
+		return this;
+	}
 	
 }
