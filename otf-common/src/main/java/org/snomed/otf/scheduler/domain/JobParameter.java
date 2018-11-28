@@ -102,7 +102,7 @@ public class JobParameter {
 	}
 
 	public Boolean getMandatory() {
-		return mandatory;
+		return mandatory == null ? Boolean.FALSE : mandatory ;
 	}
 
 	public void setMandatory(Boolean mandatory) {
@@ -156,6 +156,17 @@ public class JobParameter {
 	public JobParameter withMandatory() {
 		this.mandatory = true;
 		return this;
+	}
+	
+	public String toString() {
+		String str = "'" + (value == null? "" : value) + "'";
+		if (getMandatory()) {
+			str = "* " + str;
+		}
+		if (getDefaultValue() != null) {
+			str += " | '" + getDefaultValue() + "'"; 
+		}
+		return str;
 	}
 	
 }
