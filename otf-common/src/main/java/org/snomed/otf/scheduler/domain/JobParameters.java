@@ -52,6 +52,14 @@ public class JobParameters {
 		return null;
 	}
 	
+	public String getDefaultValue(String key) {
+		JobParameter param = getParameterMap().get(key);
+		if (param != null) {
+			return param.getDefaultValue();
+		}
+		return null;
+	}
+	
 	public String getMandatory(String key) {
 		String value = getValue(key);
 		if (value == null) {

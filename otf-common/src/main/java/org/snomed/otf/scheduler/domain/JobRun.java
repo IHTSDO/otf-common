@@ -159,7 +159,12 @@ public class JobRun {
 	public String getMandatoryParamValue(String key) {
 		String value = parameters.getValue(key);
 		if (value == null) {
-			throw new IllegalArgumentException("Mandatory parameter '" + key + "' was not supplied");
+			//Do we have a default value to use instead?
+			if (parameters.getDefaultValue(key) != null) {
+				return parameters.getDefaultValue(key);
+			} else {
+				throw new IllegalArgumentException("Mandatory parameter '" + key + "' was not supplied");
+			}
 		}
 		return value;
 	}
@@ -170,6 +175,14 @@ public class JobRun {
 	
 	public JobRunParameters getParameters() {
 		return parameters;
+	}
+
+	public String getParamValue(String key, String defaultValue) {
+		String value = parameters.getValue(key);
+		if (value == null) {
+			value = defaultValue;
+		}
+		return value;
 	}
 
 }
