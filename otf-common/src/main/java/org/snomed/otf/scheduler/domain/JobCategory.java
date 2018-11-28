@@ -35,7 +35,7 @@ public class JobCategory implements Serializable {
 	JobType type;
 	
 	@OneToMany(mappedBy = "category")
-	List<Job> jobs = new ArrayList<>();
+	Set<Job> jobs = new HashSet<>();
 	
 	public JobCategory() {}
 	
@@ -66,10 +66,11 @@ public class JobCategory implements Serializable {
 				.filter(j -> !j.getProductionStatus().equals(ProductionStatus.HIDEME))
 				.collect(Collectors.toList());
 	}
-	public void setJobs(List<Job> jobs) {
+	public void setJobs(Set<Job> jobs) {
 		this.jobs = jobs;
 	}
 	public JobCategory addJob (Job job) {
+		job.setCategory(this);
 		jobs.add(job);
 		return this;
 	}

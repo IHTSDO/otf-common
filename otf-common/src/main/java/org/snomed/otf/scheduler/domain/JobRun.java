@@ -18,6 +18,8 @@ public class JobRun {
 	String terminologyServerUrl;
 	Date requestTime;
 	String user;
+	
+	@Transient
 	String authToken;
 	JobStatus status;
 	
@@ -142,7 +144,12 @@ public class JobRun {
 	}
 
 	public void setParameters(JobRunParameters parameters) {
-		this.parameters = parameters;
+		//Must always have a parameters object, even if it's empty
+		if (parameters == null) {
+			this.parameters = new JobRunParameters();
+		} else {
+			this.parameters = parameters;
+		}
 	}
 
 	public void setParameter(String key, String value) {

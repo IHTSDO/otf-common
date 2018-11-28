@@ -29,8 +29,13 @@ public class Job {
 	
 	@OneToMany
 	List<JobSchedule> schedules;
-	public Job() {};
+	
+	public Job() {
+		this.parameters = new JobParameters();
+	};
+	
 	public Job(JobCategory category, String name, String description, JobParameters params, ProductionStatus prodStatus) {
+		this();
 		this.category = category;
 		this.name = name;
 		this.description = description;
@@ -67,9 +72,10 @@ public class Job {
 	}
 	@Override
 	public boolean equals (Object other) {
+		//Job may be missing a category as we hide that in the json
 		if (other instanceof Job) {
 			Job otherJob = (Job)other;
-			if (category.equals(otherJob.getCategory())) {
+			if (category == null || otherJob.getCategory() == null || category.equals(otherJob.getCategory())) {
 				return name.equals(otherJob.getName());
 			}
 		}
@@ -80,6 +86,12 @@ public class Job {
 	public String toString() {
 		return getCategory() + "/" + getName();
 	}
+	
+	@Override
+	public int hashCode() {
+		return toString().hashCode();
+	}
+	
 	public long getId() {
 		return id;
 	}
@@ -96,6 +108,11 @@ public class Job {
 		return parameters;
 	}
 	public void setParamters(JobParameters paramaters) {
-		this.parameters = paramaters;
+		//Don't allow JobParameters to be set to null, wipe if required
+		if (parameters == null) {
+			this.parameters = new JobParameters();
+		} else {
+			this.parameters = paramaters;
+		}
 	}
 }

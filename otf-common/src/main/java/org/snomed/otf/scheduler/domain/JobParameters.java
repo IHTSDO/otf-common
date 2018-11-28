@@ -15,12 +15,14 @@ public class JobParameters {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	Long id;
 
-	@OneToMany(mappedBy="parentParams", cascade = CascadeType.ALL)
-	@MapKey(name="paramKey")
+	//See https://stackoverflow.com/questions/2327971/how-do-you-map-a-map-in-hibernate-using-annotations
+	//Also https://thoughts-on-java.org/hibernate-tips-how-to-delete-child-entities/
+	@ElementCollection(fetch = FetchType.EAGER)
+	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	Map<String, JobParameter> parameterMap;
 	
 	public JobParameters (@JsonProperty("parameters") Map<String, JobParameter> parameterMap) {
-		this.parameterMap = new HashMap<>();
+		this();
 	}
 	
 	public JobParameters(String[] keys) {
@@ -80,7 +82,7 @@ public class JobParameters {
 	public JobParameter add(String key) {
 		JobParameter param = getParameterMap().get(key);
 		if (param == null) {
-			param = new JobParameter(this, key);
+			param = new JobParameter(this);
 			getParameterMap().put(key, param);
 		}
 		return param;
@@ -92,5 +94,17 @@ public class JobParameters {
 	public JobParameters clone() {
 		JobParameters clone = new JobParameters(new HashMap<>(this.getParameterMap()));
 		return clone;
+	}
+	
+	public String toString() {
+		return getParameterMap().toString();
+	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 }

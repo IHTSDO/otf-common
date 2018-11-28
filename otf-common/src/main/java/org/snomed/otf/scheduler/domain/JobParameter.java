@@ -1,5 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.Serializable;
+
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -16,10 +18,11 @@ public class JobParameter {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	Long id;
 	
+	@JsonIgnore
 	String paramKey;
 	
-	@ManyToOne
 	@JsonIgnore
+	@ManyToOne
 	JobParameters parentParams;
 	
 	Type type;
@@ -35,11 +38,13 @@ public class JobParameter {
 	
 	Boolean mandatory;
 	
-	protected JobParameter () {}
+	public JobParameter () {}
 	
-	protected JobParameter (JobParameters parentParams, String key) {
+	/* Parameters must always know their owning object, otherwise database
+	 * saves will fail.
+	 */
+	protected JobParameter (JobParameters parentParams) {
 		this.parentParams = parentParams;
-		this.paramKey = key;
 	}
 
 	//This function is for chaining and adding a sibling
@@ -147,4 +152,5 @@ public class JobParameter {
 	public void setValue(String value) {
 		this.value = value;
 	}
+	
 }
