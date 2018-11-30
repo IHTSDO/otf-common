@@ -90,7 +90,7 @@ public class JobParameters {
 	public JobParameter add(String key) {
 		JobParameter param = getParameterMap().get(key);
 		if (param == null) {
-			param = new JobParameter(this);
+			param = new JobParameter(this, getParameterMap().size());
 			getParameterMap().put(key, param);
 		}
 		return param;

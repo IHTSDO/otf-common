@@ -1,7 +1,5 @@
 package org.snomed.otf.scheduler.domain;
 
-import java.io.Serializable;
-
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,13 +36,16 @@ public class JobParameter {
 	
 	Boolean mandatory;
 	
+	int displayOrder;
+
 	public JobParameter () {}
 	
 	/* Parameters must always know their owning object, otherwise database
 	 * saves will fail.
 	 */
-	protected JobParameter (JobParameters parentParams) {
+	protected JobParameter (JobParameters parentParams, int displayOrder) {
 		this.parentParams = parentParams;
+		this.displayOrder = displayOrder;
 	}
 
 	//This function is for chaining and adding a sibling
@@ -168,5 +169,13 @@ public class JobParameter {
 		}
 		return str;
 	}
-	
+
+	public int getDisplayOrder() {
+		return displayOrder;
+	}
+
+	public void setDisplayOrder(int displayOrder) {
+		this.displayOrder = displayOrder;
+	}
+
 }
