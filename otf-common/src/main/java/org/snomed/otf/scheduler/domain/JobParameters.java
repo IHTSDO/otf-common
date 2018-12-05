@@ -26,14 +26,14 @@ public class JobParameters {
 	}
 	
 	public JobParameters(String[] keys) {
-		parameterMap = new HashMap<>();
+		this();
 		for (String key : keys) {
 			setValue(key, null);
 		}
 	}
 
 	public JobParameters() {
-		parameterMap = new HashMap<>();
+		parameterMap = new LinkedHashMap<>();
 	}
 
 	public JobParameter withValue(String key, Object value) {
@@ -72,7 +72,7 @@ public class JobParameters {
 	// Ah, can't be private or doesn't show up in JSON
 	public Map<String, JobParameter> getParameterMap() {
 		if (parameterMap == null) {
-			parameterMap = new HashMap<>();
+			parameterMap = new LinkedHashMap<>();
 		}
 		return parameterMap;
 	}
