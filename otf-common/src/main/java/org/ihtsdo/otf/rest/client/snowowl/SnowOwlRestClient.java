@@ -566,6 +566,10 @@ public class SnowOwlRestClient {
 		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class).isEmpty();
 	}
 
+	public Set getMergeReviewsDetails(String mergeId) throws RestClientException{
+		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class);
+	}
+	
 	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
 			throws RestClientException {
 		Assert.notNull(rf2ZipFileStream, "Archive to import should not be null.");
