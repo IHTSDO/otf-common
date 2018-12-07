@@ -28,6 +28,7 @@ public class JobParameter {
 	@JsonInclude(Include.ALWAYS)
 	String value;
 	
+	@Column(columnDefinition="TEXT")
 	String description;
 	
 	String defaultValue;

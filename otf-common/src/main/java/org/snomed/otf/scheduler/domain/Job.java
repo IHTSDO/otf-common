@@ -17,6 +17,8 @@ public class Job {
 	private long id;
 	
 	String name;
+	
+	@Column(columnDefinition="TEXT")
 	String description;
 	ProductionStatus productionStatus;
 	
