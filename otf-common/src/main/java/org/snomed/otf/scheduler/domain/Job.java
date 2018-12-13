@@ -26,7 +26,7 @@ public class Job {
 	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
 	JobCategory category;
 	
-	@OneToOne(cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	JobParameters parameters;
 	
 	@OneToMany

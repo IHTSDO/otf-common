@@ -12,7 +12,7 @@ public class JobRun {
 	UUID id;
 	String jobName;
 	
-	@OneToOne(cascade = CascadeType.ALL)
+	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	JobRunParameters parameters;
 	
 	String terminologyServerUrl;

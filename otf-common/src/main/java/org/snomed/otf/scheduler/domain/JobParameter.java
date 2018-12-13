@@ -37,7 +37,7 @@ public class JobParameter {
 	
 	Boolean mandatory;
 	
-	int displayOrder;
+	Integer displayOrder;
 
 	public JobParameter () {}
 	
@@ -171,11 +171,11 @@ public class JobParameter {
 		return str;
 	}
 
-	public int getDisplayOrder() {
+	public Integer getDisplayOrder() {
 		return displayOrder;
 	}
 
-	public void setDisplayOrder(int displayOrder) {
+	public void setDisplayOrder(Integer displayOrder) {
 		this.displayOrder = displayOrder;
 	}
 
