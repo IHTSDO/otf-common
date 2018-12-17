@@ -74,8 +74,8 @@ public class JobParameters {
 			throw new IllegalArgumentException("Mandatory parameter value for '" + key + "' was not supplied");
 		}
 		value = value.toUpperCase();
-		if (value.equals("Y") || value.equals("N")) {
-			return value.equals("Y");
+		if (value.equals("Y") || value.equals("N") || value.equals("TRUE") || value.equals("FALSE")) {
+			return value.equals("Y") || value.equals("TRUE");
 		}
 		throw new IllegalArgumentException("Mandatory boolean parameter value for '" + key + "' was not recognised: '" + value + "'");
 	}
