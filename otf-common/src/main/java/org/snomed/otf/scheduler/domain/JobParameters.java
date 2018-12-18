@@ -19,6 +19,7 @@ public class JobParameters {
 	//Also https://thoughts-on-java.org/hibernate-tips-how-to-delete-child-entities/
 	@ElementCollection(fetch = FetchType.EAGER)
 	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@OrderBy("displayOrder ASC")
 	Map<String, JobParameter> parameterMap;
 	
 	public JobParameters (@JsonProperty("parameters") Map<String, JobParameter> parameterMap) {

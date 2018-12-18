@@ -37,7 +37,6 @@ public class JobParameter {
 	
 	Boolean mandatory;
 	
-	@OrderBy
 	Integer displayOrder;
 
 	public JobParameter () {}
