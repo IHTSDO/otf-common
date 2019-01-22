@@ -9,7 +9,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @Entity
 public class JobParameter {
 
-	public enum Type { BOOLEAN, STRING, CONCEPT, CONCEPT_LIST, TEMPLATE, ECL }
+	public enum Type {	BOOLEAN, STRING, CONCEPT, 
+						CONCEPT_LIST, TEMPLATE_NAME, TEMPLATE,
+						HIDDEN, ECL }
 	
 	@Id
 	@JsonIgnore

@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Job {
-	
+	//TODO Make testing jobs appear in Dev environment
 	public enum ProductionStatus {TESTING, PROD_READY, HIDEME}
 	
 	@Id
