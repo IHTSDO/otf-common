@@ -4,6 +4,8 @@ import java.util.*;
 
 import javax.persistence.*;
 
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptMiniPojo;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -31,6 +33,9 @@ public class Job {
 	
 	@OneToMany
 	List<JobSchedule> schedules;
+	
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	Set<WhiteListedConcept> whiteList;
 	
 	public Job() {
 		this.parameters = new JobParameters();
@@ -115,6 +120,23 @@ public class Job {
 			this.parameters = new JobParameters();
 		} else {
 			this.parameters = paramaters;
+		}
+	}
+
+	public Set<WhiteListedConcept> getWhiteList() {
+		return whiteList;
+	}
+
+	public void setWhiteList(Set<WhiteListedConcept> whiteList) {
+		//Ensure we set the parent link before saving
+		whiteList.stream()
+			.forEach(c -> { c.setJob(this); });
+		
+		if (this.whiteList == null) {
+			this.whiteList = whiteList;
+		} else {
+			this.whiteList.retainAll(whiteList);
+			this.whiteList.addAll(whiteList);
 		}
 	}
 }

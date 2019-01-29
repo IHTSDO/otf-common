@@ -4,6 +4,8 @@ import java.util.*;
 
 import javax.persistence.*;
 
+import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptMiniPojo;
+
 @Entity
 public class JobRun {
 	@Id
@@ -28,6 +30,9 @@ public class JobRun {
 	Date resultTime;
 	Integer issuesReported;
 	String resultUrl;
+	
+	@Transient //No need to persist whitelist for every run, once for the Job is fine
+	Set<WhiteListedConcept> whiteList;
 	
 	private JobRun () {
 		parameters = new JobRunParameters();
@@ -183,6 +188,14 @@ public class JobRun {
 			value = defaultValue;
 		}
 		return value;
+	}
+
+	public Set<WhiteListedConcept> getWhiteList() {
+		return whiteList;
+	}
+
+	public void setWhiteList(Set<WhiteListedConcept> whiteList) {
+		this.whiteList = whiteList;
 	}
 
 }
