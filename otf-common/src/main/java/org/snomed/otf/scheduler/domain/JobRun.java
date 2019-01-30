@@ -4,8 +4,6 @@ import java.util.*;
 
 import javax.persistence.*;
 
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptMiniPojo;
-
 @Entity
 public class JobRun {
 	@Id

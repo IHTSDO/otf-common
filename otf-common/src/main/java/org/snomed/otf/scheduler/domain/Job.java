@@ -4,8 +4,6 @@ import java.util.*;
 
 import javax.persistence.*;
 
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ConceptMiniPojo;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -34,7 +32,7 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = CascadeType.ALL)
 	Set<WhiteListedConcept> whiteList;
 	
 	public Job() {
