@@ -129,14 +129,18 @@ public class Job {
 
 	public void setWhiteList(Set<WhiteListedConcept> whiteList) {
 		//Ensure we set the parent link before saving
-		whiteList.stream()
-			.forEach(c -> { c.setJob(this); });
+		if (whiteList != null) {
+			whiteList.stream()
+				.forEach(c -> { c.setJob(this); });
 		
-		if (this.whiteList == null) {
-			this.whiteList = whiteList;
+			if (this.whiteList == null) {
+				this.whiteList = whiteList;
+			} else {
+				this.whiteList.retainAll(whiteList);
+				this.whiteList.addAll(whiteList);
+			}
 		} else {
-			this.whiteList.retainAll(whiteList);
-			this.whiteList.addAll(whiteList);
+			this.whiteList = null;
 		}
 	}
 }
