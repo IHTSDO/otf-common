@@ -676,29 +676,6 @@ public class SnowOwlRestClient {
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
 			results.setStatus(ProcessingStatus.COMPLETED.toString());
-			try {
-				// Check equivalent concepts
-				JSONArray items = getItems(urlHelper.getEquivalentConceptsUrl(classificationLocation));
-				boolean equivalentConceptsFound = !(items == null || items.length() == 0);
-				results.setEquivalentConceptsFound(equivalentConceptsFound);
-				if (equivalentConceptsFound) {
-					results.setEquivalentConceptsJson(toPrettyJson(items.toString()));
-				}
-			} catch (Exception e) {
-				throw new RestClientException("Failed to retrieve equivalent concepts of classification.", e);
-			}
-			try {
-				// Check relationship changes
-				JSONResource relationshipChangesUnlimited = resty.json(urlHelper.getRelationshipChangesFirstTenThousand(classificationLocation));
-				Integer total = (Integer) relationshipChangesUnlimited.get("total");
-				results.setRelationshipChangesCount(total);
-				Path tempDirectory = Files.createTempDirectory(getClass().getSimpleName());
-				File file = new File(tempDirectory.toFile(), "relationship-changes-" + date + ".json");
-				toPrettyJson(relationshipChangesUnlimited.object().toString(), file);
-				results.setRelationshipChangesFile(file);
-			} catch (Exception e) {
-				throw new RestClientException("Failed to retrieve relationship changes of classification.", e);
-			}
 			return results;
 		} else {
 			throw new RestClientException("Classification failed, see SnowOwl logs for details.");
