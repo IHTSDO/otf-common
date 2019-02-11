@@ -2,16 +2,23 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 public class ClassificationResults {
 
-	private String classificationId;
+	private String id;
 	private String classificationLocation;
-	private String status;
+	private ClassificationStatus status;
+	private String userId;
+	private boolean inferredRelationshipChangesFound;
+	private boolean equivalentConceptsFound;
 
-	public void setClassificationId(String classificationId) {
-		this.classificationId = classificationId;
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getId() {
+		return id;
 	}
 
 	public String getClassificationId() {
-		return classificationId;
+		return id;
 	}
 
 	public String getClassificationLocation() {
@@ -22,12 +29,47 @@ public class ClassificationResults {
 		this.classificationLocation = classificationLocation;
 	}
 
-	public String getStatus() {
+	public ClassificationStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(ClassificationStatus status) {
 		this.status = status;
 	}
 
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public boolean isInferredRelationshipChangesFound() {
+		return inferredRelationshipChangesFound;
+	}
+
+	public void setInferredRelationshipChangesFound(boolean inferredRelationshipChangesFound) {
+		this.inferredRelationshipChangesFound = inferredRelationshipChangesFound;
+	}
+
+	public boolean isEquivalentConceptsFound() {
+		return equivalentConceptsFound;
+	}
+
+	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
+		this.equivalentConceptsFound = equivalentConceptsFound;
+	}
+
+	@Override
+	public String toString() {
+		return "ClassificationResults{" +
+				"id='" + id + '\'' +
+				", classificationLocation='" + classificationLocation + '\'' +
+				", status='" + status + '\'' +
+				", userId='" + userId + '\'' +
+				", inferredRelationshipChangesFound=" + inferredRelationshipChangesFound +
+				", equivalentConceptsFound=" + equivalentConceptsFound +
+				'}';
+	}
 }

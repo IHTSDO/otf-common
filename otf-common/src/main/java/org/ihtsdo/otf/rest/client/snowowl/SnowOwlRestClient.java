@@ -645,7 +645,7 @@ public class SnowOwlRestClient {
 				}
 				throw new RestClientException (errorMsg);
 			}
-			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
+			results.setId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
 		} catch (JSONException | IOException e) {
 			throw new RestClientException("Create classification failed.", e);
@@ -671,12 +671,18 @@ public class SnowOwlRestClient {
 	
 	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws RestClientException, InterruptedException {
 		String classificationLocation = results.getClassificationLocation();
-		String date = SIMPLE_DATE_FORMAT.format(new Date());
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
-			results.setStatus(ProcessingStatus.COMPLETED.toString());
-			return results;
+			// Fetch classification to get result summary flags.
+			ResponseEntity<ClassificationResults> exchange = restTemplate.exchange(
+					RequestEntity.get(URI.create(classificationLocation)).header(COOKIE, singleSignOnCookie).build(), ClassificationResults.class);
+			if (!exchange.getStatusCode().is2xxSuccessful()) {
+				throw new RestClientException("Failed to fetch completed classification.");
+			}
+			ClassificationResults classificationResults = exchange.getBody();
+			classificationResults.setClassificationLocation(classificationLocation);
+			return classificationResults;
 		} else {
 			throw new RestClientException("Classification failed, see SnowOwl logs for details.");
 		}
