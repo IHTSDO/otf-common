@@ -102,8 +102,9 @@ public class SnowOwlRestClient {
 	private String singleSignOnCookie;
 	private RestTemplate restTemplate;
 
-	private String reasonerId;
-	private boolean useExternalClassificationService;
+	private String reasonerId = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
+	private boolean useExternalClassificationService = true;
+
 	private boolean flatIndexExportStyle = true;
 	private String logPath;
 	private String rolloverLogPath;
