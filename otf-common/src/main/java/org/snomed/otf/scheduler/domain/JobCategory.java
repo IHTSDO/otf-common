@@ -21,6 +21,7 @@ public class JobCategory implements Serializable {
 	public static final String QI = "Quality Improvement";
 	public static final String DRUGS = "Drugs and Substances";
 	public static final String RELEASE_VALIDATION = "Release Validation";
+	public static final String RELEASE_STATS = "Release Statistics";
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
