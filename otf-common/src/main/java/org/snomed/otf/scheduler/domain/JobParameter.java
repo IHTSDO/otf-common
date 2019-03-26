@@ -11,7 +11,7 @@ public class JobParameter {
 
 	public enum Type {	BOOLEAN, STRING, CONCEPT, 
 						CONCEPT_LIST, TEMPLATE_NAME, TEMPLATE,
-						HIDDEN, ECL }
+						HIDDEN, ECL, PROJECT }
 	
 	@Id
 	@JsonIgnore
