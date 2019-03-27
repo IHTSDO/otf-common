@@ -6,7 +6,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +25,6 @@ public class IMSRestClient {
 	private static final String SEMICOLON_SEPARATOR = ";";
 
 	private static final String SET_COOKIE = "Set-Cookie";
-
-	private static final String COOKIE = "Cookie";
 
 	private final RestTemplate restTemplate;
 
@@ -46,14 +46,12 @@ public class IMSRestClient {
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	public String login(String username, String password)
-			throws URISyntaxException, MalformedURLException, IOException {
-
+	public String login(String username, String password) throws URISyntaxException, IOException {
 		Map<String, String> bodyMap = new HashMap<>();
 		bodyMap.put("login", username);
 		bodyMap.put("password", password);
 
-		HttpHeaders headers = getRequestHeadersWithAuthenticationToken();
+		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.add("Accept", "application/json, text/plain, */*");
 
@@ -68,8 +66,8 @@ public class IMSRestClient {
 		return login(username, password);
 	}
 
-	private void logout(String token) throws IOException {
-		HttpHeaders headers = getRequestHeadersWithAuthenticationToken();
+	private void logout(String token) {
+		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.COOKIE, token);
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(headers);
 		restTemplate.exchange(imsUrl + "/account/logout", HttpMethod.POST, request, String.class);
@@ -97,19 +95,6 @@ public class IMSRestClient {
 			}
 		}
 		return "";
-	}
-
-	private HttpHeaders getRequestHeadersWithAuthenticationToken() throws IOException {
-		URLConnection connection = new URL(imsUrl).openConnection();
-		List<String> cookies = connection.getHeaderFields().get(SET_COOKIE);
-		
-		String set_cookie = cookies.toString();
-		set_cookie = set_cookie.substring(1, set_cookie.length() - 1);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.add(COOKIE, set_cookie);
-
-		return headers;
 	}
 
 }
