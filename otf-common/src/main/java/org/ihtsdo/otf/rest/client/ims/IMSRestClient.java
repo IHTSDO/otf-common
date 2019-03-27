@@ -1,14 +1,16 @@
 package org.ihtsdo.otf.rest.client.ims;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,23 +20,21 @@ public class IMSRestClient {
 
 	private static final String IMS_PATTERN = "ims-ihtsdo=";
 
-	private static final String SEMICOLUM_SEPARATOR = ";";
-
-	private static final Pattern TOKEN_PATTERN = Pattern.compile("[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}");
+	private static final String SEMICOLON_SEPARATOR = ";";
 
 	private static final String SET_COOKIE = "Set-Cookie";
 
 	private static final String COOKIE = "Cookie";
 
-	private static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
+	private final RestTemplate restTemplate;
 
-	private RestTemplate restTemplate;
-
-	private String imsUrl;
+	private final String imsUrl;
+	private final ObjectMapper objectMapper;
 
 	public IMSRestClient(String imsUrl) {
 		this.imsUrl = imsUrl;
 		this.restTemplate = new RestTemplate();
+		objectMapper = new ObjectMapper();
 	}
 
 	/**
@@ -49,17 +49,16 @@ public class IMSRestClient {
 	public String login(String username, String password)
 			throws URISyntaxException, MalformedURLException, IOException {
 
-		MultiValueMap<String, String> bodyMap = new LinkedMultiValueMap<>();
-		bodyMap.add("j_username", username);
-		bodyMap.add("j_password", password);
-		bodyMap.add("submit", "Login");
+		Map<String, String> bodyMap = new HashMap<>();
+		bodyMap.put("login", username);
+		bodyMap.put("password", password);
 
-		HttpHeaders headers = getRequestHeadersWithSessionAndCSRFToken();
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		HttpHeaders headers = getRequestHeadersWithAuthenticationToken();
+		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.add("Accept", "application/json, text/plain, */*");
 
-		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(bodyMap, headers);
-		ResponseEntity<String> model = restTemplate.exchange(imsUrl + "/j_security_check", HttpMethod.POST, request, String.class);
+		HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(bodyMap), headers);
+		ResponseEntity<String> model = restTemplate.exchange(imsUrl + "/authenticate", HttpMethod.POST, request, String.class);
 		return getAuthenticationToken(model.getHeaders());
 	}
 
@@ -70,15 +69,15 @@ public class IMSRestClient {
 	}
 
 	private void logout(String token) throws IOException {
-		HttpHeaders headers = getRequestHeadersWithSessionAndCSRFToken();
+		HttpHeaders headers = getRequestHeadersWithAuthenticationToken();
 		headers.add(HttpHeaders.COOKIE, token);
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(headers);
-		restTemplate.exchange(imsUrl + "/j_spring_security_logout", HttpMethod.POST, request, String.class);
+		restTemplate.exchange(imsUrl + "/account/logout", HttpMethod.POST, request, String.class);
 	}
 
 	private String getAuthenticationToken(HttpHeaders responseHeader) throws URISyntaxException {
 		String cookies = responseHeader.get(SET_COOKIE).toString();
-		String[] strArr = cookies.substring(1, cookies.length() - 1).split(SEMICOLUM_SEPARATOR);
+		String[] strArr = cookies.substring(1, cookies.length() - 1).split(SEMICOLON_SEPARATOR);
 		Pattern r = Pattern.compile(IMS_PATTERN);
 		List<String> tokens = new ArrayList<>();
 		for (String str : strArr) {
@@ -100,7 +99,7 @@ public class IMSRestClient {
 		return "";
 	}
 
-	private HttpHeaders getRequestHeadersWithSessionAndCSRFToken() throws IOException {
+	private HttpHeaders getRequestHeadersWithAuthenticationToken() throws IOException {
 		URLConnection connection = new URL(imsUrl).openConnection();
 		List<String> cookies = connection.getHeaderFields().get(SET_COOKIE);
 		
@@ -109,11 +108,6 @@ public class IMSRestClient {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(COOKIE, set_cookie);
-
-		Matcher matcher = TOKEN_PATTERN.matcher(set_cookie);
-		if (matcher.find()) {
-			headers.add(X_CSRF_TOKEN, matcher.group(0));
-		}
 
 		return headers;
 	}
