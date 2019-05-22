@@ -2,12 +2,13 @@ package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "relationships"})
+@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "classAxioms", "gciAxioms", "relationships"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptPojo {
 
@@ -28,6 +29,10 @@ public class ConceptPojo {
 	private Map<String, String[]> associationTargets;
 
 	private Set<DescriptionPojo> descriptions;
+	
+	private Set<AxiomPojo> classAxioms;
+	
+	private Set<AxiomPojo> gciAxioms;
 
 	private Set<RelationshipPojo> relationships;
 	
@@ -139,75 +144,46 @@ public class ConceptPojo {
 	public void setRelationships(Set<RelationshipPojo> relationships) {
 		this.relationships = relationships;
 	}
+	
+	public Set<AxiomPojo> getClassAxioms() {
+		return classAxioms;
+	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (active ? 1231 : 1237);
-		result = prime * result + ((associationTargets == null) ? 0 : associationTargets.hashCode());
-		result = prime * result + ((conceptId == null) ? 0 : conceptId.hashCode());
-		result = prime * result + ((definitionStatus == null) ? 0 : definitionStatus.hashCode());
-		result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
-		result = prime * result + ((effectiveTime == null) ? 0 : effectiveTime.hashCode());
-		result = prime * result + ((inactivationIndicator == null) ? 0 : inactivationIndicator.hashCode());
-		result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
-		result = prime * result + ((relationships == null) ? 0 : relationships.hashCode());
-		result = prime * result + (released ? 1231 : 1237);
-		return result;
+	public void setClassAxioms(Set<AxiomPojo> classAxioms) {
+		this.classAxioms = classAxioms;
+	}
+	
+	public Set<AxiomPojo> getGciAxioms() {
+		return gciAxioms;
+	}
+
+	public void setGciAxioms(Set<AxiomPojo> gciAxioms) {
+		this.gciAxioms = gciAxioms;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		ConceptPojo other = (ConceptPojo) obj;
-		if (active != other.active)
-			return false;
-		if (associationTargets == null) {
-			if (other.associationTargets != null)
-				return false;
-		} else if (!associationTargets.equals(other.associationTargets))
-			return false;
-		if (conceptId == null) {
-			if (other.conceptId != null)
-				return false;
-		} else if (!conceptId.equals(other.conceptId))
-			return false;
-		if (definitionStatus != other.definitionStatus)
-			return false;
-		if (descriptions == null) {
-			if (other.descriptions != null)
-				return false;
-		} else if (!descriptions.equals(other.descriptions))
-			return false;
-		if (effectiveTime == null) {
-			if (other.effectiveTime != null)
-				return false;
-		} else if (!effectiveTime.equals(other.effectiveTime))
-			return false;
-		if (inactivationIndicator == null) {
-			if (other.inactivationIndicator != null)
-				return false;
-		} else if (!inactivationIndicator.equals(other.inactivationIndicator))
-			return false;
-		if (moduleId == null) {
-			if (other.moduleId != null)
-				return false;
-		} else if (!moduleId.equals(other.moduleId))
-			return false;
-		if (relationships == null) {
-			if (other.relationships != null)
-				return false;
-		} else if (!relationships.equals(other.relationships))
-			return false;
-		if (released != other.released)
-			return false;
-		return true;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ConceptPojo that = (ConceptPojo) o;
+		return released == that.released &&
+				active == that.active &&
+				Objects.equals(conceptId, that.conceptId) &&
+				Objects.equals(effectiveTime, that.effectiveTime) &&
+				Objects.equals(moduleId, that.moduleId) &&
+				definitionStatus == that.definitionStatus &&
+				Objects.equals(inactivationIndicator, that.inactivationIndicator) &&
+				Objects.equals(associationTargets, that.associationTargets) &&
+				Objects.equals(descriptions, that.descriptions) &&
+				Objects.equals(classAxioms, that.classAxioms) &&
+				Objects.equals(gciAxioms, that.gciAxioms) &&
+				Objects.equals(relationships, that.relationships);
+	}
+
+	@Override
+	public int hashCode() {
+
+		return Objects.hash(conceptId, effectiveTime, released, active, moduleId, definitionStatus, inactivationIndicator, associationTargets, descriptions, classAxioms, gciAxioms, relationships);
 	}
 
 	@Override
@@ -222,6 +198,8 @@ public class ConceptPojo {
 				", inactivationIndicator='" + inactivationIndicator + '\'' +
 				", associationTargets=" + associationTargets +
 				", descriptions=" + descriptions +
+				", classAxioms=" + classAxioms +
+				", gciAxioms=" + gciAxioms +
 				", relationships=" + relationships +
 				'}';
 	}
