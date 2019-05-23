@@ -1,12 +1,12 @@
 package org.ihtsdo.otf.rest.client.snowowl.pojo;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * The Snowstorm fsn and pt values including the language code and term.
@@ -14,17 +14,15 @@ import java.io.IOException;
  */
 public class DescriptionDeserializer extends JsonDeserializer<String> {
 	@Override
-	public String deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+	public String deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 		JsonToken jsonToken = jsonParser.getCurrentToken();
 		if (jsonToken == JsonToken.VALUE_STRING) {
 			return jsonParser.getValueAsString();
 		} else {
-			Description description = jsonParser.readValueAs(Description.class);
-			return description.term;
+			Map description = jsonParser.readValueAs(Map.class);
+			Object term = description.get("term");
+			return term != null ? (String) term : null;
 		}
 	}
 
-	private static final class Description {
-		String term;
-	}
 }
