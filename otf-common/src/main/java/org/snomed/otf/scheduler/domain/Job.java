@@ -32,7 +32,7 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(cascade = CascadeType.ALL, mappedBy="id.jobId")
 	Set<WhiteListedConcept> whiteList;
 	
 	public Job() {
@@ -129,7 +129,7 @@ public class Job {
 		//Ensure we set the parent link before saving
 		if (whiteList != null) {
 			whiteList.stream()
-				.forEach(c -> { c.setJob(this); });
+				.forEach(c -> { c.getId().setJobId(this.id); });
 		
 			if (this.whiteList == null) {
 				this.whiteList = whiteList;
