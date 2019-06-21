@@ -181,5 +181,16 @@ public class JobParameter {
 	public void setDisplayOrder(Integer displayOrder) {
 		this.displayOrder = displayOrder;
 	}
+	
+	public int hashCode() {
+		return paramKey.hashCode();
+	}
+	
+	public boolean equals(Object other) {
+		if (other instanceof JobParameter) {
+			return paramKey.equals(((JobParameter)other).getParamKey());
+		}
+		return false;
+	}
 
 }

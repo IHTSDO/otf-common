@@ -100,6 +100,7 @@ public class JobParameters {
 	public void remove(String key) {
 		parameterMap.remove(key);
 	}
+	
 	public JobParameter add(String key) {
 		JobParameter param = getParameterMap().get(key);
 		if (param == null) {
@@ -108,6 +109,27 @@ public class JobParameters {
 		}
 		return param;
 	}
+	
+	public JobParameter add(JobParameter param) {
+		getParameterMap().remove(param.getParamKey());
+		param.setParentParams(this);
+		param.setDisplayOrder(getParameterMap().size());
+		getParameterMap().put(param.getParamKey(), param);
+		return param;
+	}
+	
+	//Adds a new parameter to the top of the list
+	public JobParameter addFirst(String paramKey) {
+		Map<String, JobParameter> originalParams = this.parameterMap;
+		this.parameterMap = new LinkedHashMap<>();
+		JobParameter first = add(paramKey);
+		for (JobParameter existingParam : originalParams.values()) {
+			add (existingParam);
+		}
+		return first;
+	}
+	
+	
 	public JobParameter get(String key) {
 		return getParameterMap().get(key);
 	}
