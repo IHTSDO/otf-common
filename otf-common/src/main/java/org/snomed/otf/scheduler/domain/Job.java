@@ -141,4 +141,8 @@ public class Job {
 			this.whiteList = null;
 		}
 	}
+
+	public void replaceWhiteList(Set<WhiteListedConcept> whiteList) {
+		this.whiteList = whiteList;
+	}
 }
