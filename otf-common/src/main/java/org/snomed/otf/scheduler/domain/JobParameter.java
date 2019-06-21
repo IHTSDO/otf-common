@@ -47,9 +47,10 @@ public class JobParameter {
 	/* Parameters must always know their owning object, otherwise database
 	 * saves will fail.
 	 */
-	protected JobParameter (JobParameters parentParams, int displayOrder) {
+	protected JobParameter (JobParameters parentParams, String key, int displayOrder) {
 		this.parentParams = parentParams;
 		this.displayOrder = displayOrder;
+		this.paramKey = key;
 	}
 
 	//This function is for chaining and adding a sibling
