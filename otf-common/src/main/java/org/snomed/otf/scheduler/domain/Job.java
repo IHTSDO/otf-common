@@ -32,7 +32,7 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	
-	@OneToMany(cascade = CascadeType.ALL, mappedBy="id.jobId")
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy="id.jobId")
 	Set<WhiteListedConcept> whiteList;
 	
 	public Job() {
