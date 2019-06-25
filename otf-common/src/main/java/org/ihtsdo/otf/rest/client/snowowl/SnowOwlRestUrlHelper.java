@@ -58,7 +58,8 @@ public class SnowOwlRestUrlHelper {
 	}
 
 	public String getClassificationsUrl(String branchPath) {
-		return snomedUrl + "/" + branchPath + "/classifications";
+		// ?sort=creationDate is needed on the Complete OWL version of Snow Owl.
+		return snomedUrl + "/" + branchPath + "/classifications?sort=creationDate";
 	}
 
 	public String getClassificationUrl(String projectName, String taskName, String classificationId) {
