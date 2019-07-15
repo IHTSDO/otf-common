@@ -50,4 +50,9 @@ public class WhiteListedConcept {
 		return id.hashCode();
 	}
 	
+	@Override
+	public String toString() {
+		return id.getSctId() + "|" + fsn + "| - " + id.getJobId();
+	}
+	
 }
