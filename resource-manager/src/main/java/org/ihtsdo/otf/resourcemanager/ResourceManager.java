@@ -41,12 +41,12 @@ public class ResourceManager {
 	}
 
 	public InputStream readResourceStream(String resourcePath) throws IOException {
+		String fullPath = getFullPath(resourcePath);
 		try {
-			String fullPath = getFullPath(resourcePath);
 			Resource resource = resourceLoader.getResource(fullPath);
 			return resource.getInputStream();
 		} catch (AmazonS3Exception e) {
-			throw new IOException("Failed to load resource '" + resourcePath + "'.", e);
+			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
 		}
 	}
 
