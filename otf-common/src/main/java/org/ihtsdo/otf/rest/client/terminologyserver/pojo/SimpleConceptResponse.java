@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client.snowowl.pojo;
+package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.Set;
 

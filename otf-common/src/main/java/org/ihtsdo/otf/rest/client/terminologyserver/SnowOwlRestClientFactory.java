@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client.snowowl;
+package org.ihtsdo.otf.rest.client.terminologyserver;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

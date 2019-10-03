@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client.snowowl.pojo;
+package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -8,7 +8,8 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus", "descriptions", "classAxioms", "gciAxioms", "relationships"})
+@JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus",
+		"descriptions", "classAxioms", "gciAxioms", "relationships"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptPojo {
 

@@ -1,9 +1,8 @@
-package org.ihtsdo.otf.rest.client.snowowl.pojo;
+package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @JsonPropertyOrder({"items", "total" })

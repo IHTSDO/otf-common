@@ -1,4 +1,4 @@
-package org.ihtsdo.otf.rest.client.snowowl;
+package org.ihtsdo.otf.rest.client.terminologyserver;
 
 import java.net.URI;
 import java.net.URISyntaxException;
