@@ -1,9 +1,9 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.google.common.collect.Sets;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AxiomPojo {
@@ -21,59 +21,71 @@ public class AxiomPojo {
 	private Set<RelationshipPojo> relationships;
 	
 	private String effectiveTime;
-	
+
+	public AxiomPojo() {
+		relationships = new HashSet<>();
+	}
+
+	public AxiomPojo(RelationshipPojo... relationships) {
+		this.relationships = new HashSet<>(Arrays.asList(relationships));
+	}
+
+	public void add(RelationshipPojo relationshipPojo) {
+		relationships.add(relationshipPojo);
+	}
+
 	public String getAxiomId() {
 		return axiomId;
 	}
-	
+
 	public void setAxiomId(String axiomId) {
 		this.axiomId = axiomId;
 	}
-	
+
 	public String getModuleId() {
 		return moduleId;
 	}
-	
+
 	public void setModuleId(String moduleId) {
 		this.moduleId = moduleId;
 	}
-	
+
 	public boolean isActive() {
 		return active;
 	}
-	
+
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-	
+
 	public boolean isReleased() {
 		return released;
 	}
-	
+
 	public void setReleased(boolean released) {
 		this.released = released;
 	}
-	
+
 	public String getDefinitionStatusId() {
 		return definitionStatusId;
 	}
-	
+
 	public void setDefinitionStatusId(String definitionStatusId) {
 		this.definitionStatusId = definitionStatusId;
 	}
-	
+
 	public Set<RelationshipPojo> getRelationships() {
 		return relationships;
 	}
-	
+
 	public void setRelationships(Set<RelationshipPojo> relationships) {
 		this.relationships = relationships;
 	}
-	
+
 	public String getEffectiveTime() {
 		return effectiveTime;
 	}
-	
+
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
 	}

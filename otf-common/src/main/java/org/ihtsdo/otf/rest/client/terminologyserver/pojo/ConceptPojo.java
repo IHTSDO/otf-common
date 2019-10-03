@@ -66,6 +66,13 @@ public class ConceptPojo {
 		descriptions.add(description);
 	}
 
+	public void addClassAxiom(AxiomPojo axiomPojo) {
+		if (classAxioms == null) {
+			classAxioms = new HashSet<>();
+		}
+		classAxioms.add(axiomPojo);
+	}
+
 	public String getConceptId() {
 		return conceptId;
 	}
@@ -81,7 +88,7 @@ public class ConceptPojo {
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
 	}
-	
+
 	public boolean isReleased() {
 		return released;
 	}
@@ -145,7 +152,7 @@ public class ConceptPojo {
 	public void setRelationships(Set<RelationshipPojo> relationships) {
 		this.relationships = relationships;
 	}
-	
+
 	public Set<AxiomPojo> getClassAxioms() {
 		return classAxioms;
 	}
@@ -153,7 +160,7 @@ public class ConceptPojo {
 	public void setClassAxioms(Set<AxiomPojo> classAxioms) {
 		this.classAxioms = classAxioms;
 	}
-	
+
 	public Set<AxiomPojo> getGciAxioms() {
 		return gciAxioms;
 	}
