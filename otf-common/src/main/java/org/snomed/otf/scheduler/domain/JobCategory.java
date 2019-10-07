@@ -64,7 +64,7 @@ public class JobCategory implements Serializable {
 		//This is the simpliest place to hide jobs that have been "deleted" or withdrawn, but we 
 		//want them to remain in the database
 		return jobs.stream()
-				.filter(j -> !j.getProductionStatus().equals(ProductionStatus.HIDEME))
+				.filter(j -> j.getProductionStatus() != null && !j.getProductionStatus().equals(ProductionStatus.HIDEME))
 				.collect(Collectors.toList());
 	}
 	public void setJobs(Set<Job> jobs) {

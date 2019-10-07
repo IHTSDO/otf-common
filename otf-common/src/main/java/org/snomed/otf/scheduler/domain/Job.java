@@ -81,6 +81,10 @@ public class Job {
 		if (other instanceof Job) {
 			Job otherJob = (Job)other;
 			if (category == null || otherJob.getCategory() == null || category.equals(otherJob.getCategory())) {
+				//If neither object has a job name, compare object ids
+				if (getName() == null && otherJob.getName() == null) {
+					return this == other;
+				}
 				return name.equals(otherJob.getName());
 			}
 		}

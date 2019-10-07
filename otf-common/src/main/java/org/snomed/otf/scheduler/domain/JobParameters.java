@@ -1,15 +1,23 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.IOException;
 import java.util.*;
 
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
+@JsonSerialize(using = JobParameters.Serialize.class)
+@JsonDeserialize(using = JobParameters.Deserialize.class)
 public class JobParameters {
-	
+
 	@Id
 	@JsonIgnore
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -149,5 +157,35 @@ public class JobParameters {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+	
+	public static class Serialize extends JsonSerializer<JobParameters> {
+		public Serialize() {
+			super();
+		}
+		
+		@Override
+		public void serialize(JobParameters value, JsonGenerator gen, SerializerProvider serializers)
+				throws IOException, JsonProcessingException {
+			gen.writeObject(value.getParameterMap());
+		}
+	}
+	
+	public static class Deserialize extends JsonDeserializer<JobParameters>{
+		public Deserialize() {
+			super();
+		}
+
+		@Override
+		public JobParameters deserialize(JsonParser p, DeserializationContext ctxt)
+				throws IOException, JsonProcessingException {
+			JobParameters jobParameters = new JobParameters();
+			ObjectMapper mapper = (ObjectMapper) p.getCodec();
+			JsonNode node = mapper.readTree(p);
+			TypeReference<HashMap<String, JobParameter>> typeRef = new TypeReference<HashMap<String, JobParameter>>() {};
+			Map<String,JobParameter> map = mapper.readValue(node.toString(), typeRef);
+			jobParameters.setParameterMap(map);
+			return jobParameters;
+		}
 	}
 }
