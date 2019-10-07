@@ -6,7 +6,6 @@ import java.util.*;
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
@@ -28,9 +27,10 @@ public class JobParameters {
 	@ElementCollection(fetch = FetchType.EAGER)
 	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@OrderBy("displayOrder ASC")
+	@JsonIgnore
 	Map<String, JobParameter> parameterMap;
 	
-	public JobParameters (@JsonProperty("parameters") Map<String, JobParameter> parameterMap) {
+	public JobParameters (Map<String, JobParameter> parameterMap) {
 		this();
 	}
 	
