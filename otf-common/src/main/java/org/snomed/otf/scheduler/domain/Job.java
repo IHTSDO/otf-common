@@ -32,6 +32,11 @@ public class Job {
 	@OneToMany
 	List<JobSchedule> schedules;
 	
+	@ElementCollection
+	@CollectionTable(name="job_tags", joinColumns=@JoinColumn(name="job_id"))
+	@Column(name="tag")
+	Set<String> tags = new HashSet<>();
+	
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy="id.jobId")
 	Set<WhiteListedConcept> whiteList;
 	
@@ -39,42 +44,71 @@ public class Job {
 		this.parameters = new JobParameters();
 	};
 	
-	public Job(JobCategory category, String name, String description, JobParameters params, ProductionStatus prodStatus) {
-		this();
+	public Job withCategory(JobCategory category) {
 		this.category = category;
-		this.name = name;
-		this.description = description;
-		this.parameters = params;
-		this.productionStatus = prodStatus;
+		return this;
 	}
 	
-	public Job(JobCategory category, String name, String description, JobParameters params) {
-		this(category, name, description, params, ProductionStatus.PROD_READY);
+	public Job withName (String name) {
+		this.name = name;
+		return this;
 	}
+	
+	public Job withDescription(String description) {
+		this.description = description;
+		return this;
+	}
+	public Job withParameters (JobParameters params) {
+		this.parameters = params;
+		return this;
+	}
+	
+	public Job withProductionStatus (ProductionStatus status) {
+		this.productionStatus = status;
+		return this;
+	}
+	
+	public Job withTag (String tag) {
+		tags.add(tag);
+		return this;
+	}
+	
+	public Job build() {
+		return this;
+	}
+	
 	public String getName() {
 		return name;
 	}
+	
 	public void setName(String name) {
 		this.name = name;
 	}
+	
 	public String getDescription() {
 		return description;
 	}
+	
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	
 	public JobCategory getCategory() {
 		return category;
 	}
+	
 	public void setCategory(JobCategory category) {
 		this.category = category;
 	}
+	
 	public List<JobSchedule> getSchedules() {
 		return schedules;
 	}
+	
 	public void setSchedules(List<JobSchedule> schedules) {
 		this.schedules = schedules;
 	}
+	
 	@Override
 	public boolean equals (Object other) {
 		//Job may be missing a category as we hide that in the json
@@ -148,5 +182,18 @@ public class Job {
 
 	public void replaceWhiteList(Set<WhiteListedConcept> whiteList) {
 		this.whiteList = whiteList;
+	}
+	
+	public Job addTag(String tag) {
+		tags.add(tag);
+		return this;
+	}
+
+	public Set<String> getTags() {
+		return tags;
+	}
+
+	public void setTags(Set<String> tags) {
+		this.tags = tags;
 	}
 }
