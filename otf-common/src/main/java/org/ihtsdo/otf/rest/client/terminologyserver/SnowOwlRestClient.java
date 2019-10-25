@@ -378,7 +378,8 @@ public class SnowOwlRestClient {
 		} else {
 			queryBuilder.queryParam("ecl", ecl);
 		}
-		URI uri = queryBuilder.build().toUri();
+		
+		URI uri = queryBuilder.build().encode().toUri();
 		logger.debug("URI {}", uri);
 		return RequestEntity.get(uri)
 				.header(COOKIE, authenticationToken)
