@@ -33,6 +33,8 @@ import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ClassificationResults;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptIdsResponse;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptMiniPojo;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptMiniResponse;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptPojo;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MembersResponse;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Merge;
@@ -262,6 +264,17 @@ public class SnowOwlRestClient {
 		return createConceptsRequest(branchPath, null, null, conceptIds, size, false);
 	}
 
+	
+	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit) throws RestClientException {
+		
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, limit, true);
+		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
+		if (conceptMiniResp == null) {
+			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
+		}
+		return conceptMiniResp.getItems();
+	}
+	
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit) throws RestClientException {
 		

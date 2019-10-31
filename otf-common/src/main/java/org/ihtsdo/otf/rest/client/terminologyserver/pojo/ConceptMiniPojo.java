@@ -1,15 +1,15 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptMiniPojo {
-
+	
 	private String conceptId;
 
-	@JsonDeserialize(using = DescriptionDeserializer.class)
-	private String fsn;
+	private DescriptionMiniPojo fsn;
+	
+	private DescriptionMiniPojo pt;
 	
 	private String moduleId;
 	
@@ -30,11 +30,19 @@ public class ConceptMiniPojo {
 		this.conceptId = conceptId;
 	}
 
-	public String getFsn() {
+	public DescriptionMiniPojo getFsn() {
 		return fsn;
 	}
 
-	public void setFsn(String fsn) {
+	public DescriptionMiniPojo getPt() {
+		return pt;
+	}
+
+	public void setPt(DescriptionMiniPojo pt) {
+		this.pt = pt;
+	}
+
+	public void setFsn(DescriptionMiniPojo fsn) {
 		this.fsn = fsn;
 	}
 
@@ -53,7 +61,6 @@ public class ConceptMiniPojo {
 	public void setDefinitionStatus(String definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
-	
 	
 
 	@Override
@@ -109,5 +116,73 @@ public class ConceptMiniPojo {
 		} else if (!moduleId.equals(other.moduleId))
 			return false;
 		return true;
+	}
+	
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class DescriptionMiniPojo {
+		private String term;
+		
+		private String lang;
+		
+		public DescriptionMiniPojo() {
+			
+		}
+
+		public DescriptionMiniPojo (String term, String lang) {
+			this.term = term;
+			this.lang = lang;
+		}
+		
+		public String getTerm() {
+			return term;
+		}
+
+		public void setTerm(String term) {
+			this.term = term;
+		}
+
+		public String getLang() {
+			return lang;
+		}
+
+		public void setLang(String lang) {
+			this.lang = lang;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((lang == null) ? 0 : lang.hashCode());
+			result = prime * result + ((term == null) ? 0 : term.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			DescriptionMiniPojo other = (DescriptionMiniPojo) obj;
+			if (lang == null) {
+				if (other.lang != null)
+					return false;
+			} else if (!lang.equals(other.lang))
+				return false;
+			if (term == null) {
+				if (other.term != null)
+					return false;
+			} else if (!term.equals(other.term))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "DescriptionMiniPojo [term=" + term + ", lang=" + lang + "]";
+		}
 	}
 }
