@@ -10,7 +10,7 @@ public class SnowOwlRestUrlHelper {
 	private final String snomedUrl;
 
 	public SnowOwlRestUrlHelper(String snowOwlUrl) {
-		this.snomedUrl = removeTrailingSlash(snowOwlUrl) + "/snomed-ct/v2";
+		this.snomedUrl = removeTrailingSlash(snowOwlUrl) + "/snomed-ct";
 	}
 
 	public String getBranchesUrl() {
