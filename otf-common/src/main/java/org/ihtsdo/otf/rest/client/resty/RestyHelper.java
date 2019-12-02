@@ -42,4 +42,12 @@ public class RestyHelper extends RestyMod {
 	public static Content contentJSON(String jsonString) {
 		return new Content("application/json; charset=UTF-8", jsonString.getBytes(Charset.forName("UTF-8")));
 	}
+	
+	public static Content content(String content, String aMimeType) {
+		try {
+			return new Content(aMimeType, content.getBytes(UTF_8));
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(UTF_8 + " encoding not supported!", e);
+		}
+	}
 }
