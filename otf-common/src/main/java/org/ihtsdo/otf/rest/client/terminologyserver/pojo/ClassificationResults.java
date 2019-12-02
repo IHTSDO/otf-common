@@ -1,24 +1,67 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.io.File;
+
+import com.google.gson.annotations.Expose;
+
 public class ClassificationResults {
 
-	private String id;
-	private String classificationLocation;
+	@Expose
+	private String classificationId;
+	
+	@Expose
 	private ClassificationStatus status;
-	private String userId;
-	private boolean inferredRelationshipChangesFound;
+	
 	private boolean equivalentConceptsFound;
+	private int relationshipChangesCount;
 
-	public void setId(String id) {
-		this.id = id;
+	private String equivalentConceptsJson;
+	private File relationshipChangesFile;
+	private String classificationLocation;
+
+
+	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
+		this.equivalentConceptsFound = equivalentConceptsFound;
 	}
 
-	public String getId() {
-		return id;
+	public boolean isEquivalentConceptsFound() {
+		return equivalentConceptsFound;
+	}
+
+	public void setRelationshipChangesCount(int relationshipChangesCount) {
+		this.relationshipChangesCount = relationshipChangesCount;
+	}
+
+	public int getRelationshipChangesCount() {
+		return relationshipChangesCount;
+	}
+
+	public void setClassificationId(String classificationId) {
+		this.classificationId = classificationId;
 	}
 
 	public String getClassificationId() {
-		return id;
+		return classificationId;
+	}
+
+	public void setEquivalentConceptsJson(String equivalentConceptsJson) {
+		this.equivalentConceptsJson = equivalentConceptsJson;
+	}
+
+	public String getEquivalentConceptsJson() {
+		return equivalentConceptsJson;
+	}
+
+	public void setRelationshipChangesFile(File relationshipChangesFile) {
+		this.relationshipChangesFile = relationshipChangesFile;
+	}
+
+	public File getRelationshipChangesFile() {
+		return relationshipChangesFile;
+	}
+
+	public boolean isRelationshipChangesFound() {
+		return relationshipChangesCount > 0;
 	}
 
 	public String getClassificationLocation() {
@@ -37,39 +80,5 @@ public class ClassificationResults {
 		this.status = status;
 	}
 
-	public String getUserId() {
-		return userId;
-	}
-
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-
-	public boolean isInferredRelationshipChangesFound() {
-		return inferredRelationshipChangesFound;
-	}
-
-	public void setInferredRelationshipChangesFound(boolean inferredRelationshipChangesFound) {
-		this.inferredRelationshipChangesFound = inferredRelationshipChangesFound;
-	}
-
-	public boolean isEquivalentConceptsFound() {
-		return equivalentConceptsFound;
-	}
-
-	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
-		this.equivalentConceptsFound = equivalentConceptsFound;
-	}
-
-	@Override
-	public String toString() {
-		return "ClassificationResults{" +
-				"id='" + id + '\'' +
-				", classificationLocation='" + classificationLocation + '\'' +
-				", status='" + status + '\'' +
-				", userId='" + userId + '\'' +
-				", inferredRelationshipChangesFound=" + inferredRelationshipChangesFound +
-				", equivalentConceptsFound=" + equivalentConceptsFound +
-				'}';
-	}
 }
+

@@ -1,25 +1,9 @@
 package org.ihtsdo.otf.rest.client.terminologyserver;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -30,18 +14,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ClassificationResults;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptIdsResponse;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptMiniPojo;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptMiniResponse;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.ConceptPojo;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MembersResponse;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Merge;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.MergeReviewsResults;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.SimpleConceptPojo;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.SimpleConceptResponse;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.SimpleDescriptionPojo;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -659,7 +632,7 @@ public class SnowOwlRestClient {
 				}
 				throw new RestClientException (errorMsg);
 			}
-			results.setId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
+			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
 		} catch (JSONException | IOException e) {
 			throw new RestClientException("Create classification failed.", e);
