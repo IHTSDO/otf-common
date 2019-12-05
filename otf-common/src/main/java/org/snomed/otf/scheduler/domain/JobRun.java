@@ -12,6 +12,8 @@ public class JobRun {
 	UUID id;
 	String jobName;
 	
+	String project;
+	
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	JobRunParameters parameters;
 	
@@ -194,6 +196,14 @@ public class JobRun {
 
 	public void setWhiteList(Set<WhiteListedConcept> whiteList) {
 		this.whiteList = whiteList;
+	}
+
+	public String getProject() {
+		return project;
+	}
+
+	public void setProject(String project) {
+		this.project = project;
 	}
 
 }
