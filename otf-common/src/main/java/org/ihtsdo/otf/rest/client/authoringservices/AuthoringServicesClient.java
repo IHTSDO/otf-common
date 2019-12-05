@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.rest.client.authoringservices;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -12,6 +13,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -32,11 +34,10 @@ public class AuthoringServicesClient {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
-	RestTemplate restTemplate;
-	HttpHeaders headers;
+	private RestTemplate restTemplate;
+	private HttpHeaders headers;
 	private final Resty resty;
 	private final String serverUrl;
-	private final String cookie;
 	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
@@ -50,20 +51,17 @@ public class AuthoringServicesClient {
 		gson = gsonBuilder.create();
 	}
 
-	public AuthoringServicesClient(String serverUrl, String cookie) {
+	public AuthoringServicesClient(String serverUrl, String authToken) {
 		this.serverUrl = serverUrl;
-		this.cookie = cookie;
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
-		resty.withHeader("Cookie", this.cookie);
+		resty.withHeader("Cookie", authToken);
 		resty.withHeader("Connection", "close");
 		resty.authenticate(this.serverUrl, null,null);
 		
 		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.http.HttpURLConnection").setLevel(PlatformLogger.Level.ALL);
 		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.https.DelegateHttpsURLConnection").setLevel(PlatformLogger.Level.ALL);
 		
-		headers = new HttpHeaders();
-		headers.add("Cookie", this.cookie );
-		headers.setContentType(MediaType.APPLICATION_JSON);
+		updateAuthToken(authToken);
 		
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.serverUrl)
@@ -79,6 +77,12 @@ public class AuthoringServicesClient {
 				return execution.execute(request, body);
 			}
 		}); 
+	}
+
+	public void updateAuthToken(String authToken) {
+		headers = new HttpHeaders();
+		headers.add("Cookie", authToken);
+		headers.setContentType(MediaType.APPLICATION_JSON);
 	}
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {
@@ -201,6 +205,13 @@ public class AuthoringServicesClient {
 		} catch (Exception e) {
 			throw new RestClientException("Unable to initiate validation on " + taskKey, e);
 		}
+	}
+
+	public List<Project> listProjects() {
+		String endPoint = serverUrl + apiRoot + "projects";
+		ParameterizedTypeReference<List<Project>> type = new ParameterizedTypeReference<List<Project>>(){};
+		logger.info("Recovering list of visible projects from {}", endPoint);
+		return restTemplate.exchange(endPoint, HttpMethod.GET, null, type).getBody();
 	}
 
 }
