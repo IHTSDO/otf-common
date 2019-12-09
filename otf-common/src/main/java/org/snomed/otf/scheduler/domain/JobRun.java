@@ -138,6 +138,7 @@ public class JobRun {
 		clone.setId(getId());
 		clone.setIssuesReported(getIssuesReported());
 		clone.setJobName(getJobName());
+		clone.setProject(getProject());
 		clone.setParameters(getParameters());
 		clone.setRequestTime(getRequestTime());
 		clone.setResultTime(getResultTime());
