@@ -14,6 +14,8 @@ public class JobRun {
 	
 	String project;
 	
+	String codeSystemShortname;
+	
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	JobRunParameters parameters;
 	
@@ -205,6 +207,14 @@ public class JobRun {
 
 	public void setProject(String project) {
 		this.project = project;
+	}
+
+	public String getcodeSystemShortname() {
+		return codeSystemShortname;
+	}
+
+	public void setcodeSystemShortname(String codeSystemShortname) {
+		this.codeSystemShortname = codeSystemShortname;
 	}
 
 }

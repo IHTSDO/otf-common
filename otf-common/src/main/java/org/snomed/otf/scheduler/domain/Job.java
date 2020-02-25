@@ -37,8 +37,10 @@ public class Job {
 	@Column(name="tag")
 	Set<String> tags = new HashSet<>();
 	
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy="id.jobId")
-	Set<WhiteListedConcept> whiteList;
+	@ElementCollection(fetch = FetchType.EAGER)
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@MapKey(name = "codeSystemShortname")
+	Map<String, WhiteList> whiteListMap;
 	
 	public Job() {
 		this.parameters = new JobParameters();
@@ -159,29 +161,35 @@ public class Job {
 		}
 	}
 
-	public Set<WhiteListedConcept> getWhiteList() {
-		return whiteList;
+	public Set<WhiteListedConcept> getWhiteList(String codeSystemShortname) {
+		if (whiteListMap.containsKey(codeSystemShortname)) {
+			return whiteListMap.get(codeSystemShortname).getConcepts();
+		}
+		return new HashSet<>();
 	}
 
-	public void setWhiteList(Set<WhiteListedConcept> whiteList) {
+	public void setWhiteList(String codeSystemShortname, Set<WhiteListedConcept> whiteListSet) {
 		//Ensure we set the parent link before saving
-		if (whiteList != null) {
-			whiteList.stream()
-				.forEach(c -> { c.getId().setJobId(this.id); });
-		
-			if (this.whiteList == null) {
-				this.whiteList = whiteList;
+		if (whiteListSet != null) {
+			if (this.whiteListMap == null) {
+				this.whiteListMap = new HashMap<>();
+			}
+			
+			if (this.whiteListMap.get(codeSystemShortname) == null) {
+				this.whiteListMap.put(codeSystemShortname, new WhiteList(codeSystemShortname, whiteListSet));
 			} else {
-				this.whiteList.retainAll(whiteList);
-				this.whiteList.addAll(whiteList);
+				this.whiteListMap.get(codeSystemShortname).getConcepts().retainAll(whiteListSet);
+				this.whiteListMap.get(codeSystemShortname).getConcepts().addAll(whiteListSet);
+			}
+			
+			//To keep hibernate happy, we need to tell each concept in this list about its parent
+			WhiteList whiteList = this.whiteListMap.get(codeSystemShortname);
+			for (WhiteListedConcept concept : whiteListSet) {
+				concept.setWhiteList(whiteList);
 			}
 		} else {
-			this.whiteList = null;
+			this.whiteListMap.remove(codeSystemShortname);
 		}
-	}
-
-	public void replaceWhiteList(Set<WhiteListedConcept> whiteList) {
-		this.whiteList = whiteList;
 	}
 	
 	public Job addTag(String tag) {
@@ -195,5 +203,13 @@ public class Job {
 
 	public void setTags(Set<String> tags) {
 		this.tags = tags;
+	}
+
+	public Map<String, WhiteList> getWhiteListMap() {
+		return whiteListMap;
+	}
+	
+	public void setWhiteListMap(Map<String, WhiteList> whiteListMap) {
+		this.whiteListMap = whiteListMap;
 	}
 }
