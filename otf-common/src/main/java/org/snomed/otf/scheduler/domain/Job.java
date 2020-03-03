@@ -37,7 +37,7 @@ public class Job {
 	@Column(name="tag")
 	Set<String> tags = new HashSet<>();
 	
-	@ElementCollection(fetch = FetchType.EAGER)
+	@ElementCollection//(fetch = FetchType.EAGER)
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
 	@MapKey(name = "codeSystemShortname")
 	Map<String, WhiteList> whiteListMap;
@@ -161,32 +161,23 @@ public class Job {
 		}
 	}
 
-	public Set<WhiteListedConcept> getWhiteList(String codeSystemShortname) {
+	public Set<WhiteListedConcept> getWhiteListConcepts(String codeSystemShortname) {
 		if (whiteListMap.containsKey(codeSystemShortname)) {
 			return whiteListMap.get(codeSystemShortname).getConcepts();
 		}
 		return new HashSet<>();
 	}
+	
+	public WhiteList getWhiteList(String codeSystemShortname) {
+		return whiteListMap.get(codeSystemShortname);
+	}
 
-	public void setWhiteList(String codeSystemShortname, Set<WhiteListedConcept> whiteListSet) {
-		//Ensure we set the parent link before saving
-		if (whiteListSet != null) {
+	public void setWhiteList(String codeSystemShortname, WhiteList whiteList) {
+		if (whiteList != null) {
 			if (this.whiteListMap == null) {
 				this.whiteListMap = new HashMap<>();
 			}
-			
-			if (this.whiteListMap.get(codeSystemShortname) == null) {
-				this.whiteListMap.put(codeSystemShortname, new WhiteList(codeSystemShortname, whiteListSet));
-			} else {
-				this.whiteListMap.get(codeSystemShortname).getConcepts().retainAll(whiteListSet);
-				this.whiteListMap.get(codeSystemShortname).getConcepts().addAll(whiteListSet);
-			}
-			
-			//To keep hibernate happy, we need to tell each concept in this list about its parent
-			WhiteList whiteList = this.whiteListMap.get(codeSystemShortname);
-			for (WhiteListedConcept concept : whiteListSet) {
-				concept.setWhiteList(whiteList);
-			}
+			this.whiteListMap.put(codeSystemShortname, whiteList);
 		} else {
 			this.whiteListMap.remove(codeSystemShortname);
 		}

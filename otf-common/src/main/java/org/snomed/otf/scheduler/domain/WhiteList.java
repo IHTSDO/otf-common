@@ -10,30 +10,30 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class WhiteList {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue
 	@JsonIgnore
-	private long id;
+	private Long id;
 	
 	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
 	String codeSystemShortname;
 	
-	@ElementCollection(fetch = FetchType.EAGER)
-	@OneToMany(mappedBy = "whiteList", cascade = CascadeType.ALL, orphanRemoval = true)
+	@ElementCollection//(fetch = FetchType.EAGER)
+	@OneToMany(mappedBy = "id.whiteListId", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
 	Set<WhiteListedConcept> concepts;
 	
 	WhiteList() {
 	}
 	
-	WhiteList (String codeSystemShortname, Set<WhiteListedConcept> concepts) {
+	public WhiteList (String codeSystemShortname, Set<WhiteListedConcept> concepts) {
 		this.codeSystemShortname = codeSystemShortname;
 		this.concepts = concepts;
 	}
 
-	public long getId() {
+	public Long getId() {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 

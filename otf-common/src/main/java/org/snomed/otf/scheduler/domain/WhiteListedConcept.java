@@ -1,66 +1,65 @@
 package org.snomed.otf.scheduler.domain;
 
-
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class WhiteListedConcept {
 
-	@ManyToOne
-	@JsonIgnore //Will be evident in JSON from structure, causes infinite recursion if included explicitly.
-	WhiteList whiteList;
-	
-	@Id
-	String sctId;
+	@EmbeddedId
+	@JsonIgnore
+	WhiteListedConceptId id;
 	
 	String fsn;
-	
+
 	public String getFsn() {
 		return fsn;
 	}
 	
 	public String getSctId() {
-		return sctId;
+		return id.getSctId();
 	}
 
 	public void setSctId(String sctId) {
-		this.sctId = sctId;
+		if (id == null) {
+			id = new WhiteListedConceptId();
+		}
+		id.setSctId(sctId);
 	}
 
 	public void setFsn(String fsn) {
 		this.fsn = fsn;
 	}
 	
+	public WhiteListedConceptId getId() {
+		return id;
+	}
 	
 	@Override
 	public boolean equals (Object obj) {
 		if (obj instanceof WhiteListedConcept) {
-			WhiteListedConcept other = (WhiteListedConcept)obj;
-			return this.sctId.equals(other.sctId);
+			return this.id.equals(((WhiteListedConcept)obj).getId());
 		}
 		return false;
 	}
 	
 	@Override
 	public int hashCode() {
-		return sctId.hashCode();
+		return id.hashCode();
 	}
 	
 	@Override
 	public String toString() {
-		return getSctId() + "|" + fsn + "|";
-	}
-
-	public WhiteList getWhiteList() {
-		return whiteList;
+		return id.getSctId() + "|" + fsn + "| - " + id.getWhiteListId();
 	}
 
 	public void setWhiteList(WhiteList whiteList) {
-		this.whiteList = whiteList;
+		if (id == null) {
+			id = new WhiteListedConceptId();
+		}
+		id.setWhiteList(whiteList);
 	}
 	
 }
