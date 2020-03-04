@@ -40,6 +40,7 @@ public class Job {
 	@ElementCollection//(fetch = FetchType.EAGER)
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
 	@MapKey(name = "codeSystemShortname")
+	@JsonIgnore
 	Map<String, WhiteList> whiteListMap;
 	
 	public Job() {
