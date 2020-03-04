@@ -27,11 +27,13 @@ public class TraceabilityServiceClient {
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
+	private final String serverUrl;
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
 	
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
+		this.serverUrl = serverUrl;
 		headers.add("Cookie", cookie);
 		headers.add("Accept", CONTENT_TYPE);
 		
@@ -52,6 +54,11 @@ public class TraceabilityServiceClient {
 	}
 	
 	public List<Activity> getConceptActivity(List<Long> conceptIds, String commentFilter, ActivityType activityType) {
+		if (conceptIds == null || conceptIds.size() == 0) {
+			logger.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
+			return new ArrayList<>();
+		}
+		
 		String url = "/traceability-service/activitiesBulk?activityType=" + activityType + 
 				"&commentFilter="+commentFilter;
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIds, headers);
@@ -68,6 +75,7 @@ public class TraceabilityServiceClient {
 			activities.addAll(response.getBody().getContent());
 			isLast = response.getBody().isLast();
 		}
+		logger.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
 		return activities;
 	}
 
