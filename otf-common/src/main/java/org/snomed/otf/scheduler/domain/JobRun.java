@@ -129,6 +129,8 @@ public class JobRun {
 		return jobName + " (id: " + id + ")"
 				+ " for user '" + user + "' in status: "
 				+ status 
+				+ " with codeSystem '" + codeSystemShortname +"'"
+				+ " in project '" + project + "'"
 				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
 	}
 	
