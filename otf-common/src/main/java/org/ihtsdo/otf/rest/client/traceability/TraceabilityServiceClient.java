@@ -30,6 +30,7 @@ public class TraceabilityServiceClient {
 	private final String serverUrl;
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
+	private final int DATA_SIZE = 500;
 	
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
@@ -38,13 +39,12 @@ public class TraceabilityServiceClient {
 		headers.add("Accept", CONTENT_TYPE);
 		
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(serverUrl)
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
-		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
+ 		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
 			@Override
 			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
 				request.getHeaders().addAll(headers);
@@ -59,7 +59,7 @@ public class TraceabilityServiceClient {
 			return new ArrayList<>();
 		}
 		
-		String url = "/traceability-service/activitiesBulk?activityType=" + activityType + 
+		String url = this.serverUrl + "traceability-service/activitiesBulk?activityType=" + activityType + 
 				"&commentFilter="+commentFilter;
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIds, headers);
 		List<Activity> activities = new ArrayList<>();
@@ -68,7 +68,7 @@ public class TraceabilityServiceClient {
 		ParameterizedTypeReference<RestResponsePage<Activity>> responseType = new ParameterizedTypeReference<RestResponsePage<Activity>>() { };
 		while (!isLast) {
 			ResponseEntity<RestResponsePage<Activity>> response = restTemplate.exchange(
-					url + "&offset=" + offset,
+					url + "&offset=" + offset + "&size=" + DATA_SIZE,
 					HttpMethod.POST,
 					requestEntity,
 					responseType);
