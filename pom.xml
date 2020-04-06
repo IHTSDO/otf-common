@@ -21,7 +21,7 @@
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j.version>1.7.29</slf4j.version>
-		<spring.version>5.2.1.RELEASE</spring.version>
+		<spring.version>5.2.5.RELEASE</spring.version>
 		<spring-cloud.version>1.2.2.RELEASE</spring-cloud.version>
 	</properties>
 
