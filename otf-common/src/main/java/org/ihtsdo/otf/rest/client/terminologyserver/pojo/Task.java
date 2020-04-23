@@ -8,6 +8,10 @@ import com.google.gson.annotations.Expose;
 
 public class Task {
 	
+	public static int TASK_SEQUENCE = 0;
+	
+	int uniqueTaskId;
+	
 	@Expose
 	String key;
 	
@@ -27,6 +31,7 @@ public class Task {
 	public Task(IBatch batch, String[] author_reviewer) {
 		this.batch = batch;
 		setAuthorReviewer(author_reviewer);
+		uniqueTaskId = ++TASK_SEQUENCE;
 	}
 	
 	void setAuthorReviewer(String[] author_reviewer) {
@@ -150,6 +155,14 @@ public class Task {
 
 	public void remove(Component removeMe) {
 		components.remove(removeMe);
+	}
+	
+	public boolean equals(Object other) {
+		if (other instanceof Task) {
+			Task t2 = ((Task)other);
+			return uniqueTaskId == t2.uniqueTaskId;
+		}
+		return false;
 	}
 
 }
