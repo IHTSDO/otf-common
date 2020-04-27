@@ -3,13 +3,13 @@ package org.ihtsdo.otf.rest.client.terminologyserver;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class SnowOwlRestUrlHelper {
+public class SnowstormRestUrlHelper {
 
 	private static final String MAIN = "MAIN";
 
 	private final String snomedUrl;
 
-	public SnowOwlRestUrlHelper(String snowOwlUrl) {
+	public SnowstormRestUrlHelper(String snowOwlUrl) {
 		this.snomedUrl = removeTrailingSlash(snowOwlUrl);
 	}
 

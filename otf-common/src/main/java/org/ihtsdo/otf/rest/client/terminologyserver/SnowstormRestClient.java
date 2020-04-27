@@ -52,10 +52,11 @@ import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 
-public class SnowOwlRestClient {
+// TODO: This whole class is a mess and needs refactoring.
+public class SnowstormRestClient {
 
 	private static final String COOKIE = "Cookie";
-	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
+	public static final String JSON_CONTENT_TYPE = "application/json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
@@ -72,9 +73,9 @@ public class SnowOwlRestClient {
 		PUBLISHED, UNPUBLISHED, FEEDBACK_FIX
 	}
 
-	private final RestyHelper resty;
 	private String singleSignOnCookie;
 	private RestTemplate restTemplate;
+	private final RestyHelper resty;
 
 	private String reasonerId = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
 	private boolean useExternalClassificationService = true;
@@ -88,33 +89,29 @@ public class SnowOwlRestClient {
 	private static final int INDENT = 2;
 	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
 	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
-	private final SnowOwlRestUrlHelper urlHelper;
+	private final SnowstormRestUrlHelper urlHelper;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final int BATCH_SIZE = 200;
 	private final int MAX_PAGE_SIZE = 10_000;
 
-	private SnowOwlRestClient(String snowOwlUrl) {
-		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
-		urlHelper = new SnowOwlRestUrlHelper(snowOwlUrl);
+	private SnowstormRestClient(String snowstormUrl) {
+		urlHelper = new SnowstormRestUrlHelper(snowstormUrl);
 		gson = new GsonBuilder().setPrettyPrinting().create();
 		restTemplate = new RestTemplate();
+		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 	}
 
-	public SnowOwlRestClient(String snowOwlUrl, String singleSignOnCookie) {
-		this(snowOwlUrl);
+	public SnowstormRestClient(String snowstormUrl, String singleSignOnCookie) {
+		this(snowstormUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
-		resty.withHeader(COOKIE, singleSignOnCookie);
 	}
 
-	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword) {
-		this(snowOwlUrl);
-		resty.authenticate(snowOwlUrl, apiUsername, apiPassword.toCharArray());
+	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
+		this(snowstormUrl);
 	}
 	
-	public SnowOwlRestClient(String snowOwlUrl, String apiUsername, String apiPassword, String userName, Set<String> userRoles) {
-		this(snowOwlUrl, apiUsername, apiPassword);
-		resty.withHeader("X-AUTH-username", userName);
-		resty.withHeader("X-AUTH-roles", COMMA_SEPARATED_JOINER.join(userRoles));
+	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword, String userName, Set<String> userRoles) {
+		this(snowstormUrl, apiUsername, apiPassword);
 	}
 
 	/**
@@ -458,7 +455,7 @@ public class SnowOwlRestClient {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("parent", parentBranch);
 			jsonObject.put("name", newBranchName);
-			resty.json(urlHelper.getBranchesUrl(), RestyHelper.content((jsonObject), SNOWOWL_CONTENT_TYPE));
+			resty.json(urlHelper.getBranchesUrl(), RestyHelper.content((jsonObject), JSON_CONTENT_TYPE));
 		} catch (Exception e) {
 			throw new RestClientException("Failed to create branch " + newBranchName + ", parent branch " + parentBranch, e);
 		}
@@ -571,8 +568,8 @@ public class SnowOwlRestClient {
 			params.put("branchPath", branchPath);
 			params.put("languageRefSetId", US_EN_LANG_REFSET);
 			params.put("createVersions", "false");
-			resty.withHeader("Accept", SNOWOWL_CONTENT_TYPE);
-			JSONResource json = resty.json(urlHelper.getImportsUrl(), RestyHelper.content(params, SNOWOWL_CONTENT_TYPE));
+			resty.withHeader("Accept", JSON_CONTENT_TYPE);
+			JSONResource json = resty.json(urlHelper.getImportsUrl(), RestyHelper.content(params, JSON_CONTENT_TYPE));
 			String location = json.getUrlConnection().getHeaderField("Location");
 			String importId = location.substring(location.lastIndexOf("/") + 1);
 
@@ -598,7 +595,7 @@ public class SnowOwlRestClient {
 			}
 
 			// Poll import entity until complete or times-out
-			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
+			logger.info("Snowstorm processing import, this will probably take a few minutes. (Import ID '{}')", importId);
 			return waitForStatus(urlHelper.getImportUrl(importId), getTimeoutDate(importTimeoutMinutes), ProcessingStatus.COMPLETED,
 					"import");
 		} catch (Exception e) {
@@ -619,7 +616,7 @@ public class SnowOwlRestClient {
 			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId).put("useExternalService", useExternalClassificationService);
 			String classifyURL = urlHelper.getClassificationsUrl(branchPath);
 			logger.info("Initiating classification via {}, reasonerId:{}, useExternalService:{}", classifyURL, reasonerId, useExternalClassificationService);
-			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_CONTENT_TYPE);
+			JSONResource jsonResponse = resty.json(classifyURL, requestJson, JSON_CONTENT_TYPE);
 			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (classificationLocation == null) {
 				String errorMsg = "Failed to recover classificationLocation.  Call to " 
@@ -658,7 +655,7 @@ public class SnowOwlRestClient {
 	
 	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws RestClientException, InterruptedException {
 		String classificationLocation = results.getClassificationLocation();
-		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
+		logger.info("Classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
 			// Fetch classification to get result summary flags.
@@ -671,7 +668,7 @@ public class SnowOwlRestClient {
 			classificationResults.setClassificationLocation(classificationLocation);
 			return classificationResults;
 		} else {
-			throw new RestClientException("Classification failed, see SnowOwl logs for details.");
+			throw new RestClientException("Classification failed, see logs for details.");
 		}
 	}
 
@@ -708,7 +705,7 @@ public class SnowOwlRestClient {
 		try {
 			logger.debug("Saving classification via {}", classifyURL);
 			JSONObject jsonObj = new JSONObject().put("status", "SAVED");
-			resty.put(classifyURL, jsonObj, SNOWOWL_CONTENT_TYPE);
+			resty.put(classifyURL, jsonObj, JSON_CONTENT_TYPE);
 			//We'll wait the same time for saving as we do for the classification
 			boolean savingCompleted = waitForStatus(classifyURL, getTimeoutDate(classificationTimeoutMinutes),
 					ProcessingStatus.SAVED, "classifier result saving");
@@ -875,29 +872,9 @@ public class SnowOwlRestClient {
 			JSONObject params = new JSONObject();
 			params.put("source", sourcePath);
 			params.put("target", targetPath);
-			resty.put(urlHelper.getMergesUrl(), params, SNOWOWL_CONTENT_TYPE);
+			resty.put(urlHelper.getMergesUrl(), params, JSON_CONTENT_TYPE);
 		} catch (Exception e) {
 			throw new RestClientException("Failed to merge " + sourcePath + " to " + targetPath, e);
-		}
-	}
-
-	/**
-	 * Warning - this only works when the SnowOwl log is on the same machine.
-	 */
-	public InputStream getLogStream() throws FileNotFoundException {
-		return new FileInputStream(logPath);
-	}
-
-	/**
-	 * Returns stream from rollover log or null.
-	 * @return
-	 * @throws FileNotFoundException
-	 */
-	public InputStream getRolloverLogStream() throws FileNotFoundException {
-		if (new File(rolloverLogPath).isFile()) {
-			return new FileInputStream(rolloverLogPath);
-		} else {
-			return null;
 		}
 	}
 
