@@ -2,6 +2,10 @@ package us.monoid.web;
 
 import java.net.URLConnection;
 
+/**
+ * Please replace use of Resty and RestyMod with the Spring Framework RestTemplate.
+ */
+@Deprecated
 public class RestyMod extends Resty {
 
 	public RestyMod(Option... someOptions) {
@@ -14,3 +18,4 @@ public class RestyMod extends Resty {
 		con.setRequestProperty("User-Agent", userAgent);
 	}
 }
+

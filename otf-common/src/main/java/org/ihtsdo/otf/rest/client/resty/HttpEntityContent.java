@@ -8,6 +8,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
 
+/**
+ * Please replace use of Resty and RestyMod with the Spring Framework RestTemplate.
+ */
+@Deprecated
 public class HttpEntityContent extends AbstractContent {
 
 	private final HttpEntity httpEntity;

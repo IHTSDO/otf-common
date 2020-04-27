@@ -8,6 +8,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 
+/**
+ * Please replace use of Resty and RestyMod with the Spring Framework RestTemplate.
+ */
+@Deprecated
 public class RestyHelper extends RestyMod {
 
 	public static final String UTF_8 = "UTF-8";

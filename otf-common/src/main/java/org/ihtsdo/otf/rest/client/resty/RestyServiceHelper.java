@@ -11,6 +11,10 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 
+/**
+ * Please replace use of Resty and RestyMod with the Spring Framework RestTemplate.
+ */
+@Deprecated
 public class RestyServiceHelper {
 
 	public static final String HTTP_STATUS = "HTTPStatus";
