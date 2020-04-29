@@ -2,6 +2,8 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.List;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
+
 public abstract class Component {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
@@ -26,6 +28,8 @@ public abstract class Component {
 	public abstract ComponentType getComponentType();
 	
 	public abstract String[] toRF2() throws Exception;
+	
+	protected boolean isDirty = false;
 	
 	public void addIssue(String issue) {
 		if (this.issues == null) {
@@ -78,5 +82,14 @@ public abstract class Component {
 		if (!this.getModuleId().equals(other.getModuleId())) {
 			differences.add("ModuleId different in " + name + ": " + this.getModuleId() + " vs " + other.getModuleId());
 		}
+	}
+
+
+	public void setDirty() {
+		this.isDirty = true;
+	}
+	
+	public boolean isDirty() {
+		return this.isDirty;
 	}
 }
