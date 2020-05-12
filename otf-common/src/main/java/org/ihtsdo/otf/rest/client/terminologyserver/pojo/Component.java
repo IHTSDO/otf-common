@@ -2,8 +2,6 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.List;
 
-import org.ihtsdo.otf.exception.TermServerScriptException;
-
 public abstract class Component {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
@@ -87,6 +85,10 @@ public abstract class Component {
 
 	public void setDirty() {
 		this.isDirty = true;
+	}
+	
+	public void setClean() {
+		this.isDirty = false;
 	}
 	
 	public boolean isDirty() {
