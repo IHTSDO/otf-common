@@ -11,7 +11,7 @@ public final class MembersResponse {
 
 	private long total;
 
-	private Set<RefsetPojo> items;
+	private Set<RefsetMemberPojo> items;
 
     public MembersResponse() {}
 
@@ -23,11 +23,11 @@ public final class MembersResponse {
 		this.total = total;
 	}
 
-	public Set<RefsetPojo> getItems() {
+	public Set<RefsetMemberPojo> getItems() {
 		return items;
 	}
 
-	public void setItems(Set<RefsetPojo> items) {
+	public void setItems(Set<RefsetMemberPojo> items) {
 		this.items = items;
 	}
 

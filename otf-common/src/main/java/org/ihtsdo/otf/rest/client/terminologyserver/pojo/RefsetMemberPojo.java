@@ -3,9 +3,11 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({"effectiveTime", "released", "releasedEffectiveTime", "active", "moduleId", "refsetId", "referencedComponentId", "additionalFields"})
+@JsonPropertyOrder({"id", "effectiveTime", "released", "releasedEffectiveTime", "active", "moduleId", "refsetId", "referencedComponentId", "additionalFields"})
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RefsetPojo {
+public class RefsetMemberPojo {
+
+	private String id;
 
 	private boolean released;
 
@@ -23,7 +25,11 @@ public class RefsetPojo {
 
 	private AdditionalFieldsPojo additionalFields;
 
-	public RefsetPojo() {}
+	public RefsetMemberPojo() {}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	public String getEffectiveTime() {
 		return effectiveTime;
@@ -91,7 +97,7 @@ public class RefsetPojo {
 
 	@Override
 	public String toString() {
-		return "RefsetPojo [released=" + released + ", effectiveTime=" + effectiveTime + ", active=" + active
+		return "RefsetPojo [id=" + id + ", released=" + released + ", effectiveTime=" + effectiveTime + ", active=" + active
 				+ ", moduleId=" + moduleId + ", releasedEffectiveTime=" + releasedEffectiveTime
 				+ ", referencedComponentId=" + referencedComponentId + ", refsetId=" + refsetId + ", additionalFields="
 				+ additionalFields + "]";
