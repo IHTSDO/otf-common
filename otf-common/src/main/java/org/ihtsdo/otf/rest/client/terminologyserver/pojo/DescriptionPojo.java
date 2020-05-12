@@ -2,11 +2,84 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DescriptionPojo implements SnomedComponent {
+
+	public enum Type {
+
+		FSN("900000000000003001"), SYNONYM("900000000000013009"), TEXT_DEFINITION("900000000000550004");
+
+		private final String conceptId;
+
+		Type(String conceptId) {
+			this.conceptId = conceptId;
+		}
+
+		public static Type fromConceptId(String conceptId) {
+			for (Type value : values()) {
+				if (value.conceptId.equals(conceptId)) {
+					return value;
+				}
+			}
+			return null;
+		}
+
+		public String getConceptId() {
+			return conceptId;
+		}
+	}
+
+	public enum CaseSignificance {
+
+		ENTIRE_TERM_CASE_SENSITIVE("900000000000017005"), CASE_INSENSITIVE("900000000000448009"), INITIAL_CHARACTER_CASE_INSENSITIVE("900000000000020002");
+
+		private final String conceptId;
+
+		CaseSignificance(String conceptId) {
+			this.conceptId = conceptId;
+		}
+
+		public static CaseSignificance fromConceptId(String conceptId) {
+			for (CaseSignificance value : values()) {
+				if (value.conceptId.equals(conceptId)) {
+					return value;
+				}
+			}
+			return null;
+		}
+
+		public String getConceptId() {
+			return conceptId;
+		}
+	}
+
+	public enum Acceptability {
+
+		ACCEPTABLE("900000000000549004"), PREFERRED("900000000000548007");
+
+		private final String conceptId;
+
+		Acceptability(String conceptId) {
+			this.conceptId = conceptId;
+		}
+
+		public static Acceptability fromConceptId(String conceptId) {
+			for (Acceptability value : values()) {
+				if (value.conceptId.equals(conceptId)) {
+					return value;
+				}
+			}
+			return null;
+		}
+
+		public String getConceptId() {
+			return conceptId;
+		}
+	}
 
 	private String descriptionId;
 
@@ -24,11 +97,11 @@ public class DescriptionPojo implements SnomedComponent {
 
 	private String lang;
 
-	private String type;
+	private Type type;
 
-	private String caseSignificance;
+	private CaseSignificance caseSignificance;
 
-	private Map<String, String> acceptabilityMap;
+	private Map<String, Acceptability> acceptabilityMap;
 
 	private String inactivationIndicator;
 	
@@ -106,27 +179,27 @@ public class DescriptionPojo implements SnomedComponent {
 		this.lang = lang;
 	}
 
-	public String getType() {
+	public Type getType() {
 		return type;
 	}
 
-	public void setType(String type) {
+	public void setType(Type type) {
 		this.type = type;
 	}
 
-	public String getCaseSignificance() {
+	public CaseSignificance getCaseSignificance() {
 		return caseSignificance;
 	}
 
-	public void setCaseSignificance(String caseSignificance) {
+	public void setCaseSignificance(CaseSignificance caseSignificance) {
 		this.caseSignificance = caseSignificance;
 	}
 
-	public Map<String, String> getAcceptabilityMap() {
+	public Map<String, Acceptability> getAcceptabilityMap() {
 		return acceptabilityMap;
 	}
 
-	public void setAcceptabilityMap(Map<String, String> acceptabilityMap) {
+	public void setAcceptabilityMap(Map<String, Acceptability> acceptabilityMap) {
 		this.acceptabilityMap = acceptabilityMap;
 	}
 
@@ -139,88 +212,27 @@ public class DescriptionPojo implements SnomedComponent {
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((acceptabilityMap == null) ? 0 : acceptabilityMap.hashCode());
-		result = prime * result + (active ? 1231 : 1237);
-		result = prime * result + ((caseSignificance == null) ? 0 : caseSignificance.hashCode());
-		result = prime * result + ((conceptId == null) ? 0 : conceptId.hashCode());
-		result = prime * result + ((descriptionId == null) ? 0 : descriptionId.hashCode());
-		result = prime * result + ((effectiveTime == null) ? 0 : effectiveTime.hashCode());
-		result = prime * result + ((inactivationIndicator == null) ? 0 : inactivationIndicator.hashCode());
-		result = prime * result + ((lang == null) ? 0 : lang.hashCode());
-		result = prime * result + ((moduleId == null) ? 0 : moduleId.hashCode());
-		result = prime * result + (released ? 1231 : 1237);
-		result = prime * result + ((term == null) ? 0 : term.hashCode());
-		result = prime * result + ((type == null) ? 0 : type.hashCode());
-		return result;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		DescriptionPojo that = (DescriptionPojo) o;
+		return active == that.active &&
+				released == that.released &&
+				Objects.equals(descriptionId, that.descriptionId) &&
+				Objects.equals(effectiveTime, that.effectiveTime) &&
+				Objects.equals(term, that.term) &&
+				Objects.equals(conceptId, that.conceptId) &&
+				Objects.equals(moduleId, that.moduleId) &&
+				Objects.equals(lang, that.lang) &&
+				Objects.equals(type, that.type) &&
+				Objects.equals(caseSignificance, that.caseSignificance) &&
+				Objects.equals(acceptabilityMap, that.acceptabilityMap) &&
+				Objects.equals(inactivationIndicator, that.inactivationIndicator);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		DescriptionPojo other = (DescriptionPojo) obj;
-		if (acceptabilityMap == null) {
-			if (other.acceptabilityMap != null)
-				return false;
-		} else if (!acceptabilityMap.equals(other.acceptabilityMap))
-			return false;
-		if (active != other.active)
-			return false;
-		if (caseSignificance == null) {
-			if (other.caseSignificance != null)
-				return false;
-		} else if (!caseSignificance.equals(other.caseSignificance))
-			return false;
-		if (conceptId == null) {
-			if (other.conceptId != null)
-				return false;
-		} else if (!conceptId.equals(other.conceptId))
-			return false;
-		if (descriptionId == null) {
-			if (other.descriptionId != null)
-				return false;
-		} else if (!descriptionId.equals(other.descriptionId))
-			return false;
-		if (effectiveTime == null) {
-			if (other.effectiveTime != null)
-				return false;
-		} else if (!effectiveTime.equals(other.effectiveTime))
-			return false;
-		if (inactivationIndicator == null) {
-			if (other.inactivationIndicator != null)
-				return false;
-		} else if (!inactivationIndicator.equals(other.inactivationIndicator))
-			return false;
-		if (lang == null) {
-			if (other.lang != null)
-				return false;
-		} else if (!lang.equals(other.lang))
-			return false;
-		if (moduleId == null) {
-			if (other.moduleId != null)
-				return false;
-		} else if (!moduleId.equals(other.moduleId))
-			return false;
-		if (released != other.released)
-			return false;
-		if (term == null) {
-			if (other.term != null)
-				return false;
-		} else if (!term.equals(other.term))
-			return false;
-		if (type == null) {
-			if (other.type != null)
-				return false;
-		} else if (!type.equals(other.type))
-			return false;
-		return true;
+	public int hashCode() {
+		return Objects.hash(descriptionId, active, effectiveTime, released, term, conceptId, moduleId, lang, type, caseSignificance, acceptabilityMap, inactivationIndicator);
 	}
 
 	@Override
