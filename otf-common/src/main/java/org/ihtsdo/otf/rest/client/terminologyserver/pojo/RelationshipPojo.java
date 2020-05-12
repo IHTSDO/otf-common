@@ -3,7 +3,7 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RelationshipPojo {
+public class RelationshipPojo implements SnomedComponent {
 
 	private String relationshipId;
 
@@ -37,6 +37,11 @@ public class RelationshipPojo {
 		this.type = new ConceptMiniPojo(typeId);
 		this.target = new ConceptMiniPojo(targetId);
 		this.characteristicType = characteristicType;
+	}
+
+	@Override
+	public String getId() {
+		return relationshipId;
 	}
 
 	public String getRelationshipId() {

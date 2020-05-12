@@ -6,7 +6,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DescriptionPojo {
+public class DescriptionPojo implements SnomedComponent {
 
 	private String descriptionId;
 
@@ -35,6 +35,11 @@ public class DescriptionPojo {
 	public DescriptionPojo() {
 		active = true;
 		acceptabilityMap = new HashMap<>();
+	}
+
+	@Override
+	public String getId() {
+		return descriptionId;
 	}
 
 	public String getDescriptionId() {

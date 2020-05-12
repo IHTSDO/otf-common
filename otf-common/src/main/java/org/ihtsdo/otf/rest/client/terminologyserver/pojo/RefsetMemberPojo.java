@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({"id", "effectiveTime", "released", "releasedEffectiveTime", "active", "moduleId", "refsetId", "referencedComponentId", "additionalFields"})
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RefsetMemberPojo {
+public class RefsetMemberPojo implements SnomedComponent {
 
 	private String id;
 
@@ -26,6 +26,11 @@ public class RefsetMemberPojo {
 	private AdditionalFieldsPojo additionalFields;
 
 	public RefsetMemberPojo() {}
+
+	@Override
+	public String getId() {
+		return id;
+	}
 
 	public void setId(String id) {
 		this.id = id;

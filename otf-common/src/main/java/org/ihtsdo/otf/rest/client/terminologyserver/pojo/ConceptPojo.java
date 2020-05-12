@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({"conceptId", "effectiveTime", "active", "released", "inactivationIndicator", "moduleId", "definitionStatus",
 		"descriptions", "classAxioms", "gciAxioms", "relationships"})
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConceptPojo {
+public class ConceptPojo implements SnomedComponent {
 
 	private String conceptId;
 
@@ -39,6 +39,11 @@ public class ConceptPojo {
 	
 	public ConceptPojo() {
 		active = true;
+	}
+
+	@Override
+	public String getId() {
+		return conceptId;
 	}
 
 	public String getFsn() {
