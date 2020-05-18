@@ -13,6 +13,58 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ConceptPojo implements SnomedComponent {
 
+	public enum InactivationIndicator {
+
+		DUPLICATE("900000000000482003"), OUTDATED("900000000000483008"), AMBIGUOUS("900000000000484002"), ERRONEOUS("900000000000485001"), LIMITED("900000000000486000"),
+		MOVED_ELSEWHERE("900000000000487009"), PENDING_MOVE("900000000000492006"), INAPPROPRIATE("900000000000494007"), CONCEPT_NON_CURRENT("900000000000495008"),
+		NONCONFORMANCE_TO_EDITORIAL_POLICY("723277005"), NOT_SEMANTICALLY_EQUIVALENT("723278000");
+
+		private final String conceptId;
+
+		InactivationIndicator(String conceptId) {
+			this.conceptId = conceptId;
+		}
+
+		public static InactivationIndicator fromConceptId(String conceptId) {
+			for (InactivationIndicator value : values()) {
+				if (value.conceptId.equals(conceptId)) {
+					return value;
+				}
+			}
+			return null;
+		}
+
+		public String getConceptId() {
+			return conceptId;
+		}
+	}
+
+	public enum HistoricalAssociation {
+
+		POSSIBLY_EQUIVALENT_TO("900000000000523009"), MOVED_TO("900000000000524003"), MOVED_FROM("900000000000525002"), REPLACED_BY("900000000000526001"), SAME_AS("900000000000527005"),
+		WAS_A("900000000000528000"), SIMILAR_TO("900000000000529008"), ALTERNATIVE("900000000000530003"), REFERS_TO("900000000000531004");
+
+		private final String conceptId;
+
+		HistoricalAssociation(String conceptId) {
+			this.conceptId = conceptId;
+		}
+
+		public static HistoricalAssociation fromConceptId(String conceptId) {
+			for (HistoricalAssociation value : values()) {
+				if (value.conceptId.equals(conceptId)) {
+					return value;
+				}
+			}
+			return null;
+		}
+
+
+		public String getConceptId() {
+			return conceptId;
+		}
+	}
+
 	private String conceptId;
 
 	private String effectiveTime;
@@ -25,9 +77,9 @@ public class ConceptPojo implements SnomedComponent {
 
 	private DefinitionStatus definitionStatus;
 
-	private String inactivationIndicator;
+	private InactivationIndicator inactivationIndicator;
 
-	private Map<String, String[]> associationTargets;
+	private Map<HistoricalAssociation, Set<String>> associationTargets;
 
 	private Set<DescriptionPojo> descriptions;
 	
@@ -126,19 +178,19 @@ public class ConceptPojo implements SnomedComponent {
 		this.definitionStatus = definitionStatus;
 	}
 
-	public String getInactivationIndicator() {
+	public InactivationIndicator getInactivationIndicator() {
 		return inactivationIndicator;
 	}
 
-	public void setInactivationIndicator(String inactivationIndicator) {
+	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
 	}
 
-	public Map<String, String[]> getAssociationTargets() {
+	public Map<HistoricalAssociation, Set<String>> getAssociationTargets() {
 		return associationTargets;
 	}
 
-	public void setAssociationTargets(Map<String, String[]> associationTargets) {
+	public void setAssociationTargets(Map<HistoricalAssociation, Set<String>> associationTargets) {
 		this.associationTargets = associationTargets;
 	}
 

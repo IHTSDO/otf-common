@@ -3,6 +3,7 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -103,8 +104,10 @@ public class DescriptionPojo implements SnomedComponent {
 
 	private Map<String, Acceptability> acceptabilityMap;
 
-	private String inactivationIndicator;
-	
+	private ConceptPojo.InactivationIndicator inactivationIndicator;
+
+	private Map<ConceptPojo.HistoricalAssociation, Set<String>> associationTargets;
+
 	public DescriptionPojo() {
 		active = true;
 		acceptabilityMap = new HashMap<>();
@@ -203,12 +206,20 @@ public class DescriptionPojo implements SnomedComponent {
 		this.acceptabilityMap = acceptabilityMap;
 	}
 
-	public String getInactivationIndicator() {
+	public ConceptPojo.InactivationIndicator getInactivationIndicator() {
 		return inactivationIndicator;
 	}
 
-	public void setInactivationIndicator(String inactivationIndicator) {
+	public void setInactivationIndicator(ConceptPojo.InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
+	}
+
+	public Map<ConceptPojo.HistoricalAssociation, Set<String>> getAssociationTargets() {
+		return associationTargets;
+	}
+
+	public void setAssociationTargets(Map<ConceptPojo.HistoricalAssociation, Set<String>> associationTargets) {
+		this.associationTargets = associationTargets;
 	}
 
 	@Override
@@ -227,12 +238,13 @@ public class DescriptionPojo implements SnomedComponent {
 				Objects.equals(type, that.type) &&
 				Objects.equals(caseSignificance, that.caseSignificance) &&
 				Objects.equals(acceptabilityMap, that.acceptabilityMap) &&
-				Objects.equals(inactivationIndicator, that.inactivationIndicator);
+				Objects.equals(inactivationIndicator, that.inactivationIndicator) &&
+				Objects.equals(associationTargets, that.associationTargets);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(descriptionId, active, effectiveTime, released, term, conceptId, moduleId, lang, type, caseSignificance, acceptabilityMap, inactivationIndicator);
+		return Objects.hash(descriptionId, active, effectiveTime, released, term, conceptId, moduleId, lang, type, caseSignificance, acceptabilityMap, inactivationIndicator, associationTargets);
 	}
 
 	@Override
@@ -250,6 +262,7 @@ public class DescriptionPojo implements SnomedComponent {
 				", caseSignificance='" + caseSignificance + '\'' +
 				", acceptabilityMap=" + acceptabilityMap +
 				", inactivationIndicator='" + inactivationIndicator + '\'' +
+				", associationTargets='" + associationTargets + '\'' +
 				'}';
 	}
 }
