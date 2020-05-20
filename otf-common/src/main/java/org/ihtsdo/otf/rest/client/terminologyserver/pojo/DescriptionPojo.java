@@ -110,7 +110,15 @@ public class DescriptionPojo implements SnomedComponent {
 
 	public DescriptionPojo() {
 		active = true;
+		lang = "en";
+		type = Type.FSN;
+		caseSignificance = CaseSignificance.CASE_INSENSITIVE;
 		acceptabilityMap = new HashMap<>();
+	}
+
+	public DescriptionPojo(String term) {
+		this();
+		this.term = term;
 	}
 
 	@Override
@@ -122,8 +130,9 @@ public class DescriptionPojo implements SnomedComponent {
 		return descriptionId;
 	}
 
-	public void setDescriptionId(String descriptionId) {
+	public DescriptionPojo setDescriptionId(String descriptionId) {
 		this.descriptionId = descriptionId;
+		return this;
 	}
 
 	public boolean isActive() {

@@ -1,6 +1,5 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
-import java.util.Date;
 import java.util.Set;
 
 public class ConceptChangeBatchStatus {
@@ -16,6 +15,13 @@ public class ConceptChangeBatchStatus {
 	private Long startTime;
 	private Long endTime;
 	private Float secondsDuration;
+
+	public ConceptChangeBatchStatus() {
+	}
+
+	public ConceptChangeBatchStatus(Status status) {
+		this.status = status.toString();
+	}
 
 	public String getId() {
 		return id;

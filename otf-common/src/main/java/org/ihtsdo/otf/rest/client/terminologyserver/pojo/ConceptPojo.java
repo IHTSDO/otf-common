@@ -93,6 +93,11 @@ public class ConceptPojo implements SnomedComponent {
 		active = true;
 	}
 
+	public ConceptPojo(String conceptId) {
+		this();
+		this.conceptId = conceptId;
+	}
+
 	@Override
 	public String getId() {
 		return conceptId;
@@ -109,25 +114,28 @@ public class ConceptPojo implements SnomedComponent {
 		return null;
 	}
 
-	public void add(RelationshipPojo relationship) {
+	public ConceptPojo add(RelationshipPojo relationship) {
 		if (relationships == null) {
 			relationships = new HashSet<>();
 		}
 		relationships.add(relationship);
+		return this;
 	}
 
-	public void add(DescriptionPojo description) {
+	public ConceptPojo add(DescriptionPojo description) {
 		if (descriptions == null) {
 			descriptions = new HashSet<>();
 		}
 		descriptions.add(description);
+		return this;
 	}
 
-	public void addClassAxiom(AxiomPojo axiomPojo) {
+	public ConceptPojo addClassAxiom(AxiomPojo axiomPojo) {
 		if (classAxioms == null) {
 			classAxioms = new HashSet<>();
 		}
 		classAxioms.add(axiomPojo);
+		return this;
 	}
 
 	public String getConceptId() {
