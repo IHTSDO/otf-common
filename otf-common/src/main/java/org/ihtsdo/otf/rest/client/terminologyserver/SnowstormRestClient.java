@@ -103,10 +103,6 @@ public class SnowstormRestClient {
 		this(snowstormUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
 		resty.withHeader(COOKIE, singleSignOnCookie);
-		restTemplate = new RestTemplateBuilder(rt-> rt.getInterceptors().add((request, body, execution) -> {
-			request.getHeaders().add(COOKIE, singleSignOnCookie);
-			return execution.execute(request, body);
-		})).build();
 	}
 
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
@@ -822,7 +818,7 @@ public class SnowstormRestClient {
 		logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
 		RequestEntity<?> post = RequestEntity.post(urlHelper.getExportsUri())
 				.header(COOKIE, singleSignOnCookie)
-				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
 				.body(exportJsonString);
 		URI location = restTemplate.postForLocation(urlHelper.getExportsUrl(), post);
 		if (location == null) {
