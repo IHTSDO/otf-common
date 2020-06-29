@@ -78,6 +78,10 @@ public class SnowstormRestUrlHelper {
 		return snomedUrl + "/exports";
 	}
 
+	public URI getExportsUri() {
+		return getUri(getExportsUrl());
+	}
+
 	public String getMergesUrl() {
 		return snomedUrl + "/merges";
 	}

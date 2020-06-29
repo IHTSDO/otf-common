@@ -24,12 +24,11 @@ import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.Assert;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -49,7 +48,6 @@ import com.google.gson.stream.JsonWriter;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
-import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 
 // TODO: This whole class is a mess and needs refactoring.
@@ -104,6 +102,11 @@ public class SnowstormRestClient {
 	public SnowstormRestClient(String snowstormUrl, String singleSignOnCookie) {
 		this(snowstormUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
+		resty.withHeader(COOKIE, singleSignOnCookie);
+		restTemplate = new RestTemplateBuilder(rt-> rt.getInterceptors().add((request, body, execution) -> {
+			request.getHeaders().add(COOKIE, singleSignOnCookie);
+			return execution.execute(request, body);
+		})).build();
 	}
 
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
@@ -756,9 +759,9 @@ public class SnowstormRestClient {
 	public File export(String branchPath, String effectiveDate, Set<String> moduleIds, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 
-		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, moduleIds, exportCategory, exportType);
+		JSONObject exportConfigJson = prepareExportJSON(branchPath, effectiveDate, moduleIds, exportCategory, exportType);
 
-		String exportLocationURL = initiateExport(jsonObj.toString());
+		String exportLocationURL = initiateExport(exportConfigJson.toString());
 
 		return recoverExportedArchive(exportLocationURL);
 	}
@@ -816,33 +819,29 @@ public class SnowstormRestClient {
 	}
 
 	private String initiateExport(String exportJsonString) throws BusinessServiceException {
-		try {
-			logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
-			JSONResource jsonResponse = resty.json(urlHelper.getExportsUrl(), RestyHelper.contentJSON(exportJsonString));
-			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
-			if (exportLocationURLObj == null) {
-				throw new ProcessingException("Failed to obtain location of export, instead got status '" + jsonResponse.getHTTPStatus()
-						+ "' and body: " + jsonResponse.toObject().toString(INDENT));
-			}
-			return exportLocationURLObj.toString() + "/archive";
-		} catch (Exception e) {
-			// TODO Change this to catch JSONException once Resty no longer throws Exceptions
-			throw new ProcessingException("Failed to initiate export", e);
+		logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
+		RequestEntity<?> post = RequestEntity.post(urlHelper.getExportsUri())
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.body(exportJsonString);
+		URI location = restTemplate.postForLocation(urlHelper.getExportsUrl(), post);
+		if (location == null) {
+			throw new ProcessingException("Failed to obtain location of export with " + exportJsonString);
 		}
+		return location.toString() + "/archive";
 	}
 
-	private File recoverExportedArchive(String exportLocationURL) throws BusinessServiceException {
-		try {
-			logger.debug("Recovering exported archive from {}", exportLocationURL);
-			resty.withHeader("Accept", ANY_CONTENT_TYPE);
-			BinaryResource archiveResource = resty.bytes(exportLocationURL);
+	private File recoverExportedArchive(String exportLocationURL) {
+		logger.debug("Recovering exported archive from {}", exportLocationURL);
+		File exportedArchive = restTemplate.execute(exportLocationURL, HttpMethod.GET, null, responseExtractor -> {
 			File archive = File.createTempFile("ts-extract", ".zip");
-			archiveResource.save(archive);
-			logger.debug("Extract saved to {}", archive.getAbsolutePath());
-			return archive;
-		} catch (IOException e) {
-			throw new BusinessServiceException("Unable to recover exported archive from " + exportLocationURL, e);
-		}
+			try (OutputStream outputStream = new FileOutputStream(archive)) {
+				StreamUtils.copy(responseExtractor.getBody(), outputStream);
+				return archive;
+			}
+		});
+		logger.debug("Extract saved to {}", exportedArchive.getAbsolutePath());
+		return exportedArchive;
 	}
 
 	/**
