@@ -1,5 +1,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.ihtsdo.sso.integration.SecurityUtil;
@@ -8,9 +10,10 @@ import java.util.concurrent.TimeUnit;
 
 public class SnowstormRestClientFactory {
 
-	private String snowstormUrl;
-	private String reasonerId;
+	private final String snowstormUrl;
+	private final String reasonerId;
 	private final Cache<String, SnowstormRestClient> clientCache;
+	private final ObjectMapper objectMapper;
 
 	public SnowstormRestClientFactory(String snowstormUrl, String reasonerId) {
 		this.snowstormUrl = snowstormUrl;
@@ -18,10 +21,11 @@ public class SnowstormRestClientFactory {
 		clientCache = CacheBuilder.newBuilder()
 				.expireAfterAccess(5, TimeUnit.MINUTES)
 				.build();
+		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	}
 
 	/**
-	 * Creates a Snow Owl client using the authentication context of the current thread.
+	 * Creates a Snowstorm client using the authentication context of the current thread.
 	 * @return
 	 */
 	public SnowstormRestClient getClient() {

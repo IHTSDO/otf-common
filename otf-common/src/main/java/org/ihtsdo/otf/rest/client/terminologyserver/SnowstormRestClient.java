@@ -24,7 +24,6 @@ import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.util.Assert;
@@ -79,18 +78,17 @@ public class SnowstormRestClient {
 	private boolean useExternalClassificationService = true;
 
 	private boolean flatIndexExportStyle = true;
-	private String logPath;
-	private String rolloverLogPath;
 	private final Gson gson;
 	private int importTimeoutMinutes;
 	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
-	private static final int INDENT = 2;
-	private static final Joiner COMMA_SEPARATED_JOINER = Joiner.on(',');
-	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	private final SnowstormRestUrlHelper urlHelper;
+
+	private static final int BATCH_SIZE = 200;
+	private static final int MAX_PAGE_SIZE = 10_000;
+	private static final int INDENT = 2;
+	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<ItemsPage<CodeSystem>>() {};
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	private final int BATCH_SIZE = 200;
-	private final int MAX_PAGE_SIZE = 10_000;
 
 	private SnowstormRestClient(String snowstormUrl) {
 		urlHelper = new SnowstormRestUrlHelper(snowstormUrl);
@@ -108,9 +106,15 @@ public class SnowstormRestClient {
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
 		this(snowstormUrl);
 	}
-	
+
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword, String userName, Set<String> userRoles) {
 		this(snowstormUrl, apiUsername, apiPassword);
+	}
+
+	public List<CodeSystem> getCodeSystems() {
+		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
+		ItemsPage<CodeSystem> page = responseEntity.getBody();
+		return page.getItems();
 	}
 
 	/**
@@ -937,14 +941,6 @@ public class SnowstormRestClient {
 
 	public void setUseExternalClassificationService(boolean useExternalClassificationService) {
 		this.useExternalClassificationService = useExternalClassificationService;
-	}
-
-	public void setLogPath(String logPath) {
-		this.logPath = logPath;
-	}
-
-	public void setRolloverLogPath(String rolloverLogPath) {
-		this.rolloverLogPath = rolloverLogPath;
 	}
 
 	@Required

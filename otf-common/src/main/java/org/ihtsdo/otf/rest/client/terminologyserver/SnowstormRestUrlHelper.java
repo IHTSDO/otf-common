@@ -7,22 +7,22 @@ public class SnowstormRestUrlHelper {
 
 	private static final String MAIN = "MAIN";
 
-	private final String snomedUrl;
+	private final String snowstormUrl;
 
-	public SnowstormRestUrlHelper(String snowOwlUrl) {
-		this.snomedUrl = removeTrailingSlash(snowOwlUrl);
+	public SnowstormRestUrlHelper(String snowstormUrl) {
+		this.snowstormUrl = removeTrailingSlash(snowstormUrl);
 	}
 
 	public String getBranchesUrl() {
-		return snomedUrl + "/branches";
+		return snowstormUrl + "/branches";
 	}
 
 	public String getBranchUrl(String branchPath) {
-		return snomedUrl + "/branches/" + branchPath;
+		return snowstormUrl + "/branches/" + branchPath;
 	}
 
 	public URI getBranchUri(String branchPath) {
-		return getUri(snomedUrl + "/branches/" + branchPath);
+		return getUri(snowstormUrl + "/branches/" + branchPath);
 	}
 
 	private URI getUri(String uri) {
@@ -34,23 +34,23 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public URI getMembersUrl(String branchPath, String referenceSet, int limit) {
-		return getUri (snomedUrl + "/" + branchPath + "/members" + "?referenceSet=" + referenceSet + "&limit=" + limit);
+		return getUri (snowstormUrl + "/" + branchPath + "/members" + "?referenceSet=" + referenceSet + "&limit=" + limit);
 	}
 
 	public String getBranchChildrenUrl(String branchPath) {
-		return snomedUrl + "/branches/" + branchPath + "/children";
+		return snowstormUrl + "/branches/" + branchPath + "/children";
 	}
 
 	public String getBranchUrlRelativeToMain(String pathRelativeToMain) {
-		return snomedUrl + "/" + pathRelativeToMain;
+		return snowstormUrl + "/" + pathRelativeToMain;
 	}
 
 	public String getImportsUrl() {
-		return snomedUrl + "/imports";
+		return snowstormUrl + "/imports";
 	}
 
 	public String getImportUrl(String importId) {
-		return snomedUrl + "/imports/" + importId;
+		return snowstormUrl + "/imports/" + importId;
 	}
 
 	public String getImportArchiveUrl(String importId) {
@@ -59,7 +59,7 @@ public class SnowstormRestUrlHelper {
 
 	public String getClassificationsUrl(String branchPath) {
 		// ?sort=creationDate is needed on the Complete OWL version of Snow Owl.
-		return snomedUrl + "/" + branchPath + "/classifications?sort=creationDate";
+		return snowstormUrl + "/" + branchPath + "/classifications?sort=creationDate";
 	}
 
 	public String getClassificationUrl(String projectName, String taskName, String classificationId) {
@@ -75,7 +75,7 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getExportsUrl() {
-		return snomedUrl + "/exports";
+		return snowstormUrl + "/exports";
 	}
 
 	public URI getExportsUri() {
@@ -83,11 +83,11 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getMergesUrl() {
-		return snomedUrl + "/merges";
+		return snowstormUrl + "/merges";
 	}
 	
 	public String getMergeReviewsUrl() {
-		return snomedUrl + "/merge-reviews";
+		return snowstormUrl + "/merge-reviews";
 	}
 
 	public URI getMergesUri() {
@@ -138,7 +138,7 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getBrowserConceptsUrl(String branchPath) {
-		return snomedUrl + "/browser/" + branchPath + "/concepts";
+		return snowstormUrl + "/browser/" + branchPath + "/concepts";
 	}
 
 	public URI getBrowserConceptUri(String branchPath, String conceptId) {
@@ -146,7 +146,7 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getSimpleConceptsUrl(String branchPath) {
-		return snomedUrl + "/" + branchPath + "/concepts";
+		return snowstormUrl + "/" + branchPath + "/concepts";
 	}
 
 	public URI getSimpleConceptUri(String branchPath, String conceptId) {
@@ -154,10 +154,14 @@ public class SnowstormRestUrlHelper {
 	}
 	
 	public String getBulkConceptsUrl(String branchPath) {
-		return snomedUrl + "/browser/" + branchPath + "/concepts/bulk-load";
+		return snowstormUrl + "/browser/" + branchPath + "/concepts/bulk-load";
 	}
 	
 	public URI getBulkConceptsUri(String branchPath) {
 		return getUri(getBulkConceptsUrl(branchPath));
+	}
+
+	public String getCodeSystemsUrl() {
+		return snowstormUrl + "/codesystems";
 	}
 }
