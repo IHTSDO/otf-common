@@ -24,8 +24,12 @@ import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -100,7 +104,11 @@ public class SnowstormRestClient {
 	public SnowstormRestClient(String snowstormUrl, String singleSignOnCookie) {
 		this(snowstormUrl);
 		this.singleSignOnCookie = singleSignOnCookie;
-		resty.withHeader(COOKIE, singleSignOnCookie);
+		resty.withHeader(HttpHeaders.COOKIE, singleSignOnCookie);
+		restTemplate.setInterceptors(Collections.singletonList((request, body, execution) -> {
+			request.getHeaders().set(HttpHeaders.COOKIE, singleSignOnCookie);
+			return execution.execute(request, body);
+		}));
 	}
 
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
