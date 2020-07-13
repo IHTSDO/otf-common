@@ -13,12 +13,12 @@ public class ClassificationResults {
 	private ClassificationStatus status;
 	
 	private boolean equivalentConceptsFound;
-	private int relationshipChangesCount;
+	private boolean inferredRelationshipChangesFound;
 
+	private int relationshipChangesCount;
 	private String equivalentConceptsJson;
 	private File relationshipChangesFile;
 	private String classificationLocation;
-
 
 	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
 		this.equivalentConceptsFound = equivalentConceptsFound;
@@ -26,6 +26,14 @@ public class ClassificationResults {
 
 	public boolean isEquivalentConceptsFound() {
 		return equivalentConceptsFound;
+	}
+
+	public boolean isInferredRelationshipChangesFound() {
+		return inferredRelationshipChangesFound;
+	}
+
+	public void setInferredRelationshipChangesFound(boolean inferredRelationshipChangesFound) {
+		this.inferredRelationshipChangesFound = inferredRelationshipChangesFound;
 	}
 
 	public void setRelationshipChangesCount(int relationshipChangesCount) {
@@ -58,10 +66,6 @@ public class ClassificationResults {
 
 	public File getRelationshipChangesFile() {
 		return relationshipChangesFile;
-	}
-
-	public boolean isRelationshipChangesFound() {
-		return relationshipChangesCount > 0;
 	}
 
 	public String getClassificationLocation() {
