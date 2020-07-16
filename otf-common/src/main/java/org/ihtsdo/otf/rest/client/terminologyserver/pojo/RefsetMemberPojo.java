@@ -2,6 +2,7 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.ihtsdo.otf.utils.SnomedIdentifierUtils;
 
 @JsonPropertyOrder({"id", "effectiveTime", "released", "releasedEffectiveTime", "active", "moduleId", "refsetId", "referencedComponentId", "additionalFields"})
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,6 +31,11 @@ public class RefsetMemberPojo implements SnomedComponent {
 	@Override
 	public String getId() {
 		return id;
+	}
+
+	@Override
+	public String getConceptId() {
+		return SnomedIdentifierUtils.isValidConceptIdFormat(referencedComponentId) ? referencedComponentId : null;
 	}
 
 	public void setId(String id) {

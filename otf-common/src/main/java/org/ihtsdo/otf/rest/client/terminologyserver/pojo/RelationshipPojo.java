@@ -44,6 +44,11 @@ public class RelationshipPojo implements SnomedComponent {
 		return relationshipId;
 	}
 
+	@Override
+	public String getConceptId() {
+		return getSourceId();
+	}
+
 	public String getRelationshipId() {
 		return relationshipId;
 	}

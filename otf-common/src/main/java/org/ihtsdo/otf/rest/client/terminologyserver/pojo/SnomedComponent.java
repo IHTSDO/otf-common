@@ -4,4 +4,6 @@ public interface SnomedComponent {
 
 	String getId();
 
+	String getConceptId();
+
 }

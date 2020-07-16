@@ -6,10 +6,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.Sets;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AxiomPojo {
+public class AxiomPojo implements SnomedComponent {
 	
 	private String axiomId;
-	
+
+	private String conceptId;
+
 	private String moduleId;
 	
 	private boolean active;
@@ -40,6 +42,15 @@ public class AxiomPojo {
 
 	public void setAxiomId(String axiomId) {
 		this.axiomId = axiomId;
+	}
+
+	@Override
+	public String getConceptId() {
+		return conceptId;
+	}
+
+	public void setConceptId(String conceptId) {
+		this.conceptId = conceptId;
 	}
 
 	public String getModuleId() {
@@ -98,6 +109,7 @@ public class AxiomPojo {
 		return active == axiomPojo.active &&
 				released == axiomPojo.released &&
 				Objects.equals(axiomId, axiomPojo.axiomId) &&
+				Objects.equals(conceptId, axiomPojo.conceptId) &&
 				Objects.equals(moduleId, axiomPojo.moduleId) &&
 				Objects.equals(definitionStatusId, axiomPojo.definitionStatusId) &&
 				Objects.equals(relationships, axiomPojo.relationships) &&
