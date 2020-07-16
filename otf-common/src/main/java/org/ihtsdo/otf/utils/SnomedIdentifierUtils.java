@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 public class SnomedIdentifierUtils {
 
 	public static final Pattern SCTID_PATTERN = Pattern.compile("\\d{6,18}");
+	public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
 	private static final String PARTITION_PART2_CONCEPT = "0";
 	private static final String PARTITION_PART2_DESCRIPTION = "1";
@@ -22,6 +23,10 @@ public class SnomedIdentifierUtils {
 
 	public static boolean isValidRelationshipIdFormat(String sctid) {
 		return sctid != null && SCTID_PATTERN.matcher(sctid).matches() && PARTITION_PART2_RELATIONSHIP.equals(getPartitionIdPart(sctid)) && isChecksumCorrect(sctid);
+	}
+
+	public static boolean isValidRefsetMemberIdFormat(String uuid) {
+		return uuid != null && UUID_PATTERN.matcher(uuid).matches();
 	}
 
 	public static boolean isChecksumCorrect(String sctid) {
