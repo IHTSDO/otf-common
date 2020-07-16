@@ -17,7 +17,11 @@ public class AxiomPojo implements SnomedComponent {
 	private boolean active;
 	
 	private boolean released;
-	
+
+	private String owlExpression;
+
+	private Boolean gci;
+
 	private String definitionStatusId;
 	
 	private Set<RelationshipPojo> relationships;
@@ -34,6 +38,11 @@ public class AxiomPojo implements SnomedComponent {
 
 	public void add(RelationshipPojo relationshipPojo) {
 		relationships.add(relationshipPojo);
+	}
+
+	@Override
+	public String getId() {
+		return getAxiomId();
 	}
 
 	public String getAxiomId() {
@@ -77,6 +86,22 @@ public class AxiomPojo implements SnomedComponent {
 		this.released = released;
 	}
 
+	public String getOwlExpression() {
+		return owlExpression;
+	}
+
+	public void setOwlExpression(String owlExpression) {
+		this.owlExpression = owlExpression;
+	}
+
+	public Boolean getGci() {
+		return gci;
+	}
+
+	public void setGci(Boolean gci) {
+		this.gci = gci;
+	}
+
 	public String getDefinitionStatusId() {
 		return definitionStatusId;
 	}
@@ -111,6 +136,7 @@ public class AxiomPojo implements SnomedComponent {
 				Objects.equals(axiomId, axiomPojo.axiomId) &&
 				Objects.equals(conceptId, axiomPojo.conceptId) &&
 				Objects.equals(moduleId, axiomPojo.moduleId) &&
+				Objects.equals(owlExpression, axiomPojo.owlExpression) &&
 				Objects.equals(definitionStatusId, axiomPojo.definitionStatusId) &&
 				Objects.equals(relationships, axiomPojo.relationships) &&
 				Objects.equals(effectiveTime, axiomPojo.effectiveTime);
@@ -118,20 +144,6 @@ public class AxiomPojo implements SnomedComponent {
 
 	@Override
 	public int hashCode() {
-
-		return Objects.hash(axiomId, moduleId, active, released, definitionStatusId, relationships, effectiveTime);
-	}
-
-	@Override
-	public String toString() {
-		return "AxiomPojo{" +
-				"axiomId='" + axiomId + '\'' +
-				", moduleId='" + moduleId + '\'' +
-				", active=" + active +
-				", released=" + released +
-				", definitionStatusId='" + definitionStatusId + '\'' +
-				", relationships=" + relationships +
-				", effectiveTime='" + effectiveTime + '\'' +
-				'}';
+		return Objects.hash(axiomId, conceptId, moduleId, active, released, owlExpression, definitionStatusId, relationships, effectiveTime);
 	}
 }
