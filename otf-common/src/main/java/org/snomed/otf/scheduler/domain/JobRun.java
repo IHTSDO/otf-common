@@ -4,6 +4,8 @@ import java.util.*;
 
 import javax.persistence.*;
 
+import org.springframework.util.StringUtils;
+
 @Entity
 public class JobRun {
 	@Id
@@ -168,7 +170,7 @@ public class JobRun {
 
 	public String getMandatoryParamValue(String key) {
 		String value = parameters.getValue(key);
-		if (value == null) {
+		if (value == null || StringUtils.isEmpty(value.trim())) {
 			//Do we have a default value to use instead?
 			if (parameters.getDefaultValue(key) != null) {
 				return parameters.getDefaultValue(key);
@@ -180,7 +182,11 @@ public class JobRun {
 	}
 	
 	public String getParamValue(String key) {
-		return parameters.getValue(key);
+		String value = parameters.getValue(key);
+		if (value == null || StringUtils.isEmpty(value.trim())) {
+			return null;
+		}
+		return value.trim();
 	}
 	
 	public JobRunParameters getParameters() {
@@ -189,7 +195,7 @@ public class JobRun {
 
 	public String getParamValue(String key, String defaultValue) {
 		String value = parameters.getValue(key);
-		if (value == null) {
+		if (value == null || StringUtils.isEmpty(value.trim())) {
 			value = defaultValue;
 		}
 		return value;
