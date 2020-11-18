@@ -38,7 +38,8 @@ public class ResourceManager {
      * and <code>cloudResourceLoader</code>. {@code NullPointerException} is thrown if
      * either of the parameters are {@code null}.
      *
-     * @param resourceConfiguration Used to get the cloud configuration.
+     * @param resourceConfiguration Used to get the resource configuration which details
+     *                              the local/cloud setting.
      * @param cloudResourceLoader   The resource loader associated to the cloud
      *                              service.
      */
