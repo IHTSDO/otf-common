@@ -10,6 +10,9 @@ package org.ihtsdo.otf.resourcemanager;
  * - tasks.storage.local.path
  * - tasks.storage.cloud.bucketName
  * - tasks.storage.cloud.path
+ * - tasks.storage.cloud.accessKey
+ * - tasks.storage.cloud.secretKey
+ * - tasks.storage.cloud.region
  *
  * TasksResourceConfiguration would be autowired into your spring configuration and then passed to the constructor of ResourceManager.
  */
@@ -94,13 +97,23 @@ public abstract class ResourceConfiguration {
 
 		private String bucketName;
 		private String path;
+		private String accessKey;
+		private String secretKey;
+		private String region;
 
 		public Cloud() {
 		}
 
-		public Cloud(String bucketName, String path) {
+		public Cloud(final String bucketName,
+					 final String path,
+					 final String accessKey,
+					 final String secretKey,
+					 final String region) {
 			this.bucketName = bucketName;
 			this.path = path;
+			this.accessKey = accessKey;
+			this.secretKey = secretKey;
+			this.region = region;
 		}
 
 		public String getBucketName() {
@@ -119,11 +132,38 @@ public abstract class ResourceConfiguration {
 			this.path = normalisePath(path);
 		}
 
+		public String getAccessKey() {
+			return accessKey;
+		}
+
+		public void setAccessKey(String accessKey) {
+			this.accessKey = accessKey;
+		}
+
+		public String getSecretKey() {
+			return secretKey;
+		}
+
+		public void setSecretKey(String secretKey) {
+			this.secretKey = secretKey;
+		}
+
+		public String getRegion() {
+			return region;
+		}
+
+		public void setRegion(String region) {
+			this.region = region;
+		}
+
 		@Override
 		public String toString() {
 			return "Cloud{" +
 					"bucketName='" + bucketName + '\'' +
 					", path='" + path + '\'' +
+					", accessKey='" + accessKey + '\'' +
+					", secretKey='" + secretKey + '\'' +
+					", region='" + region + '\'' +
 					'}';
 		}
 	}
@@ -132,11 +172,11 @@ public abstract class ResourceConfiguration {
 		if (path == null || path.isEmpty()) {
 			return "";
 		}
-		if (path.substring(0, 1).equals("/")) {
-			path = path.substring(1, path.length());
+		if (path.charAt(0) == '/') {
+			path = path.substring(1);
 		}
 		if (!path.isEmpty() && path.lastIndexOf("/") != path.length() - 1) {
-			path = path + "/";
+			path += "/";
 		}
 		return path;
 	}
