@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
@@ -182,13 +183,13 @@ public class ResourceManager {
      * bucket name and object key.
      *
      * @param bucketName Where the object resides.
-     * @param objectKey Key which is associated to the object
-     *                  inside S3.
-     * @throws IOException If an error occurs while trying to
-     * delete the resource from S3.
+     * @param objectKey  Key which is associated to the object
+     *                   inside S3.
+     * @throws AmazonS3Exception If an error occurs while trying to
+     *                           delete the resource from S3.
      */
     public void deleteResource(final String bucketName,
-                               final String objectKey) throws IOException {
+                               final String objectKey) throws AmazonS3Exception {
         deleteResource(new DeleteObjectRequest(bucketName,
                                                objectKey));
     }
@@ -199,17 +200,17 @@ public class ResourceManager {
      *
      * @param deleteObjectRequest Request which contains the
      *                            bucket name and object key.
-     * @throws IOException If an error occurs while trying to
-     * delete the resource from S3.
+     * @throws AmazonS3Exception If an error occurs while trying to
+     *                           delete the resource from S3.
      */
-    public void deleteResource(final DeleteObjectRequest deleteObjectRequest) throws IOException {
+    public void deleteResource(final DeleteObjectRequest deleteObjectRequest) throws AmazonS3Exception {
         try {
             checkCloudServiceIsConfigured();
             amazonS3.deleteObject(deleteObjectRequest);
         } catch (AmazonS3Exception e) {
-            throw new IOException("Failed to delete the S3 object: '"
-                                          + deleteObjectRequest.getBucketName() + "/"
-                                          + deleteObjectRequest.getKey() + "'.", e);
+            throw new AmazonS3Exception("Failed to delete the S3 object: '"
+                                                + deleteObjectRequest.getBucketName() + "/"
+                                                + deleteObjectRequest.getKey() + "'.", e);
         }
     }
 
@@ -219,7 +220,7 @@ public class ResourceManager {
      * @param resourcePath Which points to the resource that is going
      *                     to be deleted.
      * @throws IOException If an error occurs while trying to delete the
-     *                     resource.
+     *                     resource locally.
      */
     public boolean deleteResource(final String resourcePath) throws IOException {
         try {
@@ -235,17 +236,17 @@ public class ResourceManager {
      * been performed, it will delete the resource from the
      * source location.
      *
-     * @param sourceBucketName The name of the source bucket.
-     * @param sourceKey The key of the source object.
+     * @param sourceBucketName      The name of the source bucket.
+     * @param sourceKey             The key of the source object.
      * @param destinationBucketName The name of the destination bucket.
-     * @param destinationKey The key of the destination object.
-     * @throws IOException If an error occurs while trying to move the
-     * resource inside S3 from the source, to the destination location.
+     * @param destinationKey        The key of the destination object.
+     * @throws AmazonS3Exception If an error occurs while trying to move the
+     *                           resource inside S3 from the source, to the destination location.
      */
     public void moveResource(final String sourceBucketName,
                              final String sourceKey,
                              final String destinationBucketName,
-                             final String destinationKey) throws IOException {
+                             final String destinationKey) throws AmazonS3Exception {
         moveResource(new CopyObjectRequest(sourceBucketName, sourceKey, destinationBucketName, destinationKey));
     }
 
@@ -259,17 +260,18 @@ public class ResourceManager {
      *                          bucket name, source object key,
      *                          destination bucket name and destination
      *                          object key.
-     * @throws IOException If an error occurs while trying to move the
-     * resource inside S3 from the source, to the destination location.
+     * @throws AmazonS3Exception If an error occurs while trying to move the
+     *                           resource inside S3 from the source, to the destination location.
      */
-    public void moveResource(final CopyObjectRequest copyObjectRequest) throws IOException {
+    public void moveResource(final CopyObjectRequest copyObjectRequest) throws AmazonS3Exception {
         try {
             checkCloudServiceIsConfigured();
             amazonS3.copyObject(copyObjectRequest);
             deleteResource(copyObjectRequest.getSourceBucketName(), copyObjectRequest.getSourceKey());
         } catch (AmazonS3Exception e) {
-            throw new IOException("Failed to move resource from '" + copyObjectRequest.getSourceBucketName() +
-                                          "' to '" + copyObjectRequest.getDestinationBucketName() + "'.", e);
+            throw new AmazonS3Exception("Failed to move resource from '" +
+                                                copyObjectRequest.getSourceBucketName() +
+                                                "' to '" + copyObjectRequest.getDestinationBucketName() + "'.", e);
         }
     }
 
@@ -277,19 +279,21 @@ public class ResourceManager {
      * Moves the resource locally from the specified resource path, to the desired
      * resource location.
      *
-     * @param fromResourcePath    Path to the current/old resource location.
-     * @param toResourcePath      Path to the new resource location.
+     * @param fromResourcePath Path to the current/old resource location.
+     * @param toResourcePath   Path to the new resource location.
      * @throws IOException If an error occurs while trying to move the resource
-     *                     from the specified path, to the desired location.
+     *                     from the specified path, to the desired location locally.
      */
-    public void moveResource(final String fromResourcePath,
+    public Path moveResource(final String fromResourcePath,
                              final String toResourcePath) throws IOException {
         try {
-            Files.move(new File(getFullPath(fromResourcePath)).toPath(),
-                       new File(getFullPath(toResourcePath)).toPath(),
-                       StandardCopyOption.REPLACE_EXISTING);
+            return Files.move(new File(getFullPath(fromResourcePath)).toPath(),
+                              new File(getFullPath(toResourcePath)).toPath(),
+                              StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new IOException("Failed to move resource from '" + fromResourcePath + "' to '" + toResourcePath + "'.", e);
+            throw new IOException("Failed to move resource from '" +
+                                          fromResourcePath + "' to '" +
+                                          toResourcePath + "'.", e);
         }
     }
 
@@ -297,7 +301,6 @@ public class ResourceManager {
      * Checks to make sure the resource configuration is pointing
      * to cloud: <code>useCloud == true</code>. This check occurs
      * before deletion/movement operation occur on S3 objects.
-     *
      */
     private void checkCloudServiceIsConfigured() {
         if (!resourceConfiguration.isUseCloud()) {
