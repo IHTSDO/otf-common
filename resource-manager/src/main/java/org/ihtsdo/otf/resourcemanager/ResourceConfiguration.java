@@ -1,5 +1,7 @@
 package org.ihtsdo.otf.resourcemanager;
 
+import java.util.Objects;
+
 /**
  * Use this configuration class by extending it.
  * Create a class which extends ResourceConfiguration and add the Spring 'Configuration' and 'ConfigurationProperties' annotations.
@@ -10,8 +12,6 @@ package org.ihtsdo.otf.resourcemanager;
  * - tasks.storage.local.path
  * - tasks.storage.cloud.bucketName
  * - tasks.storage.cloud.path
- * - tasks.storage.cloud.accessKey
- * - tasks.storage.cloud.secretKey
  * - tasks.storage.cloud.region
  *
  * TasksResourceConfiguration would be autowired into your spring configuration and then passed to the constructor of ResourceManager.
@@ -97,8 +97,6 @@ public abstract class ResourceConfiguration {
 
 		private String bucketName;
 		private String path;
-		private String accessKey;
-		private String secretKey;
 		private String region;
 
 		public Cloud() {
@@ -106,13 +104,9 @@ public abstract class ResourceConfiguration {
 
 		public Cloud(final String bucketName,
 					 final String path,
-					 final String accessKey,
-					 final String secretKey,
 					 final String region) {
 			this.bucketName = bucketName;
 			this.path = path;
-			this.accessKey = accessKey;
-			this.secretKey = secretKey;
 			this.region = region;
 		}
 
@@ -132,22 +126,6 @@ public abstract class ResourceConfiguration {
 			this.path = normalisePath(path);
 		}
 
-		public String getAccessKey() {
-			return accessKey;
-		}
-
-		public void setAccessKey(String accessKey) {
-			this.accessKey = accessKey;
-		}
-
-		public String getSecretKey() {
-			return secretKey;
-		}
-
-		public void setSecretKey(String secretKey) {
-			this.secretKey = secretKey;
-		}
-
 		public String getRegion() {
 			return region;
 		}
@@ -161,8 +139,6 @@ public abstract class ResourceConfiguration {
 			return "Cloud{" +
 					"bucketName='" + bucketName + '\'' +
 					", path='" + path + '\'' +
-					", accessKey='" + accessKey + '\'' +
-					", secretKey='" + secretKey + '\'' +
 					", region='" + region + '\'' +
 					'}';
 		}
@@ -179,5 +155,21 @@ public abstract class ResourceConfiguration {
 			path += "/";
 		}
 		return path;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ResourceConfiguration that = (ResourceConfiguration) o;
+		return readonly == that.readonly &&
+				useCloud == that.useCloud &&
+				Objects.equals(local, that.local) &&
+				Objects.equals(cloud, that.cloud);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(readonly, useCloud, local, cloud);
 	}
 }

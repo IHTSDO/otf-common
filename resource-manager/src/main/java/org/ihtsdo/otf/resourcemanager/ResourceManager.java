@@ -1,7 +1,5 @@
 package org.ihtsdo.otf.resourcemanager;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
@@ -65,13 +63,8 @@ public class ResourceManager {
      * objects inside S3.
      */
     private AmazonS3 buildAmazonS3Client(final ResourceConfiguration resourceConfiguration) {
-        final Cloud cloud = resourceConfiguration.getCloud();
         return AmazonS3ClientBuilder.standard()
-                                    .withRegion(cloud.getRegion())
-                                    .withCredentials(
-                                            new AWSStaticCredentialsProvider(
-                                                    new BasicAWSCredentials(cloud.getAccessKey(),
-                                                                            cloud.getSecretKey())))
+                                    .withRegion(resourceConfiguration.getCloud().getRegion())
                                     .build();
     }
 
@@ -147,7 +140,7 @@ public class ResourceManager {
     public void writeResource(final String resourcePath,
                               final InputStream resourceInputStream) throws IOException {
         try {
-            try (final OutputStream outputStream = writeResourceStream(resourcePath);
+            try (final OutputStream outputStream = retrieveWritableResourceStream(resourcePath);
                  final InputStream inputStream = resourceInputStream) {
                 StreamUtils.copy(inputStream, outputStream);
             }
@@ -157,17 +150,16 @@ public class ResourceManager {
     }
 
     /**
-     * Writes the data to the given resource path location and returns the
-     * {@code OutputStream}.
+     * Retrieves the output stream, which will have the input stream written
+     * into it.
      *
-     * @param resourcePath Which points to the resource that is going
-     *                     to have the write operation performed on it.
-     * @return an {@code OutputStream} which is the result after getting
-     * the resource from the given path.
-     * @throws IOException If an error occurs while trying to get the
-     *                     {@code OutputStream}.
+     * @param resourcePath Location of the resource.
+     * @return {@code OutputStream} which is the content that can be written
+     * to.
+     * @throws IOException If an error occurs while trying to get the writable
+     * resource {@code OutputStream}.
      */
-    public OutputStream writeResourceStream(final String resourcePath) throws IOException {
+    private OutputStream retrieveWritableResourceStream(final String resourcePath) throws IOException {
         writeCheck();
         final String fullPath = getFullPath(resourcePath);
         if (!resourceConfiguration.isUseCloud()) new File(fullPath).getParentFile().mkdirs();
