@@ -122,7 +122,7 @@ public class ResourceManager {
 	public void writeResource(final String resourcePath,
 							  final InputStream resourceInputStream) throws IOException {
 		try {
-			try (final OutputStream outputStream = retrieveWritableResourceStream(resourcePath);
+			try (final OutputStream outputStream = openWritableResourceStream(resourcePath);
 				 final InputStream inputStream = resourceInputStream) {
 				StreamUtils.copy(inputStream, outputStream);
 			}
@@ -141,7 +141,7 @@ public class ResourceManager {
 	 * @throws IOException If an error occurs while trying to get the writable
 	 *                     resource {@code OutputStream}.
 	 */
-	public OutputStream retrieveWritableResourceStream(final String resourcePath) throws IOException {
+	public OutputStream openWritableResourceStream(final String resourcePath) throws IOException {
 		writeCheck();
 		final String fullPath = getFullPath(resourcePath);
 		if (!resourceConfiguration.isUseCloud()) new File(fullPath).getParentFile().mkdirs();
