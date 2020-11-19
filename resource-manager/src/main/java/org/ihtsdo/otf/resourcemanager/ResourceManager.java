@@ -166,7 +166,7 @@ public class ResourceManager {
         try {
             return ((WritableResource) resourceLoader.getResource(fullPath)).getOutputStream();
         } catch (AmazonS3Exception e) {
-            throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
+            throw new IOException("Failed to retrieve writable resource '" + resourcePath + "'.", e);
         }
     }
 
