@@ -191,9 +191,7 @@ public class ResourceManager {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
 			}
 		} catch (AmazonS3Exception e) {
-			throw new IOException("Failed to delete the S3 object: '"
-										  + resourceConfiguration.getCloud().getBucketName() + "/"
-										  + resourcePath + "'.", e);
+			throw new IOException("Failed to delete the resource: '" + resourcePath + "'.", e);
 		}
 	}
 
