@@ -12,7 +12,6 @@ import java.util.Objects;
  * - tasks.storage.local.path
  * - tasks.storage.cloud.bucketName
  * - tasks.storage.cloud.path
- * - tasks.storage.cloud.region
  *
  * TasksResourceConfiguration would be autowired into your spring configuration and then passed to the constructor of ResourceManager.
  */
@@ -97,17 +96,14 @@ public abstract class ResourceConfiguration {
 
 		private String bucketName;
 		private String path;
-		private String region;
 
 		public Cloud() {
 		}
 
 		public Cloud(final String bucketName,
-					 final String path,
-					 final String region) {
+					 final String path) {
 			this.bucketName = bucketName;
 			this.path = path;
-			this.region = region;
 		}
 
 		public String getBucketName() {
@@ -126,20 +122,11 @@ public abstract class ResourceConfiguration {
 			this.path = normalisePath(path);
 		}
 
-		public String getRegion() {
-			return region;
-		}
-
-		public void setRegion(String region) {
-			this.region = region;
-		}
-
 		@Override
 		public String toString() {
 			return "Cloud{" +
 					"bucketName='" + bucketName + '\'' +
 					", path='" + path + '\'' +
-					", region='" + region + '\'' +
 					'}';
 		}
 	}
