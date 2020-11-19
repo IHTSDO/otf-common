@@ -44,25 +44,10 @@ public class ResourceManager {
 		this.resourceConfiguration = Objects.requireNonNull(resourceConfiguration);
 		if (resourceConfiguration.isUseCloud()) {
 			this.resourceLoader = checkS3Connection(Objects.requireNonNull(cloudResourceLoader));
-			this.amazonS3 = buildAmazonS3Client(resourceConfiguration);
+			this.amazonS3 = AmazonS3ClientBuilder.standard().build();
 		} else {
 			this.resourceLoader = new FileSystemResourceLoader();
 		}
-	}
-
-	/**
-	 * Builds the {@link AmazonS3} instance so that delete and move operations can occur on
-	 * objects inside S3.
-	 *
-	 * @param resourceConfiguration Which contains the configuration settings for the access
-	 *                              and secret key.
-	 * @return {@link AmazonS3} instance so that delete and movement operations can occur on
-	 * objects inside S3.
-	 */
-	private AmazonS3 buildAmazonS3Client(final ResourceConfiguration resourceConfiguration) {
-		return AmazonS3ClientBuilder.standard()
-									.withRegion(resourceConfiguration.getCloud().getRegion())
-									.build();
 	}
 
 	/**
@@ -156,7 +141,7 @@ public class ResourceManager {
 	 * @throws IOException If an error occurs while trying to get the writable
 	 *                     resource {@code OutputStream}.
 	 */
-	private OutputStream retrieveWritableResourceStream(final String resourcePath) throws IOException {
+	public OutputStream retrieveWritableResourceStream(final String resourcePath) throws IOException {
 		writeCheck();
 		final String fullPath = getFullPath(resourcePath);
 		if (!resourceConfiguration.isUseCloud()) new File(fullPath).getParentFile().mkdirs();
