@@ -144,7 +144,9 @@ public class ResourceManager {
 	public OutputStream openWritableResourceStream(final String resourcePath) throws IOException {
 		writeCheck();
 		final String fullPath = getFullPath(resourcePath);
-		if (!resourceConfiguration.isUseCloud()) new File(fullPath).getParentFile().mkdirs();
+		if (!resourceConfiguration.isUseCloud()) {
+			new File(fullPath).getParentFile().mkdirs();
+		}
 		try {
 			return ((WritableResource) resourceLoader.getResource(fullPath)).getOutputStream();
 		} catch (AmazonS3Exception e) {
@@ -203,8 +205,11 @@ public class ResourceManager {
 	public void moveResource(final String fromResourcePath,
 							 final String toResourcePath) throws IOException {
 		try {
-			if (resourceConfiguration.isUseCloud()) s3MoveResource(fromResourcePath, toResourcePath);
-			else localMoveResource(fromResourcePath, toResourcePath);
+			if (resourceConfiguration.isUseCloud()) {
+				s3MoveResource(fromResourcePath, toResourcePath);
+			} else {
+				localMoveResource(fromResourcePath, toResourcePath);
+			}
 		} catch (AmazonS3Exception e) {
 			throw new IOException("Failed to move resource from '" +
 										  fromResourcePath + "' to '" +
