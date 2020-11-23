@@ -18,9 +18,6 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.*;
 
-/**
- * Client can either load a template from the template service, or from a local resource
- */
 public class TraceabilityServiceClient {
 	
 	Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -30,7 +27,7 @@ public class TraceabilityServiceClient {
 	private final String serverUrl;
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
-	private final int DATA_SIZE = 500;
+	private final int DATA_SIZE = 1000;
 	
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
