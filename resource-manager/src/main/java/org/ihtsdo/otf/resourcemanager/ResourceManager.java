@@ -148,7 +148,9 @@ public class ResourceManager {
 			new File(fullPath).getParentFile().mkdirs();
 		}
 		try {
-			return ((WritableResource) resourceLoader.getResource(fullPath)).getOutputStream();
+			final Resource resource = resourceLoader.getResource(fullPath);
+			final WritableResource writableResource = (WritableResource) resource;
+			return writableResource.getOutputStream();
 		} catch (AmazonS3Exception e) {
 			throw new IOException("Failed to retrieve writable resource '" + resourcePath + "'.", e);
 		}
