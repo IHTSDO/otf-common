@@ -174,8 +174,9 @@ public class ResourceManager {
 	public void deleteResource(final String resourcePath) throws IOException {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
+				final String path = resourceConfiguration.getCloud().getPath();
 				amazonS3.deleteObject(resourceConfiguration.getCloud().getBucketName(),
-									  resourcePath);
+									  (path != null ? path : "") + resourcePath);
 			} else {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
 			}
@@ -255,7 +256,8 @@ public class ResourceManager {
 	private void s3MoveResource(final String fromResourcePath,
 								final String toResourcePath) throws IOException {
 		final String bucketName = resourceConfiguration.getCloud().getBucketName();
-		amazonS3.copyObject(bucketName, fromResourcePath, bucketName, toResourcePath);
+		final String path = resourceConfiguration.getCloud().getPath();
+		amazonS3.copyObject(bucketName, (path != null ? path : "") + fromResourcePath, bucketName, (path != null ? path : "") + toResourcePath);
 		deleteResource(fromResourcePath);
 	}
 
