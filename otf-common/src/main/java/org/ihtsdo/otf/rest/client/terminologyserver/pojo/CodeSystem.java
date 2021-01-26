@@ -1,5 +1,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.Set;
+
 public class CodeSystem {
 
 	private String shortName;
@@ -7,6 +9,7 @@ public class CodeSystem {
 	private String countryCode;
 	private String maintainerType;
 	private String branchPath;
+	private Set <String> userRoles;
 
 	public String getShortName() {
 		return shortName;
@@ -26,5 +29,13 @@ public class CodeSystem {
 
 	public String getBranchPath() {
 		return branchPath;
+	}
+
+	public Set <String> getUserRoles() {
+		return userRoles;
+	}
+
+	public void setUserRoles(Set <String> userRoles) {
+		this.userRoles = userRoles;
 	}
 }
