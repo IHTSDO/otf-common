@@ -43,6 +43,16 @@ public class Job {
 	@JsonIgnore
 	Map<String, WhiteList> whiteListMap;
 	
+	int expectedDuration = 15;
+	
+	public int getExpectedDuration() {
+		return expectedDuration;
+	}
+
+	public void setExpectedDuration(int expectedDuration) {
+		this.expectedDuration = expectedDuration;
+	}
+
 	public Job() {
 		this.parameters = new JobParameters();
 	};
@@ -73,6 +83,11 @@ public class Job {
 	
 	public Job withTag (String tag) {
 		tags.add(tag);
+		return this;
+	}
+	
+	public Job withExpectedDuration (int expectedDuration) {
+		this.expectedDuration = expectedDuration;
 		return this;
 	}
 	

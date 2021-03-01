@@ -133,6 +133,7 @@ public class JobRun {
 				+ status 
 				+ " with codeSystem '" + codeSystemShortname +"'"
 				+ " in project '" + project + "'"
+				+ " with parameters: " + getParameters()
 				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
 	}
 	
