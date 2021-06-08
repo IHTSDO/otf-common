@@ -243,7 +243,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		if (!bucket.isDirectory()) {
 			//Attempt to create - will fail if file already exists at that location.
 			boolean success = bucket.mkdirs();
-			if (!success) {
+			if (!success && !bucket.exists()) {
 				throw new AmazonServiceException("Could neither find nor create Bucket at: " + bucketsDirectory + File.separator + bucketName);
 			}
 		}
