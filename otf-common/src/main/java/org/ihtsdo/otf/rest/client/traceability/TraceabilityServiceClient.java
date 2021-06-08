@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +57,11 @@ public class TraceabilityServiceClient {
 			return new ArrayList<>();
 		}
 		
-		String url = this.serverUrl + "traceability-service/activitiesBulk?activityType=" + activityType + 
-				"&commentFilter="+commentFilter;
+		String url = this.serverUrl + "traceability-service/activitiesBulk?activityType=" + activityType;
+		if (!StringUtils.isEmpty(commentFilter)) {
+				url += "&commentFilter="+commentFilter;
+		}
+		
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIds, headers);
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
