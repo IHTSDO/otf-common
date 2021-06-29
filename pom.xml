@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common-parent</artifactId>
-	<version>4.4.0-SNAPSHOT</version>
+	<version>4.4.0</version>
 	<name>OTF Common Parent</name>
 	<packaging>pom</packaging>
 
