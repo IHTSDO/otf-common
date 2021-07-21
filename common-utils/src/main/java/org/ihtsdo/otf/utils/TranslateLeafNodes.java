@@ -1,6 +1,6 @@
 package org.ihtsdo.otf.utils;
 
-import java.io.BufferedReader;
+/*import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,10 +13,10 @@ import java.util.Iterator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.FilenameUtils;*/
 
 public class TranslateLeafNodes {
-
+/*
 	private static String newLang;
 	private static boolean nullTranslate = false;
 
@@ -132,4 +132,5 @@ public class TranslateLeafNodes {
 				.replace(" .", ".").replace(" \"", "\"").replace(" ,", ",").replace("( ", "(").replace(" )", ")").replace("/ ", "/")
 				.replace("{ ", "{");
 	}
+	*/
 }

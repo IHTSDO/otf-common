@@ -8,6 +8,7 @@ import javax.persistence.*;
 public class JobType {
 	
 	public static final String REPORT = "Report";
+	public static final String BATCH_JOB = "Batch Job";
 	
 	@Id
 	@Column(length = 50)

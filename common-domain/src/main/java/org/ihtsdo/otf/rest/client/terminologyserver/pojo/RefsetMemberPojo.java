@@ -57,6 +57,11 @@ public class RefsetMemberPojo implements SnomedComponent {
 	public void setReferencedComponentId(String referencedComponentId) {
 		this.referencedComponentId = referencedComponentId;
 	}
+	
+	public RefsetMemberPojo withReferencedComponentId(String referencedComponentId) {
+		this.referencedComponentId = referencedComponentId;
+		return this;
+	}
 
 	public String getRefsetId() {
 		return refsetId;
@@ -65,15 +70,23 @@ public class RefsetMemberPojo implements SnomedComponent {
 	public void setRefsetId(String refsetId) {
 		this.refsetId = refsetId;
 	}
+	
+	public RefsetMemberPojo withRefsetId(String refsetId) {
+		this.refsetId = refsetId;
+		return this;
+	}
 
 	public AdditionalFieldsPojo getAdditionalFields() {
+		if (this.additionalFields == null) {
+			this.additionalFields = new AdditionalFieldsPojo();
+		}
 		return additionalFields;
 	}
 
 	public void setAdditionalFields(AdditionalFieldsPojo additionalFields) {
 		this.additionalFields = additionalFields;
 	}
-
+	
 	public String getReferencedComponentId() {
 		return referencedComponentId;
 	}
@@ -89,6 +102,12 @@ public class RefsetMemberPojo implements SnomedComponent {
 	public void setActive(boolean active) {
 		this.active = active;
 	}
+	
+
+	public RefsetMemberPojo withActive(boolean active) {
+		setActive(active);
+		return this;
+	}
 
 	public String getModuleId() {
 		return moduleId;
@@ -96,6 +115,11 @@ public class RefsetMemberPojo implements SnomedComponent {
 
 	public void setModuleId(String moduleId) {
 		this.moduleId = moduleId;
+	}
+	
+	public RefsetMemberPojo withModuleId(String moduleId) {
+		this.moduleId = moduleId;
+		return this;
 	}
 
 	public boolean getReleased() {
@@ -105,13 +129,18 @@ public class RefsetMemberPojo implements SnomedComponent {
 	public void setReleased(boolean released) {
 		this.released = released;
 	}
-
+	
 	@Override
 	public String toString() {
+		return id + ":" + refsetId + " " + referencedComponentId + " -> " + additionalFields.toString();
+	}
+
+	public String toStringFull() {
 		return "RefsetPojo [id=" + id + ", released=" + released + ", effectiveTime=" + effectiveTime + ", active=" + active
 				+ ", moduleId=" + moduleId + ", releasedEffectiveTime=" + releasedEffectiveTime
 				+ ", referencedComponentId=" + referencedComponentId + ", refsetId=" + refsetId + ", additionalFields="
 				+ additionalFields + "]";
 	}
+
 	
 }

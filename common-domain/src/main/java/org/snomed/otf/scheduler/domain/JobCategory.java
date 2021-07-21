@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import javax.persistence.*;
 
-import org.ihtsdo.otf.rest.exception.ApplicationWiringException;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.fasterxml.jackson.annotation.*;
@@ -22,6 +21,8 @@ public class JobCategory implements Serializable {
 	public static final String DRUGS = "Drugs and Substances";
 	public static final String RELEASE_VALIDATION = "Release Validation";
 	public static final String RELEASE_STATS = "Release Statistics";
+	
+	public static final String REFSET_UPDATE = "Refset Update";
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -84,7 +85,7 @@ public class JobCategory implements Serializable {
 					return name.equals(otherCat.getName());
 				}
 			} else {
-				throw new ApplicationWiringException("Job Category '" + this.getName() + "' doesn't know what type it is!"); 
+				throw new RuntimeException("Job Category '" + this.getName() + "' doesn't know what type it is!"); 
 			}
 		}
 		return false;

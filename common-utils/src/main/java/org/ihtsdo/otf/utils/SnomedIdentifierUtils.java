@@ -1,7 +1,5 @@
 package org.ihtsdo.otf.utils;
 
-import com.google.common.base.Strings;
-
 import java.util.regex.Pattern;
 
 public class SnomedIdentifierUtils {
@@ -34,7 +32,7 @@ public class SnomedIdentifierUtils {
 	}
 
 	private static String getPartitionIdPart(String sctid) {
-		if (!Strings.isNullOrEmpty(sctid) && sctid.length() > 4) {
+		if (!StringUtils.isEmpty(sctid) && sctid.length() > 4) {
 			return sctid.substring(sctid.length() - 2, sctid.length() - 1);
 		}
 		return null;

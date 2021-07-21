@@ -258,9 +258,13 @@ public class ConceptPojo implements SnomedComponent {
 
 		return Objects.hash(conceptId, effectiveTime, released, active, moduleId, definitionStatus, inactivationIndicator, associationTargets, descriptions, classAxioms, gciAxioms, relationships);
 	}
-
+	
 	@Override
 	public String toString() {
+		return getId() + "|" + getFsn() + "|";
+	}
+
+	public String toStringFull() {
 		return "ConceptPojo{" +
 				"conceptId='" + conceptId + '\'' +
 				", effectiveTime='" + effectiveTime + '\'' +

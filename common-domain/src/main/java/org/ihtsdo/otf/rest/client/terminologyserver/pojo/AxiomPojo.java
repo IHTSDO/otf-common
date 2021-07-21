@@ -3,7 +3,6 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.google.common.collect.Sets;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AxiomPojo implements SnomedComponent {

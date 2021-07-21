@@ -4,7 +4,7 @@ import java.util.*;
 
 import javax.persistence.*;
 
-import org.springframework.util.StringUtils;
+import org.ihtsdo.otf.utils.StringUtils;
 
 @Entity
 public class JobRun {
