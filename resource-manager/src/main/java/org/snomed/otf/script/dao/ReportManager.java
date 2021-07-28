@@ -30,9 +30,10 @@ public class ReportManager implements RF2Constants {
 	
 	private ReportManager() {};
 	
-	public static ReportManager create(Script script, ReportConfiguration reportConfiguration) {
+	public static ReportManager create(Script script, ReportConfiguration reportConfiguration) throws TermServerScriptException {
 		ReportManager rm = new ReportManager();
 		rm.script = script;
+		rm.dataUploader = script.getReportDataUploader();
 		rm.init(reportConfiguration);
 		return rm;
 	}

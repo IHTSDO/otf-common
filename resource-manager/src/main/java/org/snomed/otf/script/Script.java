@@ -1,11 +1,14 @@
 package org.snomed.otf.script;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.script.dao.DataUploader;
 
 public abstract class Script implements RF2Constants {
 	
@@ -62,8 +65,11 @@ public abstract class Script implements RF2Constants {
 	public abstract String getEnv();
 
 	public String getReportComplexName() {
-		//Currently only used by SummaryComponentStats as it compares to releases
-		return "";
+		throw new NotImplementedException("Complex name currently only required by SummaryComponentStats");
+	}
+
+	public DataUploader getReportDataUploader() throws TermServerScriptException {
+		throw new NotImplementedException("ReportDataUploader should be provided by TermServerScript.");
 	}
 	
 }
