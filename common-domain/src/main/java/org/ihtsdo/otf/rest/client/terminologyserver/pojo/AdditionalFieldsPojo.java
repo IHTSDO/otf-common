@@ -29,7 +29,7 @@ public class AdditionalFieldsPojo {
 	private String proximalPrimitiveRefinement;
 	
 	//Attribute domain
-	private boolean grouped;
+	private Boolean grouped;
 	
 	private String attributeInGroupCardinality;
 	
@@ -105,11 +105,11 @@ public class AdditionalFieldsPojo {
 		this.proximalPrimitiveRefinement = proximalPrimitiveRefinement;
 	}
 	
-	public boolean isGrouped() {
+	public Boolean isGrouped() {
 		return grouped;
 	}
 
-	public void setGrouped(boolean grouped) {
+	public void setGrouped(Boolean grouped) {
 		this.grouped = grouped;
 	}
 
@@ -195,7 +195,9 @@ public class AdditionalFieldsPojo {
 			builder.append("parentDomain=").append(parentDomain).append(", ");
 		if (proximalPrimitiveRefinement != null)
 			builder.append("proximalPrimitiveRefinement=").append(proximalPrimitiveRefinement).append(", ");
-		builder.append("grouped=").append(grouped).append(", ");
+		if (grouped != null) {
+			builder.append("grouped=").append(grouped).append(", ");
+		}
 		if (attributeInGroupCardinality != null)
 			builder.append("attributeInGroupCardinality=").append(attributeInGroupCardinality).append(", ");
 		if (attributeCardinality != null)
@@ -209,8 +211,11 @@ public class AdditionalFieldsPojo {
 		if (attributeRule != null)
 			builder.append("attributeRule=").append(attributeRule).append(", ");
 		if (rangeConstraint != null)
-			builder.append("rangeConstraint=").append(rangeConstraint);
+			builder.append("rangeConstraint=").append(rangeConstraint).append(", ");
+		if (targetComponentId != null)
+			builder.append("targetComponentId=").append(targetComponentId);
 		builder.append("]");
+		//TODO Knock off that last ugly comma
 		return builder.toString();
 	}
 }
