@@ -130,6 +130,14 @@ public class RefsetMemberPojo implements SnomedComponent {
 		this.released = released;
 	}
 	
+	public String getMemberId() {
+		return id;
+	}
+	
+	public void setMemberId(String id) {
+		this.id = id;
+	}
+	
 	@Override
 	public String toString() {
 		return id + ":" + refsetId + " " + referencedComponentId + " -> " + additionalFields.toString();

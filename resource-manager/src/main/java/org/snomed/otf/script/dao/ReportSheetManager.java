@@ -124,7 +124,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				.create(sheet.getSpreadsheetId(), perm)
 				.setSupportsTeamDrives(true)
 				.execute();
-			System.out.println("Spreadsheet shared");
+			System.out.println("Spreadsheet opened up to the universe.");
 		} catch (IOException | GeneralSecurityException e) {
 			throw new IllegalStateException("Unable to initialise Google Sheets connection",e);
 		}

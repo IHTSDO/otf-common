@@ -38,7 +38,7 @@ public class ReportManager implements RF2Constants {
 		return rm;
 	}
 	
-	public void init(ReportConfiguration reportConfiguration) {
+	private void init(ReportConfiguration reportConfiguration) {
 		reportFileManager = new ReportFileManager(this);
 		Set<ReportOutputType> reportOutputTypes = reportConfiguration.getReportOutputTypes();
 		Set<ReportConfiguration.ReportFormatType> reportFormatTypes = reportConfiguration.getReportFormatTypes();

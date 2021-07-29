@@ -6,12 +6,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({"domainTemplateForPostcoordination", "domainTemplateForPrecoordination", 
 	"proximalPrimitiveConstraint", "guideURL", "domainConstraint", "parentDomain", "proximalPrimitiveRefinement",
 	"grouped", "attributeInGroupCardinality", "attributeCardinality", "contentTypeId", "domainId", "ruleStrengthId",
-	"attributeRule", "rangeConstraint", "targetComponentId"})
+	"attributeRule", "rangeConstraint", "targetComponentId", "mapTarget", "valueId"})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AdditionalFieldsPojo {
 	
 	//Association Refsets
 	private String targetComponentId;
+	
+	//Inactivation Indicator
+	private String valueId;
+	
+	//Simple Map
+	private String mapTarget;
 
 	//Domain
 	private String domainTemplateForPostcoordination;
@@ -175,6 +181,22 @@ public class AdditionalFieldsPojo {
 
 	public void setTargetComponentId(String targetComponentId) {
 		this.targetComponentId = targetComponentId;
+	}
+	
+	public String getValueId() {
+		return valueId;
+	}
+
+	public void setValueId(String valueId) {
+		this.valueId = valueId;
+	}
+
+	public String getMapTarget() {
+		return mapTarget;
+	}
+
+	public void setMapTarget(String mapTarget) {
+		this.mapTarget = mapTarget;
 	}
 
 	@Override
