@@ -286,7 +286,13 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			throw new TermServerScriptException("Attempt to write to sheet " + tabIdx + " but sheet not known to SheetManager. Check list of tab names initialised");
 		}
 		int maxColumn = maxTabColumns.get(tabIdx);
-		String maxColumnStr = Character.toString((char)('A' + maxColumn));
+		String beyondZ = "";
+		int alphabetsPassed = maxColumn / 26;
+		if (alphabetsPassed > 0) {
+			beyondZ = Character.toString((char)('A' + alphabetsPassed - 1));
+			maxColumn %= 26;
+		}
+		String maxColumnStr = beyondZ + Character.toString((char)('A' + maxColumn));
 		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + maxColumnStr +  tabLineCount.get(tabIdx); 
 		dataToBeWritten.add(new ValueRange()
 					.setRange(range)
