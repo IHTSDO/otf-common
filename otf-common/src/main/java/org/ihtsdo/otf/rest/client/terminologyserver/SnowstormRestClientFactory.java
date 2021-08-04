@@ -33,12 +33,12 @@ public class SnowstormRestClientFactory {
 	 */
 	public SnowstormRestClient getClient() {
 		String authenticationToken = SecurityUtil.getAuthenticationToken();
+		LOGGER.info("FRI-128: " + authenticationToken);
 		SnowstormRestClient client = clientCache.getIfPresent(authenticationToken);
 		if (client == null) {
 			synchronized (clientCache) {
 				client = clientCache.getIfPresent(authenticationToken);
 				if (client == null) {
-					LOGGER.info("FRI-128: " + authenticationToken);
 					client = new SnowstormRestClient(snowstormUrl, authenticationToken);
 					client.setReasonerId(reasonerId);
 					client.setUseExternalClassificationService(true);
