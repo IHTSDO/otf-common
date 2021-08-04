@@ -5,10 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.ihtsdo.sso.integration.SecurityUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 public class SnowstormRestClientFactory {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormRestClientFactory.class);
 
 	private final String snowstormUrl;
 	private final String reasonerId;
@@ -35,6 +38,7 @@ public class SnowstormRestClientFactory {
 			synchronized (clientCache) {
 				client = clientCache.getIfPresent(authenticationToken);
 				if (client == null) {
+					LOGGER.info("FRI-128: " + authenticationToken);
 					client = new SnowstormRestClient(snowstormUrl, authenticationToken);
 					client.setReasonerId(reasonerId);
 					client.setUseExternalClassificationService(true);
