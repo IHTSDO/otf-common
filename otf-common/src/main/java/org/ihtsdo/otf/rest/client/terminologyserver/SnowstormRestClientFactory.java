@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 
 public class SnowstormRestClientFactory {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormRestClientFactory.class);
-
 	private final String snowstormUrl;
 	private final String reasonerId;
 	private final Cache<String, SnowstormRestClient> clientCache;
@@ -33,7 +31,6 @@ public class SnowstormRestClientFactory {
 	 */
 	public SnowstormRestClient getClient() {
 		String authenticationToken = SecurityUtil.getAuthenticationToken();
-		LOGGER.info("FRI-128: " + authenticationToken);
 		SnowstormRestClient client = clientCache.getIfPresent(authenticationToken);
 		if (client == null) {
 			synchronized (clientCache) {
