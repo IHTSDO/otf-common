@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -51,6 +52,7 @@ import us.monoid.web.JSONResource;
 
 // TODO: This whole class is a mess and needs refactoring.
 public class SnowstormRestClient {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormRestClient.class);
 
 	private static final String COOKIE = "Cookie";
 	public static final String JSON_CONTENT_TYPE = "application/json";
@@ -102,8 +104,38 @@ public class SnowstormRestClient {
 		this.singleSignOnCookie = singleSignOnCookie.replaceAll(";", "; ");
 		resty.withHeader(HttpHeaders.COOKIE, singleSignOnCookie);
 		restTemplate.setInterceptors(Collections.singletonList((request, body, execution) -> {
+			// Set cookie
 			request.getHeaders().set(HttpHeaders.COOKIE, singleSignOnCookie);
-			return execution.execute(request, body);
+
+			// Log request
+			LOGGER.debug("===========================request begin================================================");
+			LOGGER.debug("URI         : {}", request.getURI());
+			LOGGER.debug("Method      : {}", request.getMethod());
+			LOGGER.debug("Headers     : {}", request.getHeaders());
+			HttpHeaders headers = request.getHeaders();
+			headers.forEach((k, v) -> {
+				LOGGER.debug("Header      : {}", k);
+				LOGGER.debug("Value       : {}", v);
+			});
+			LOGGER.debug("Request body: {}", new String(body, "UTF-8"));
+			LOGGER.debug("==========================request end================================================");
+
+			ClientHttpResponse response = execution.execute(request, body);
+
+			// Log response
+			LOGGER.debug("============================response begin==========================================");
+			LOGGER.debug("Status code  : {}", response.getStatusCode());
+			LOGGER.debug("Status text  : {}", response.getStatusText());
+			LOGGER.debug("Headers      : {}", response.getHeaders());
+			headers = response.getHeaders();
+			headers.forEach((k, v) -> {
+				LOGGER.debug("Header      : {}", k);
+				LOGGER.debug("Value       : {}", v);
+			});
+			LOGGER.debug("Response body: {}", body.toString());
+			LOGGER.debug("=======================response end=================================================");
+
+			return response;
 		}));
 	}
 
