@@ -99,7 +99,7 @@ public class SnowstormRestClient {
 
 	public SnowstormRestClient(String snowstormUrl, String singleSignOnCookie) {
 		this(snowstormUrl);
-		this.singleSignOnCookie = singleSignOnCookie;
+		this.singleSignOnCookie = singleSignOnCookie.replaceAll(";", "; ");
 		resty.withHeader(HttpHeaders.COOKIE, singleSignOnCookie);
 		restTemplate.setInterceptors(Collections.singletonList((request, body, execution) -> {
 			request.getHeaders().set(HttpHeaders.COOKIE, singleSignOnCookie);
