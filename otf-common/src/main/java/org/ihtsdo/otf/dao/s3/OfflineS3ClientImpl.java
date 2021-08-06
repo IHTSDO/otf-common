@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Collections;
@@ -233,7 +234,12 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	 * For clearing down before and after testing.
 	 */
 	public void freshBucketStore() throws IOException {
-		bucketsDirectory = Files.createTempDirectory(getClass().getName() + "-temp-S3").toFile();
+		if (bucketsDirectory.exists() && bucketsDirectory.isDirectory()) {
+			Files.walk(bucketsDirectory.toPath())
+					.sorted(Comparator.reverseOrder())
+					.map(Path::toFile)
+					.forEach(File::delete);
+		}
 	}
 
 	private File getBucket(String bucketName) {
