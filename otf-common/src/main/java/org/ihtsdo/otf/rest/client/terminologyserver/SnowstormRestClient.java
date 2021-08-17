@@ -59,6 +59,7 @@ public class SnowstormRestClient {
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
+	public static final String LOCK = "lock";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -1116,5 +1117,13 @@ public class SnowstormRestClient {
 			}
 		}
 		return result;
+	}
+
+	public boolean isBranchLocked(String branchPath) throws RestClientException {
+		Branch branch = getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
+		if (branch != null && branch.getMetadata() != null) {
+			return branch.getMetadata().containsKey(LOCK);
+		}
+		return false;
 	}
 }
