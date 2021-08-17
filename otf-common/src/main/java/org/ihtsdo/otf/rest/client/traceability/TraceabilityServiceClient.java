@@ -1,9 +1,6 @@
 package org.ihtsdo.otf.rest.client.traceability;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.slf4j.Logger;
@@ -13,11 +10,15 @@ import org.snomed.otf.traceability.domain.ActivityType;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.http.client.*;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TraceabilityServiceClient {
 	
@@ -51,7 +52,7 @@ public class TraceabilityServiceClient {
 		}); 
 	}
 	
-	public List<Activity> getConceptActivity(List<Long> conceptIds, String commentFilter, ActivityType activityType) {
+	public List<Activity> getConceptActivity(List<Long> conceptIds, String commentFilter, ActivityType activityType, String user) {
 		if (conceptIds == null || conceptIds.size() == 0) {
 			logger.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
 			return new ArrayList<>();
@@ -61,6 +62,11 @@ public class TraceabilityServiceClient {
 		if (!StringUtils.isEmpty(commentFilter)) {
 				url += "&commentFilter="+commentFilter;
 		}
+
+		if (user != null && !StringUtils.isEmpty(user)) {
+			url += "&user=" + user;
+		}
+
 		
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIds, headers);
 		List<Activity> activities = new ArrayList<>();
