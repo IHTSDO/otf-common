@@ -1,6 +1,9 @@
 package org.ihtsdo.otf.rest.client.traceability;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.slf4j.Logger;
@@ -8,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -49,7 +51,9 @@ public class TraceabilityServiceClient {
 				request.getHeaders().addAll(headers);
 				return execution.execute(request, body);
 			}
-		}); 
+		});
+
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 	
 	public List<Activity> getConceptActivity(List<Long> conceptIds, String commentFilter, ActivityType activityType, String user) {
@@ -72,15 +76,23 @@ public class TraceabilityServiceClient {
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
 		int offset = 0;
-		ParameterizedTypeReference<RestResponsePage<Activity>> responseType = new ParameterizedTypeReference<RestResponsePage<Activity>>() { };
+		TypeReference<List<Activity>> responseContentType = new TypeReference<>() {
+		};
+		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
 		while (!isLast) {
-			ResponseEntity<RestResponsePage<Activity>> response = restTemplate.exchange(
-					url + "&offset=" + offset + "&size=" + DATA_SIZE,
-					HttpMethod.POST,
-					requestEntity,
-					responseType);
-			activities.addAll(response.getBody().getContent());
-			isLast = response.getBody().isLast();
+			ResponseEntity<Object> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
+			LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
+			if (responseBody != null) {
+				Object content = responseBody.get("content");
+				if (content != null) {
+					activities.addAll(mapper.convertValue(content, responseContentType));
+					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+				} else {
+					isLast = true;
+				}
+			} else {
+				isLast = true;
+			}
 		}
 		logger.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
 		return activities;
