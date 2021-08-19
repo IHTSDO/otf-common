@@ -1,77 +1,44 @@
 package org.snomed.otf.traceability.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
 import java.util.HashSet;
 import java.util.Set;
-import javax.persistence.*;
 
-@Entity
-@Table(
-		indexes = {
-				@Index(columnList = "conceptId", name = "concept_id_index")
-		}
-)
-@JsonPropertyOrder({"conceptId", "componentChanges"})
 public class ConceptChange {
-
-	@Id
-	@Column(name = "id")
-	@GeneratedValue(strategy= GenerationType.AUTO)
-	@JsonIgnore
-	private Long id;
-
-	@ManyToOne
-	@JoinColumn(name="activity_id", nullable=false)
-	@JsonIgnore
-	private Activity activity;
-
 	private Long conceptId;
-
-	@OneToMany(cascade = CascadeType.ALL, mappedBy = "conceptChange", fetch = FetchType.EAGER)
-	@JsonManagedReference
-	private Set<ComponentChange> componentChanges;
+	private final Set<ComponentChange> componentChanges = new HashSet<>();
 
 	public ConceptChange() {
 	}
 
-	public ConceptChange(Long conceptId) {
+	public ConceptChange(Long conceptId, Set<ComponentChange> componentChanges) {
 		this.conceptId = conceptId;
-		this.componentChanges = new HashSet<>();
+		if (componentChanges != null) {
+			this.componentChanges.addAll(componentChanges);
+		}
 	}
 
-	public void addComponentChange(ComponentChange componentChange) {
-		componentChanges.add(componentChange);
-		componentChange.setConceptChange(this);
-	}
-
-	public void setActivity(Activity activity) {
-		this.activity = activity;
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public Activity getActivity() {
-		return activity;
-	}
-
-	@JsonIgnore
 	public Long getConceptId() {
 		return conceptId;
 	}
 
-	@JsonProperty("conceptId")
-	public String getConceptIdAsString() {
-		return conceptId.toString();
+	public void setConceptId(Object conceptId) {
+		if (conceptId instanceof Double) {
+			Double asDouble = (Double) conceptId;
+			this.conceptId = asDouble.longValue();
+		} else if (conceptId instanceof Long) {
+			Long asLong = (Long) conceptId;
+			this.conceptId = asLong;
+		}
 	}
 
 	public Set<ComponentChange> getComponentChanges() {
 		return componentChanges;
+	}
+
+	public void setComponentChanges(Set<ComponentChange> componentChanges) {
+		if (componentChanges != null) {
+			this.componentChanges.addAll(componentChanges);
+		}
 	}
 
 	@Override
@@ -96,8 +63,7 @@ public class ConceptChange {
 	@Override
 	public String toString() {
 		return "ConceptChange{" +
-				"id=" + id +
-				", conceptId=" + conceptId +
+				"conceptId=" + conceptId +
 				", componentChanges=" + componentChanges +
 				'}';
 	}

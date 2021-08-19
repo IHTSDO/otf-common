@@ -1,62 +1,52 @@
 package org.snomed.otf.traceability.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import javax.persistence.*;
-
-@Entity
 public class ComponentChange {
 
-	@Id
-	@Column(name = "id")
-	@GeneratedValue(strategy=GenerationType.AUTO)
-	@JsonIgnore
-	private Long id;
-
-	@ManyToOne
-	@JoinColumn(name = "concept_change_id")
-	@JsonIgnore
-	private ConceptChange conceptChange;
-
 	private String componentId;
-
-	@Enumerated
+	private ChangeType changeType;
 	private ComponentType componentType;
-
-	@Enumerated
-	private ComponentSubType componentSubType;
-
-	@Enumerated
-	private ComponentChangeType changeType;
+	private Long componentSubType;
 
 	public ComponentChange() {
 	}
 
-	public ComponentChange(String componentId, ComponentChangeType changeType, ComponentType componentType, ComponentSubType componentSubType) {
+	public ComponentChange(String componentId, ChangeType changeType, ComponentType componentType, Long componentSubType) {
 		this.componentId = componentId;
 		this.changeType = changeType;
 		this.componentType = componentType;
 		this.componentSubType = componentSubType;
 	}
 
-	public void setConceptChange(ConceptChange conceptChange) {
-		this.conceptChange = conceptChange;
-	}
-
 	public String getComponentId() {
 		return componentId;
 	}
 
-	public ComponentChangeType getChangeType() {
+	public void setComponentId(String componentId) {
+		this.componentId = componentId;
+	}
+
+	public ChangeType getChangeType() {
 		return changeType;
+	}
+
+	public void setChangeType(ChangeType changeType) {
+		this.changeType = changeType;
 	}
 
 	public ComponentType getComponentType() {
 		return componentType;
 	}
 
-	public ComponentSubType getComponentSubType() {
+	public void setComponentType(ComponentType componentType) {
+		this.componentType = componentType;
+	}
+
+	public Long getComponentSubType() {
 		return componentSubType;
+	}
+
+	public void setComponentSubType(Long componentSubType) {
+		this.componentSubType = componentSubType;
 	}
 
 	@Override
@@ -85,11 +75,10 @@ public class ComponentChange {
 	@Override
 	public String toString() {
 		return "ComponentChange{" +
-				"id=" + id +
-				", componentId='" + componentId + '\'' +
+				"componentId='" + componentId + '\'' +
+				", changeType=" + changeType +
 				", componentType=" + componentType +
 				", componentSubType=" + componentSubType +
-				", changeType=" + changeType +
 				'}';
 	}
 }

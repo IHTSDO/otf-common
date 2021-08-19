@@ -1,127 +1,109 @@
 package org.snomed.otf.traceability.domain;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-import javax.persistence.*;
+import java.util.List;
 
-@Entity
-@Table(
-		name = "activity",
-		indexes = {
-			@Index(columnList = "branch", name = "branch_index"),
-			@Index(columnList = "highest_promoted_branch", name = "highest_branch_index"),
-			@Index(columnList = "user", name = "user_index"),
-			@Index(columnList = "commitDate", name = "commit_date_index")
-		}
-)
 public class Activity {
-
-	@Id
-	@GeneratedValue(strategy= GenerationType.AUTO)
-	private Long id;
-
-	@ManyToOne
-	@JoinColumn(name = "user")
-	private User user;
-
-	@Enumerated
-	private ActivityType activityType;
-
-	@ManyToOne
-	@JoinColumn(name = "branch")
-	private Branch branch;
-
-	@ManyToOne
-	private Branch mergeSourceBranch;
-
-	@ManyToOne
-	@JoinColumn(name = "highest_promoted_branch")
-	private Branch highestPromotedBranch;
-
-	private String commitComment;
+	private String id;
+	private String username;
+	private String branch;
+	private int branchDepth;
+	private String sourceBranch;
+	private String highestPromotedBranch;
 	private Date commitDate;
-
-	@OneToMany(cascade = CascadeType.ALL, mappedBy = "activity", fetch = FetchType.EAGER)
-	private Set<ConceptChange> conceptChanges;
+	private ActivityType activityType;
+	private final List<ConceptChange> conceptChanges = new ArrayList<>();
 
 	public Activity() {
 	}
 
-	public Activity(User user, String commitComment, Branch branch, Date commitDate) {
-		this.user = user;
-		this.commitComment = commitComment;
+	public Activity(String id, String username, String branch, int branchDepth, String sourceBranch,
+					String highestPromotedBranch, Date commitDate, ActivityType activityType, List<ConceptChange> conceptChanges) {
+		this.id = id;
+		this.username = username;
 		this.branch = branch;
-		this.commitDate = commitDate;
-		this.highestPromotedBranch = branch;
-		conceptChanges = new HashSet<>();
-	}
-
-	public void addConceptChange(ConceptChange conceptChange) {
-		conceptChanges.add(conceptChange);
-		conceptChange.setActivity(this);
-	}
-
-	public void setActivityType(ActivityType activityType) {
-		this.activityType = activityType;
-	}
-
-	public void setMergeSourceBranch(Branch mergeSourceBranch) {
-		this.mergeSourceBranch = mergeSourceBranch;
-	}
-
-	public void setHighestPromotedBranch(Branch highestPromotedBranch) {
+		this.branchDepth = branchDepth;
+		this.sourceBranch = sourceBranch;
 		this.highestPromotedBranch = highestPromotedBranch;
+		this.commitDate = commitDate;
+		this.activityType = activityType;
+		if (conceptChanges != null) {
+			this.conceptChanges.addAll(conceptChanges);
+		}
 	}
 
-	public Long getId() {
+	public String getId() {
 		return id;
 	}
 
-	public User getUser() {
-		return user;
+	public void setId(String id) {
+		this.id = id;
 	}
 
-	public String getCommitComment() {
-		return commitComment;
+	public String getUsername() {
+		return username;
 	}
 
-	public Branch getBranch() {
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getBranch() {
 		return branch;
+	}
+
+	public void setBranch(String branch) {
+		this.branch = branch;
+	}
+
+	public int getBranchDepth() {
+		return branchDepth;
+	}
+
+	public void setBranchDepth(int branchDepth) {
+		this.branchDepth = branchDepth;
+	}
+
+	public String getSourceBranch() {
+		return sourceBranch;
+	}
+
+	public void setSourceBranch(String sourceBranch) {
+		this.sourceBranch = sourceBranch;
+	}
+
+	public String getHighestPromotedBranch() {
+		return highestPromotedBranch;
+	}
+
+	public void setHighestPromotedBranch(String highestPromotedBranch) {
+		this.highestPromotedBranch = highestPromotedBranch;
 	}
 
 	public Date getCommitDate() {
 		return commitDate;
 	}
 
+	public void setCommitDate(Date commitDate) {
+		this.commitDate = commitDate;
+	}
+
 	public ActivityType getActivityType() {
 		return activityType;
 	}
 
-	public Set<ConceptChange> getConceptChanges() {
+	public void setActivityType(ActivityType activityType) {
+		this.activityType = activityType;
+	}
+
+	public List<ConceptChange> getConceptChanges() {
 		return conceptChanges;
 	}
 
-	public Branch getMergeSourceBranch() {
-		return mergeSourceBranch;
-	}
-
-	public Branch getHighestPromotedBranch() {
-		return highestPromotedBranch;
-	}
-
-	@Override
-	public String toString() {
-		return "Activity{" +
-				"id=" + id +
-				", user=" + user +
-				", activityType=" + activityType +
-				", commitComment='" + commitComment + '\'' +
-				", branch=" + branch +
-				", mergeSourceBranch=" + mergeSourceBranch +
-				", highestPromotedBranch=" + highestPromotedBranch +
-				", commitDate=" + commitDate +
-				", conceptChanges=" + conceptChanges +
-				'}';
+	public void setConceptChanges(List<ConceptChange> conceptChanges) {
+		if (conceptChanges != null) {
+			this.conceptChanges.addAll(conceptChanges);
+		}
 	}
 }
