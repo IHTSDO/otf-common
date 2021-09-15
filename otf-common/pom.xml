@@ -109,11 +109,6 @@
 			<version>1.25.0</version>
 		</dependency>
 		<dependency>
-			<groupId>com.google.oauth-client</groupId>
-			<artifactId>google-oauth-client-jetty</artifactId>
-			<version>1.25.0</version>
-		</dependency>
-		<dependency>
 			<groupId>com.google.apis</groupId>
 			<artifactId>google-api-services-sheets</artifactId>
 			<version>v4-rev614-1.18.0-rc</version>
