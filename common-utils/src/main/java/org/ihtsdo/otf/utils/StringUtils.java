@@ -5,6 +5,10 @@ import java.util.*;
 import org.ihtsdo.otf.RF2Constants;
 
 public class StringUtils implements RF2Constants {
+	
+	public static int INDEX_NOT_FOUND = -1;
+	
+	public static String EMPTY = "";
 
 	public static List<String> removeBlankLines(List<String> lines) {
 		List<String> unixLines = new ArrayList<String>();
@@ -204,7 +208,75 @@ public class StringUtils implements RF2Constants {
 		}
 		return false;
 	}
+	
+	public static String difference(String lhs, String rhs) {
+		return difference(lhs, rhs, false);
+	}
+	
+	public static String differenceCaseInsensitive(String lhs, String rhs) {
+		return difference(lhs, rhs, true);
+	}
 
+	public static String difference(String lhs, String rhs, boolean caseInsensitive) {
+		if (lhs == null) {
+			return rhs;
+		}
+		if (rhs == null) {
+			return lhs;
+		}
+		int at = INDEX_NOT_FOUND;
+		if (caseInsensitive) {
+			at = indexOfDifference(lhs.toLowerCase(), rhs.toLowerCase());
+		} else {
+			at = indexOfDifference(lhs, rhs);
+		}
+		
+		if (at == INDEX_NOT_FOUND) {
+			return EMPTY;
+		}
+		
+		String larger = caseInsensitive?rhs.toLowerCase():rhs;
+		String largerOrig = rhs;
+		String smaller = caseInsensitive?lhs.toLowerCase():lhs;
+		if (rhs.length() < lhs.length()) {
+			larger = caseInsensitive?lhs.toLowerCase():lhs;
+			largerOrig = lhs;
+			smaller = caseInsensitive?rhs.toLowerCase():rhs;;
+		}
+		
+		//From the index point where they differ, see if we can find the point in the larger
+		//where they re-align
+		String remainder = smaller.substring(at);
+		for (int i=at; i < larger.length(); i++) {
+			try {
+				if (larger.substring(i).equals(remainder)) {
+					return largerOrig.substring(at, i);
+				}
+			} catch (Exception e) {
+				System.out.println("Check exception here:" + e);
+				break;
+			}
+		}
+		return rhs.substring(at);
+	}
 
+	public static int indexOfDifference(CharSequence lhs, CharSequence rhs) {
+		if (lhs == rhs) {
+			return INDEX_NOT_FOUND;
+		}
+		if (lhs == null || rhs == null) {
+			return 0;
+		}
+		int i;
+		for (i = 0; i < lhs.length() && i < rhs.length(); ++i) {
+			if (lhs.charAt(i) != rhs.charAt(i)) {
+				break;
+			}
+		}
+		if (i < rhs.length() || i < lhs.length()) {
+			return i;
+		}
+		return INDEX_NOT_FOUND;
+	}
 
 }
