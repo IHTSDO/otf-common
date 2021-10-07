@@ -164,4 +164,8 @@ public class SnowstormRestUrlHelper {
 	public String getCodeSystemsUrl() {
 		return snowstormUrl + "/codesystems";
 	}
+
+	public URI getSetAuthorFlagUri(String branchPath) {
+		return getUri(snowstormUrl + "/branches/" + branchPath + "/actions/set-author-flag");
+	}
 }

@@ -1,10 +1,14 @@
 package org.ihtsdo.otf.rest.client.terminologyserver;
 
-import java.io.*;
-import java.net.URI;
-import java.nio.file.Files;
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonWriter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -34,21 +38,15 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonWriter;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
+
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Files;
+import java.util.*;
 
 // TODO: This whole class is a mess and needs refactoring.
 public class SnowstormRestClient {
@@ -1125,5 +1123,9 @@ public class SnowstormRestClient {
 			return branch.getMetadata().containsKey(LOCK);
 		}
 		return false;
+	}
+
+	public void setAuthorFlag(String branchPath, String key, String value) throws RestClientException {
+		createEntity(urlHelper.getSetAuthorFlagUri(branchPath), Map.of("name", key, "value", value));
 	}
 }
