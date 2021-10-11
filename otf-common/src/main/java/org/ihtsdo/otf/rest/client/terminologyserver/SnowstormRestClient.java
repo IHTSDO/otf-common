@@ -1126,6 +1126,15 @@ public class SnowstormRestClient {
 	}
 
 	public void setAuthorFlag(String branchPath, String key, String value) throws RestClientException {
-		createEntity(urlHelper.getSetAuthorFlagUri(branchPath), Map.of("name", key, "value", value));
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		RequestEntity<Map<String, String>> request = RequestEntity
+				.post(urlHelper.getSetAuthorFlagUri(branchPath))
+				.header(COOKIE, authenticationToken)
+				.body(Map.of("name", key, "value", value));
+
+		ResponseEntity<Object> exchange = restTemplate.exchange(request, Object.class);
+		if (!exchange.getStatusCode().is2xxSuccessful()) {
+			throw new RestClientException("Failed to set flag on branch " + branchPath);
+		}
 	}
 }
