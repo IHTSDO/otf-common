@@ -19,6 +19,8 @@ public class RelationshipPojo implements SnomedComponent {
 
 	private ConceptMiniPojo target;
 
+	private ConcreteValue concreteValue;
+
 	private int groupId;
 
 	private ConceptMiniPojo type;
@@ -104,6 +106,14 @@ public class RelationshipPojo implements SnomedComponent {
 
 	public void setTarget(ConceptMiniPojo target) {
 		this.target = target;
+	}
+
+	public void setConcreteValue(ConcreteValue concreteValue) {
+		this.concreteValue = concreteValue;
+	}
+
+	public ConcreteValue getConcreteValue() {
+		return concreteValue;
 	}
 
 	public ConceptMiniPojo getType() {
