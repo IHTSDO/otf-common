@@ -201,6 +201,10 @@ public class JobRun {
 		}
 		return value;
 	}
+	
+	public boolean getParamBoolean(String key) {
+		return parameters.getBoolean(key);
+	}
 
 	public Set<WhiteListedConcept> getWhiteList() {
 		return whiteList;

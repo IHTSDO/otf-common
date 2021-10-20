@@ -88,6 +88,14 @@ public class JobParameters {
 		}
 		throw new IllegalArgumentException("Mandatory boolean parameter value for '" + key + "' was not recognised: '" + value + "'");
 	}
+	
+	public boolean getBoolean(String key) {
+		String value = getValue(key);
+		if (value != null && (value.toUpperCase().equals("Y") || value.toUpperCase().equals("TRUE"))) {
+			return true;
+		}
+		return false;
+	}
 
 	// Private so not to expose the internal collection
 	// Ah, can't be private or doesn't show up in JSON
