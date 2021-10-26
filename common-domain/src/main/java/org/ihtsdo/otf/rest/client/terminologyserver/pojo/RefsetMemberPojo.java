@@ -50,7 +50,7 @@ public class RefsetMemberPojo implements SnomedComponent {
 		this.releasedEffectiveTime = releasedEffectiveTime;
 	}
 
-	public String getreleasedEffectiveTime() {
+	public String getReleasedEffectiveTime() {
 		return releasedEffectiveTime;
 	}
 
