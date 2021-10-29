@@ -12,9 +12,12 @@ public class JobRun {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(columnDefinition = "BINARY(16)")
 	UUID id;
+	
 	String jobName;
 	
 	String project;
+	
+	String task;
 	
 	String codeSystemShortname;
 	
@@ -132,7 +135,7 @@ public class JobRun {
 				+ " for user '" + user + "' in status: "
 				+ status 
 				+ " with codeSystem '" + codeSystemShortname +"'"
-				+ " in project '" + project + "'"
+				+ " in project '" + project + "'" + (task==null?"":(" task " + task))
 				+ " with parameters: " + getParameters()
 				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
 	}
@@ -146,6 +149,7 @@ public class JobRun {
 		clone.setIssuesReported(getIssuesReported());
 		clone.setJobName(getJobName());
 		clone.setProject(getProject());
+		clone.setTask(getTask());
 		clone.setParameters(getParameters());
 		clone.setRequestTime(getRequestTime());
 		clone.setResultTime(getResultTime());
@@ -228,6 +232,14 @@ public class JobRun {
 
 	public void setcodeSystemShortname(String codeSystemShortname) {
 		this.codeSystemShortname = codeSystemShortname;
+	}
+
+	public String getTask() {
+		return task;
+	}
+
+	public void setTask(String task) {
+		this.task = task;
 	}
 
 }
