@@ -24,6 +24,9 @@ public class Metadata {
     @SerializedName("dependencyPackage")
     @Expose
     private String dependencyPackage;
+    @SerializedName("previousDependencyPackage")
+    @Expose
+    private String previousDependencyPackage;
     @SerializedName("codeSystemShortName")
     @Expose
     private String codeSystemShortName;
@@ -113,6 +116,14 @@ public class Metadata {
 
     public void setDependencyPackage(String dependencyPackage) {
         this.dependencyPackage = dependencyPackage;
+    }
+    
+    public String getPreviousDependencyPackage() {
+        return previousDependencyPackage;
+    }
+
+    public void setPreviousDependencyPackage(String previousDependencyPackage) {
+        this.previousDependencyPackage = previousDependencyPackage;
     }
 
     public String getCodeSystemShortName() {
