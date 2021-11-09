@@ -106,7 +106,7 @@ public class ConceptPojo implements SnomedComponent, IConcept {
 	public String getFsn() {
 		if (descriptions != null) {
 			for (DescriptionPojo description : descriptions) {
-				if ("FSN".equals(description.getType()) && description.isActive()) {
+				if (DescriptionPojo.Type.FSN.equals(description.getType()) && description.isActive()) {
 					return description.getTerm();
 				}
 			}

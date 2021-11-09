@@ -52,7 +52,6 @@ public class AdditionalFieldsPojo {
 	
 	private String rangeConstraint;
 	
-
 	public AdditionalFieldsPojo() {}
 
 	public String getDomainTemplateForPostcoordination() {
@@ -239,5 +238,28 @@ public class AdditionalFieldsPojo {
 		builder.append("]");
 		//TODO Knock off that last ugly comma
 		return builder.toString();
+	}
+	
+	public AdditionalFieldsPojo clone() {
+		AdditionalFieldsPojo clone = new AdditionalFieldsPojo();
+		clone.targetComponentId = this.targetComponentId;
+		clone.valueId = this.valueId;
+		clone.mapTarget = this.mapTarget;
+		clone.domainTemplateForPostcoordination = this.domainTemplateForPostcoordination;
+		clone.domainTemplateForPrecoordination = this.domainTemplateForPrecoordination;
+		clone.proximalPrimitiveConstraint = this.proximalPrimitiveConstraint;
+		clone.guideURL = this.guideURL;
+		clone.domainConstraint = this.domainConstraint;
+		clone.parentDomain = this.parentDomain;
+		clone.proximalPrimitiveRefinement = this.proximalPrimitiveRefinement;
+		clone.grouped = this.grouped;
+		clone.attributeInGroupCardinality = this.attributeInGroupCardinality;
+		clone.attributeCardinality = this.attributeCardinality;
+		clone.contentTypeId = this.contentTypeId;
+		clone.domainId = this.domainId;
+		clone.ruleStrengthId = this.ruleStrengthId;
+		clone.attributeRule = this.attributeRule;
+		clone.rangeConstraint = this.rangeConstraint;
+		return clone;
 	}
 }

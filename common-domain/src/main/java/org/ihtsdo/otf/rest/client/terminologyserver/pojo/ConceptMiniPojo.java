@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConceptMiniPojo {
+public class ConceptMiniPojo implements IConcept {
 	
 	private String conceptId;
 
@@ -63,10 +63,8 @@ public class ConceptMiniPojo {
 	public void setDefinitionStatus(String definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
-	
 
-	@Override
-	public String toString() {
+	public String toStringFull() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("ConceptMiniPojo [");
 		if (conceptId != null)
@@ -75,6 +73,11 @@ public class ConceptMiniPojo {
 			builder.append("fsn=").append(fsn);
 		builder.append("]");
 		return builder.toString();
+	}
+	
+	@Override
+	public String toString() {
+		return conceptId + "|" + (fsn==null?null:fsn.getTerm()) + "|";
 	}
 
 	@Override
@@ -156,5 +159,10 @@ public class ConceptMiniPojo {
 		public String toString() {
 			return "DescriptionMiniPojo [term=" + term + ", lang=" + lang + "]";
 		}
+	}
+
+	@Override
+	public String getFsnTerm() {
+		return fsn.getTerm();
 	}
 }

@@ -21,12 +21,25 @@ public class RefsetMemberPojo implements SnomedComponent {
 	private String releasedEffectiveTime;
 
 	private String referencedComponentId;
+	
+	private ConceptMiniPojo referencedComponent;
 
 	private String refsetId;
 
 	private AdditionalFieldsPojo additionalFields;
 
 	public RefsetMemberPojo() {}
+	
+	public RefsetMemberPojo clone() {
+		RefsetMemberPojo clone = new RefsetMemberPojo();
+		clone.id = null;
+		clone.effectiveTime = null;
+		clone.moduleId = this.moduleId;
+		clone.refsetId = this.refsetId;
+		clone.referencedComponentId = this.referencedComponentId;
+		clone.additionalFields = this.additionalFields.clone();
+		return clone;
+	}
 
 	@Override
 	public String getId() {
@@ -138,6 +151,15 @@ public class RefsetMemberPojo implements SnomedComponent {
 		this.id = id;
 	}
 	
+
+	public ConceptMiniPojo getReferencedComponent() {
+		return referencedComponent;
+	}
+
+	public void setReferencedComponent(ConceptMiniPojo referencedComponent) {
+		this.referencedComponent = referencedComponent;
+	}
+	
 	@Override
 	public String toString() {
 		return id + ":" + refsetId + " " + referencedComponentId + " -> " + additionalFields.toString();
@@ -150,5 +172,16 @@ public class RefsetMemberPojo implements SnomedComponent {
 				+ additionalFields + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		return id.hashCode();
+	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof RefsetMemberPojo) {
+			return this.id.equals(((RefsetMemberPojo)obj).id);
+		}
+		return false;
+	}
 }
