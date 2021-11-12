@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TraceabilityServiceClient {
 	
@@ -56,23 +57,21 @@ public class TraceabilityServiceClient {
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 	
-	public List<Activity> getConceptActivity(List<Long> conceptIds, String commentFilter, ActivityType activityType, String user) {
+	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) {
 		if (conceptIds == null || conceptIds.size() == 0) {
 			logger.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
 			return new ArrayList<>();
 		}
 		
 		String url = this.serverUrl + "traceability-service/activitiesBulk?activityType=" + activityType;
-		if (!StringUtils.isEmpty(commentFilter)) {
-				url += "&commentFilter="+commentFilter;
-		}
 
 		if (user != null && !StringUtils.isEmpty(user)) {
 			url += "&user=" + user;
 		}
-
-		
-		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIds, headers);
+		List<Long> conceptIdsL = conceptIds.stream()
+				.map(c -> Long.parseLong(c))
+				.collect(Collectors.toList());
+		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIdsL, headers);
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
 		int offset = 0;

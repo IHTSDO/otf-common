@@ -106,4 +106,17 @@ public class Activity {
 			this.conceptChanges.addAll(conceptChanges);
 		}
 	}
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		sb.append("Activity{");
+		sb.append("id = " + id);
+		sb.append(", username = " + username);
+		sb.append(", branch = " + branch);
+		sb.append(", commitDate = " + commitDate);
+		sb.append(", activityType = " + activityType);
+		sb.append("}");
+		return sb.toString();
+	}
 }

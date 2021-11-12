@@ -4,31 +4,25 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ConceptChange {
-	private Long conceptId;
+	private String conceptId;
 	private final Set<ComponentChange> componentChanges = new HashSet<>();
 
 	public ConceptChange() {
 	}
 
-	public ConceptChange(Long conceptId, Set<ComponentChange> componentChanges) {
+	public ConceptChange(String conceptId, Set<ComponentChange> componentChanges) {
 		this.conceptId = conceptId;
 		if (componentChanges != null) {
 			this.componentChanges.addAll(componentChanges);
 		}
 	}
 
-	public Long getConceptId() {
+	public String getConceptId() {
 		return conceptId;
 	}
 
-	public void setConceptId(Object conceptId) {
-		if (conceptId instanceof Double) {
-			Double asDouble = (Double) conceptId;
-			this.conceptId = asDouble.longValue();
-		} else if (conceptId instanceof Long) {
-			Long asLong = (Long) conceptId;
-			this.conceptId = asLong;
-		}
+	public void setConceptId(String conceptId) {
+		this.conceptId = conceptId;
 	}
 
 	public Set<ComponentChange> getComponentChanges() {
