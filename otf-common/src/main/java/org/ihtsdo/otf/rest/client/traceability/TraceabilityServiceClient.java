@@ -19,6 +19,7 @@ import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,6 +44,8 @@ public class TraceabilityServiceClient {
 		restTemplate = new RestTemplateBuilder()
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
+				.setConnectTimeout(Duration.ofMinutes(3)) // 3 minutes
+				.setReadTimeout(Duration.ofMinutes(3))
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
@@ -57,7 +60,7 @@ public class TraceabilityServiceClient {
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 	
-	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) {
+	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) throws InterruptedException {
 		if (conceptIds == null || conceptIds.size() == 0) {
 			logger.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
 			return new ArrayList<>();
@@ -78,8 +81,20 @@ public class TraceabilityServiceClient {
 		TypeReference<List<Activity>> responseContentType = new TypeReference<>() {
 		};
 		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
+		int failureCount = 0;
 		while (!isLast) {
-			ResponseEntity<Object> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
+			ResponseEntity<Object> responseEntity = null;
+			try {
+				responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
+			} catch (Exception e) {
+				failureCount++;
+				if (failureCount > 3) {
+					throw e;
+				}
+				logger.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
+				continue;
+			}
 			LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
 			if (responseBody != null) {
 				Object content = responseBody.get("content");
