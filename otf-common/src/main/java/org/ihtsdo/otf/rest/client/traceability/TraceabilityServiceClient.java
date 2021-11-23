@@ -16,6 +16,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -86,7 +87,11 @@ public class TraceabilityServiceClient {
 			ResponseEntity<Object> responseEntity = null;
 			try {
 				responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
-			} catch (Exception e) {
+			} catch (RestClientResponseException e) {
+				if (e.getRawStatusCode()==500) {
+					//No need to retry if the server is failing this badly
+					throw (e);
+				}
 				failureCount++;
 				if (failureCount > 3) {
 					throw e;
