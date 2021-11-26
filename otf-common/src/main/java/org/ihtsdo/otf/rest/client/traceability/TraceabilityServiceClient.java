@@ -3,6 +3,7 @@ package org.ihtsdo.otf.rest.client.traceability;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
@@ -35,6 +36,7 @@ public class TraceabilityServiceClient {
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
 	private final int DATA_SIZE = 1000;
+	public static int BATCH_SIZE = 50;
 	
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
@@ -89,6 +91,12 @@ public class TraceabilityServiceClient {
 				responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
 			} catch (RestClientResponseException e) {
 				if (e.getRawStatusCode()==500) {
+					//Are we asking for too much here? Try splitting
+					if (conceptIds.size() > BATCH_SIZE / 2) {
+						logger.warn("Issue with call to " + url);
+						logger.warn("Received 500 error " + e + " retrying smaller batches");
+						return retryAsSplit(conceptIds, activityType, user);
+					}
 					//No need to retry if the server is failing this badly
 					throw (e);
 				}
@@ -115,6 +123,20 @@ public class TraceabilityServiceClient {
 		}
 		logger.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
 		return activities;
+	}
+
+	private List<Activity> retryAsSplit(List<String> conceptIds, ActivityType activityType, String user) throws InterruptedException {
+		//Try the conceptIds again, split into batches of 15
+		List<List<String>> subBatches = Lists.partition(conceptIds, 10);
+		List<Activity> activity = new ArrayList<>();
+		for (List<String> subBatch : subBatches) {
+			try {
+				activity.addAll(getConceptActivity(subBatch, activityType, user));
+			} catch (Exception e) {
+				logger.error("Exception against " + activityType + " conceptIds " + StringUtils.join(subBatch, ", "));
+			}
+		}
+		return activity;
 	}
 
 }
