@@ -50,13 +50,17 @@ public class StringUtils implements RF2Constants {
 		}
 		return first.equals(first.toLowerCase());
 	}
-
-	public static boolean isCaseSensitive(String term) {
+	
+	public static boolean isCaseSensitive(String term, boolean expectFirstLetterCapitalization) {
 		String afterFirst = term.substring(1);
 		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
 		
 		//Also case sensitive if we start with a lower case letter
-		return !allLowerCase || initialLetterLowerCase(term);
+		return !allLowerCase || (expectFirstLetterCapitalization && initialLetterLowerCase(term));
+	}
+
+	public static boolean isCaseSensitive(String term) {
+		return isCaseSensitive(term, true);
 	}
 	
 	/**
@@ -277,6 +281,14 @@ public class StringUtils implements RF2Constants {
 			return i;
 		}
 		return INDEX_NOT_FOUND;
+	}
+
+	public static String getFirstWord(String term) {
+		return term.split(" ")[0];
+	}
+
+	public static boolean isCapitalized(String word) {
+		return Character.isUpperCase(word.charAt(0));
 	}
 
 }
