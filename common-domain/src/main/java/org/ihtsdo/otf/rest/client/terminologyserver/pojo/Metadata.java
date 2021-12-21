@@ -1,6 +1,10 @@
 
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -39,6 +43,9 @@ public class Metadata {
     @SerializedName("shortname")
     @Expose
     private String shortname;
+    @SerializedName("requiredLanguageRefsets")
+    @Expose
+    private List<Map<String, String>> requiredLanguageRefsets;
 
     /**
      * No args constructor for use in serialization
@@ -157,5 +164,29 @@ public class Metadata {
     public void setShortname(String shortname) {
         this.shortname = shortname;
     }
+
+	public List<Map<String, String>> getRequiredLanguageRefsets() {
+		return requiredLanguageRefsets;
+	}
+
+	public void setRequiredLanguageRefsets(List<Map<String, String>> requiredLanguageRefsets) {
+		this.requiredLanguageRefsets = requiredLanguageRefsets;
+	}
+	
+	public Map<String, String> getLangLangRefsetMapping() {
+		Map<String, String> langLangRefsetMapping = new HashMap<>();
+		if (getRequiredLanguageRefsets() != null) {
+			for (Map<String, String> langEntry : getRequiredLanguageRefsets()) {
+				for (Map.Entry<String, String> langItem : langEntry.entrySet()) {
+					if (langItem.getKey().length() == 2) {
+						//We're assuming two lettered entries are language codes.  Oh dear.
+						langLangRefsetMapping.put(langItem.getKey(), langItem.getValue());
+					}
+				}
+			}
+		}
+		
+		return langLangRefsetMapping;
+	}
 
 }
