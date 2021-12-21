@@ -1,6 +1,8 @@
 package org.snomed.otf.script;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -25,6 +27,19 @@ public abstract class Script implements RF2Constants {
 	
 	static Logger sLogger = LoggerFactory.getLogger(Script.class);
 	Logger logger = LoggerFactory.getLogger(this.getClass());
+	
+	public static List<String> HISTORICAL_REFSETS = new ArrayList<>();
+	static {
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_REPLACED_BY_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_POSS_REPLACED_BY_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_POSS_EQUIV_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_SAME_AS_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_MOVED_TO_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_ALTERNATIVE_REFSETID);
+		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
+	};
 	
 	protected ReportManager reportManager;
 	protected RF2Manager rf2Manager;
