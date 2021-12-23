@@ -388,8 +388,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		return sheet == null ? null : sheet.getSpreadsheetUrl();
 	}
 
-	public boolean formatSpreadSheetColumns() {
-		boolean writeSuccess = false;
+	public void formatSpreadSheetColumns() {
 		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 		List<Request> requests = new ArrayList<>();
 
@@ -408,24 +407,13 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		}
 		batch.setRequests(requests);
 
-		Script.info("Formatting Goggle SpreadSheet Sheet/s (Columns to auto size).");
-		int writeAttempts = 0;
-		while (!writeSuccess && writeAttempts <= MAX_WRITE_ATTEMPTS) {
+		Script.info("Formatting Google SpreadSheet Sheet/s (Columns to auto size).");
+		new Thread(() -> {
 			try {
 				sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
-				writeSuccess = true;
 			} catch (Exception e) {
-				if (writeAttempts <= MAX_WRITE_ATTEMPTS) {
-					try {
-						Script.warn("Exception from Google Sheets, sleeping then trying again");
-						Thread.sleep(30 * 1000);
-					} catch (InterruptedException e1) {
-					}
-					Script.info(e.getMessage() + " trying again...");
-				}
+				Script.error("Column size formatting attempt failed. Don't care.", e);
 			}
-			writeAttempts++;
-		}
-		return writeSuccess;
+		}).start();
 	}
 }
