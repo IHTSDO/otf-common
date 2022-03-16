@@ -25,7 +25,7 @@ public class ReportManager implements RF2Constants {
 	protected int numberOfDistinctReports = 1;
 	Script script;
 	
-	protected DataUploader dataUploader;
+	protected DataBroker dataUploader;
 	List<String> tabNames;
 	
 	private ReportManager() {};
@@ -195,6 +195,10 @@ public class ReportManager implements RF2Constants {
 
 	public void setWriteToS3(boolean flag) {
 		this.writeToS3 = flag;
+	}
+	
+	public boolean isWriteToS3() {
+		return this.writeToS3;
 	}
 
 	public boolean isWriteToSheet() {

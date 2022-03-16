@@ -22,7 +22,7 @@ public class ReportS3FileManager extends ReportFileManager {
     public static final String REPORT_NAME_KEY = "@REPORT_NAME@";
 
 
-    private DataUploader reportDataUploader;
+    private DataBroker reportDataUploader;
     private DataTransformer dataTransformer;
 
     // Do not delete as the worker is reset every time is starts.
@@ -34,7 +34,7 @@ public class ReportS3FileManager extends ReportFileManager {
     private Map<File, File> transformedReportsToS3Reports;
 
     public ReportS3FileManager(ReportManager owner,
-                               DataUploader dataUploader,
+                               DataBroker dataUploader,
                                DataTransformer dataTransformer) {
         super(owner);
         this.reportDataUploader = dataUploader;
@@ -168,6 +168,9 @@ public class ReportS3FileManager extends ReportFileManager {
     }
 
     public String getURL() {
+    	if (transformedReportsToS3Reports == null || transformedReportsToS3Reports.values() == null) {
+    		return null;
+    	}
         // get the path for all the reports (this is the way it's done for csv files)
         return cleanFileName(reportDataUploader.getUploadLocation(S3_BUCKET_PROTOCOL, S3_BUCKET_DOMAIN) +
                 File.separator +

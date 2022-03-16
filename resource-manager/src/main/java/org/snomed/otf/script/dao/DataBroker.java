@@ -4,7 +4,7 @@ import java.io.File;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
-public interface DataUploader {
+public interface DataBroker {
 
 	String getUploadLocation(String s3BucketProtocol, String s3BucketDomain);
 

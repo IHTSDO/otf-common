@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 
@@ -86,6 +87,34 @@ public class ResourceManager {
 			return resourceLoader.getResource(fullPath).getInputStream();
 		} catch (AmazonS3Exception e) {
 			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
+		}
+	}
+	
+	/**
+	 * Determine existence of resource from the given <code>resourcePath</code>.
+	 *
+	 * @param resourcePath Path to the resource.
+	 * @return boolean true if the resource exists
+	 * @throws IOException If an error occurs while trying to examine
+	 *                     the resource.
+	 */
+	public boolean doesObjectExist(final File resource) throws IOException {
+		try {
+			if (resourceConfiguration.isUseCloud()) {
+				//In case we're running on a PC we need to convert backslashes to forward
+				String configPath = resourceConfiguration.getCloud().getPath().replaceAll("\\\\", "/");;
+				if (configPath != null && !configPath.endsWith("/")) {
+					configPath += "/";
+				}
+				String resourcePath = resource.getPath().replaceAll("\\\\", "/");
+				resourcePath = (configPath != null ? configPath : "") + resourcePath;
+				String bucketName = resourceConfiguration.getCloud().getBucketName();
+				return amazonS3.doesObjectExist(bucketName, resourcePath);
+			} else {
+				return Files.isReadable(resource.toPath());
+			}
+		} catch (AmazonS3Exception e) {
+			throw new IOException("Failed to determine existence of '" + resource + "'.", e);
 		}
 	}
 

@@ -15,7 +15,7 @@ import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
-import org.snomed.otf.script.dao.DataUploader;
+import org.snomed.otf.script.dao.DataBroker;
 import org.snomed.otf.script.dao.RF2Manager;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportManager;
@@ -102,7 +102,7 @@ public abstract class Script implements RF2Constants {
 		throw new NotImplementedException("Complex name currently only required by SummaryComponentStats");
 	}
 
-	public DataUploader getReportDataUploader() throws TermServerScriptException {
+	public DataBroker getReportDataUploader() throws TermServerScriptException {
 		throw new NotImplementedException("ReportDataUploader should be provided by TermServerScript.");
 	}
 	
