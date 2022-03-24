@@ -2,6 +2,8 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.List;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
+
 public abstract class Component {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
@@ -15,9 +17,15 @@ public abstract class Component {
 	
 	public abstract String getEffectiveTime();
 	
+	public abstract void setEffectiveTime(String effectiveTime);
+	
 	public abstract boolean isActive();
 	
+	public abstract void setActive(boolean active);
+	
 	public abstract String getModuleId();
+	
+	public abstract void setModuleId(String moduleId);
 	
 	public abstract String getReportedName();
 	
@@ -55,21 +63,31 @@ public abstract class Component {
 		}
 		return false;
 	}
+	
+	public List<String> fieldComparison(Component other) throws TermServerScriptException {
+		return fieldComparison(other, false);
+	}
 
-	public abstract List<String> fieldComparison(Component other);
+	public abstract List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException;
 	
 	protected void commonFieldComparison(Component other, List<String> differences) {
+		commonFieldComparison(other, differences, false);
+	}
+	
+	protected void commonFieldComparison(Component other, List<String> differences, boolean ignoreEffectiveTime) {
 		String name = this.getClass().getSimpleName(); 
 		
 		if (!this.getId().equals(other.getId())) {
 			differences.add("Id different in " + name + ": " + this.getId() + " vs " + other.getId());
 		}
 		
-		if (this.getEffectiveTime() != null || this.getEffectiveTime() != null) {
-			if ((this.getEffectiveTime() == null && this.getEffectiveTime() != null) ||
-					(this.getEffectiveTime() != null && this.getEffectiveTime() == null) ||
-					!this.getEffectiveTime().equals(other.getEffectiveTime())){
-				differences.add("EffectiveTime different in " + name + ": " + this.getEffectiveTime() + " vs " + other.getEffectiveTime());
+		if (!ignoreEffectiveTime) {
+			if (this.getEffectiveTime() != null || this.getEffectiveTime() != null) {
+				if ((this.getEffectiveTime() == null && this.getEffectiveTime() != null) ||
+						(this.getEffectiveTime() != null && this.getEffectiveTime() == null) ||
+						!this.getEffectiveTime().equals(other.getEffectiveTime())){
+					differences.add("EffectiveTime different in " + name + ": " + this.getEffectiveTime() + " vs " + other.getEffectiveTime());
+				}
 			}
 		}
 		
