@@ -108,7 +108,7 @@ public interface RF2Constants {
 	//Inactivation Indicator Reasons
 	enum InactivationIndicator {AMBIGUOUS, DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED, NONCONFORMANCE_TO_EDITORIAL_POLICY, 
-		NOT_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASS_DERIVED_COMPONENT};
+		NOT_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASS_DERIVED_COMPONENT, GRAMMATICAL_DESCRIPTION_ERROR};
 	public static final String SCTID_INACT_AMBIGUOUS ="900000000000484002";  // |Ambiguous component (foundation metadata concept)|
 	public static final String SCTID_INACT_MOVED_ELSEWHERE  ="900000000000487009";  // |Component moved elsewhere (foundation metadata concept)|
 	public static final String SCTID_INACT_CONCEPT_NON_CURRENT  ="900000000000495008";  // |Concept non-current (foundation metadata concept)|
@@ -122,6 +122,7 @@ public interface RF2Constants {
 	public static final String SCTID_INACT_NOT_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
 	public static final String SCTID_INACT_COMPONENT_MEANING_UNKNOWN  = "1186919006"; // |Meaning of component unknown (foundation metadata concept)|
 	public static final String SCTID_INACT_CLASS_DERIVED_COMPONENT  = "1186917008"; // |Classification derived component (foundation metadata concept)|
+	public static final String SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR = "1217318005"; // |Grammatical description error (foundation metadata concept)|
 	
 	// Associations
 	enum Association { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE, ANATOMY_STRUC_ENTIRE, POSS_REPLACED_BY, PARTIALLY_EQUIV_TO, ANATOMY_STRUC_PART }
