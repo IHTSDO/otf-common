@@ -1,6 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.persistence.*;
 
@@ -169,19 +170,21 @@ public class JobRun {
 		}
 	}
 
-	public void setParameter(String key, String value) {
-		parameters.setValue(key, value);
+	public void setParameter(String key, Object value) {
+		if (value instanceof Collection) {
+			List<String> values = ((Collection<?>)value).stream()
+					.map(v -> v.toString())
+					.collect(Collectors.toList());
+			parameters.setValues(key, values);
+		} else {
+			parameters.setValue(key, value);
+		}
 	}
 
 	public String getMandatoryParamValue(String key) {
 		String value = parameters.getValue(key);
 		if (value == null || StringUtils.isEmpty(value.trim())) {
-			//Do we have a default value to use instead?
-			if (parameters.getDefaultValue(key) != null) {
-				return parameters.getDefaultValue(key);
-			} else {
-				throw new IllegalArgumentException("Mandatory parameter '" + key + "' was not supplied");
-			}
+			throw new IllegalArgumentException("Mandatory parameter '" + key + "' was not supplied");
 		}
 		return value;
 	}

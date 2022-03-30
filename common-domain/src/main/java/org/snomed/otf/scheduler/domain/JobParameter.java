@@ -1,17 +1,18 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.util.Arrays;
+import java.util.List;
+
 import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 @Entity
 public class JobParameter {
 
 	public enum Type {	BOOLEAN, STRING, CONCEPT, 
 						CONCEPT_LIST, TEMPLATE_NAME, TEMPLATE,
-						HIDDEN, ECL, PROJECT }
+						HIDDEN, ECL, PROJECT, DROPDOWN, CHECKBOXES }
 	
 	@Id
 	@JsonIgnore
@@ -27,14 +28,18 @@ public class JobParameter {
 	
 	Type type;
 	
-	@JsonInclude(Include.ALWAYS)
 	@Column(columnDefinition="TEXT")
 	String value;
 	
+	@ElementCollection(targetClass=String.class)
+	@Column(name="parameter_values")
+	List<String> values;
+	
+	@ElementCollection(targetClass=String.class)
+	List<String> options;
+	
 	@Column(columnDefinition="TEXT")
 	String description;
-	
-	String defaultValue;
 	
 	String validationRule;
 	
@@ -69,6 +74,24 @@ public class JobParameter {
 		return this;
 	}
 	
+	public JobParameter withValues(String... values) {
+		if (values == null) {
+			setValues(null);
+		} else {
+			setValues(Arrays.asList(values));
+		}
+		return this;
+	}
+	
+	public JobParameter withOptions(String... options) {
+		if (options == null) {
+			setOptions(null);
+		} else {
+			setOptions(Arrays.asList(options));
+		}
+		return this;
+	}
+	
 	public JobParameter withValue(Object value) {
 		return setValue(value);
 	}
@@ -88,9 +111,18 @@ public class JobParameter {
 	
 	public JobParameter withDefaultValue(Object defaultValue) {
 		if (defaultValue == null) {
-			this.defaultValue = null;
+			this.value = null;
 		} else {
-			this.defaultValue = defaultValue.toString();
+			this.value = defaultValue.toString();
+		}
+		return this;
+	}
+	
+	public JobParameter withDefaultValues(String... defaultValues) {
+		if (defaultValues == null) {
+			this.values = null;
+		} else {
+			this.values = Arrays.asList(defaultValues);
 		}
 		return this;
 	}
@@ -139,14 +171,6 @@ public class JobParameter {
 		this.description = description;
 	}
 
-	public String getDefaultValue() {
-		return defaultValue;
-	}
-
-	public void setDefaultValue(String defaultValue) {
-		this.defaultValue = defaultValue;
-	}
-
 	public String getValidationRule() {
 		return validationRule;
 	}
@@ -169,9 +193,6 @@ public class JobParameter {
 		if (getMandatory()) {
 			str = "* " + str;
 		}
-		if (getDefaultValue() != null) {
-			str += " | '" + getDefaultValue() + "'"; 
-		}
 		return str;
 	}
 
@@ -181,6 +202,22 @@ public class JobParameter {
 
 	public void setDisplayOrder(Integer displayOrder) {
 		this.displayOrder = displayOrder;
+	}
+	
+	public List<String> getValues() {
+		return values;
+	}
+
+	public void setValues(List<String> values) {
+		this.values = values;
+	}
+	
+	public List<String> getOptions() {
+		return options;
+	}
+
+	public void setOptions(List<String> options) {
+		this.options = options;
 	}
 	
 	public int hashCode() {

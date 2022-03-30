@@ -53,6 +53,18 @@ public class JobParameters {
 		return add(key).setValue(value);
 	}
 	
+	public JobParameter setValues(String key, List<String> values) {
+		JobParameter p = add(key);
+		p.setValues(values);
+		return p;
+	}
+	
+	public JobParameter setOptions(String key, List<String> options) {
+		JobParameter p = add(key);
+		p.setOptions(options);
+		return p;
+	}
+	
 	public String getValue(String key) {
 		JobParameter param = getParameterMap().get(key);
 		if (param != null) {
@@ -61,12 +73,20 @@ public class JobParameters {
 		return null;
 	}
 	
-	public String getDefaultValue(String key) {
+	public List<String> getValues(String key) {
 		JobParameter param = getParameterMap().get(key);
 		if (param != null) {
-			return param.getDefaultValue();
-		}
-		return null;
+			return param.getValues();
+		} 
+		return new ArrayList<>();
+	}
+	
+	public List<String> getOptions(String key) {
+		JobParameter param = getParameterMap().get(key);
+		if (param != null) {
+			return param.getOptions();
+		} 
+		return new ArrayList<>();
 	}
 	
 	public String getMandatory(String key) {
