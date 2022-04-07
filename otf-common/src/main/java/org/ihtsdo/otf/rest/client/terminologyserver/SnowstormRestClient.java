@@ -33,6 +33,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -150,6 +151,28 @@ public class SnowstormRestClient {
 		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
 		return page.getItems();
+	}
+
+	public void  updateCodeSystemVersionPackage(String codeSystemShortname, String effectiveDate, String releasePackage) throws RestClientException {
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getUpdateCodeSystemVersionPackageUri(codeSystemShortname, effectiveDate).toString())
+				.queryParam("releasePackage", releasePackage);
+		URI uri = queryBuilder.build().toUri();
+		try {
+			restTemplate.exchange(uri, HttpMethod.PUT, new org.springframework.http.HttpEntity<>(null), Void.class);
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			int statusCode = e.getStatusCode().value();
+			if (statusCode == 404 && StringUtils.hasLength(e.getResponseBodyAsString())) {
+				try {
+					JSONObject jsonObject = new JSONObject(e.getResponseBodyAsString());
+					if (jsonObject.has("message")) {
+						throw new RestClientException(jsonObject.getString("message"));
+					}
+				}catch (JSONException err){
+					// do nothing
+				}
+			}
+			throw  e;
+		}
 	}
 
 	/**
