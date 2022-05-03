@@ -188,5 +188,25 @@ public class Metadata {
 		
 		return langLangRefsetMapping;
 	}
+	
+	public String getDefaultLangRefset() {
+		if (getRequiredLanguageRefsets() != null) {
+			for (Map<String, String> langEntry : getRequiredLanguageRefsets()) {
+				if(langEntry.containsKey("default") && langEntry.get("default").equals("true")) {
+					return extractLangRefset(langEntry);
+				}
+			}
+		}
+		throw new IllegalStateException("Unable to determine default language refset from : " + getRequiredLanguageRefsets());
+	}
+	
+	private String extractLangRefset(Map<String, String> langEntry) {
+		for (Map.Entry<String, String> langItem : langEntry.entrySet()) {
+			if (langItem.getKey().length() == 2) {
+				return langItem.getValue();
+			}
+		}
+		throw new IllegalStateException("Unable to determine lang refset in metadata item: " + langEntry);
+	}
 
 }
