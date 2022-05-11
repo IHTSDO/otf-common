@@ -35,6 +35,8 @@ public abstract class Component {
 	
 	public abstract String[] toRF2() throws Exception;
 	
+	public abstract Boolean isReleased();
+	
 	protected boolean isDirty = false;
 	
 	public void addIssue(String issue) {
