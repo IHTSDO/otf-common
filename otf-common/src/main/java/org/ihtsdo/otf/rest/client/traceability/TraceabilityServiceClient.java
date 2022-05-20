@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
+import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.traceability.domain.Activity;
@@ -124,7 +125,70 @@ public class TraceabilityServiceClient {
 		logger.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
 		return activities;
 	}
+	
 
+	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly) throws InterruptedException {
+		if (conceptId == null) {
+			logger.warn("TraceabilityServiceClient was asked to recover activities for null concept");
+			return new ArrayList<>();
+		}
+		
+		String url = this.serverUrl + "traceability-service/activities?activityType=" + activityType;
+		if (conceptId != null) {
+			url += "&conceptId=" + conceptId;
+		}
+		if (toDate != null) {
+			url += "&commitToDate=" + (toDate.length()==8 ? DateUtils.formatAsISO(toDate) : toDate);
+		}
+		if (fromDate != null) {
+			url += "&commitFromDate=" + (fromDate .length()==8 ? DateUtils.formatAsISO(fromDate) : fromDate);
+		}
+		if (summaryOnly) {
+			url += "&summaryOnly=true";
+		}
+		if (intOnly) {
+			url += "&intOnly=true";
+		}
+		List<Activity> activities = new ArrayList<>();
+		boolean isLast = false;
+		int offset = 0;
+		TypeReference<List<Activity>> responseContentType = new TypeReference<>() {
+		};
+		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
+		int failureCount = 0;
+		while (!isLast) {
+			ResponseEntity<Object> responseEntity = null;
+			try {
+				responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, Object.class);
+			} catch (RestClientResponseException e) {
+				if (e.getRawStatusCode()==500) {
+					//No need to retry if the server is failing this badly
+					throw (e);
+				}
+				failureCount++;
+				if (failureCount > 3) {
+					throw e;
+				}
+				logger.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
+				continue;
+			}
+			LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
+			if (responseBody != null) {
+				Object content = responseBody.get("content");
+				if (content != null) {
+					activities.addAll(mapper.convertValue(content, responseContentType));
+					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+				} else {
+					isLast = true;
+				}
+			} else {
+				isLast = true;
+			}
+		}
+		logger.info("Recovered {} activities for concept {} using {}", activities.size(), conceptId, url);
+		return activities;
+	}
 	private List<Activity> retryAsSplit(List<String> conceptIds, ActivityType activityType, String user) throws InterruptedException {
 		//Try the conceptIds again, split into batches of 15
 		List<List<String>> subBatches = Lists.partition(conceptIds, 10);
