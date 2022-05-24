@@ -46,16 +46,20 @@ public class RF2Manager implements RF2Constants {
 	}
 
 	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
+		StringBuffer line = new StringBuffer();
+		for (int x=0; x<columns.length; x++) {
+			if (x > 0) {
+				line.append(TSV_FIELD_DELIMITER);
+			}
+			line.append(columns[x]==null?"":columns[x]);
+		}
+		writeToRF2File(fileName, line.toString());
+	}
+	
+	public void writeToRF2File(String fileName, String line) throws TermServerScriptException {
 		PrintWriter out = getPrintWriter(fileName);
 		try {
-			StringBuffer line = new StringBuffer();
-			for (int x=0; x<columns.length; x++) {
-				if (x > 0) {
-					line.append(TSV_FIELD_DELIMITER);
-				}
-				line.append(columns[x]==null?"":columns[x]);
-			}
-			out.print(line.toString() + LINE_DELIMITER);
+			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
 			Script.info ("Unable to output report rf2 line due to " + e.getMessage());
 		}
