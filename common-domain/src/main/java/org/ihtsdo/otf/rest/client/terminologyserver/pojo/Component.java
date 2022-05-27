@@ -15,6 +15,8 @@ public abstract class Component {
 
 	public abstract String getId();
 	
+	public abstract void setId(String id);
+	
 	public abstract String getEffectiveTime();
 	
 	public abstract void setEffectiveTime(String effectiveTime);
