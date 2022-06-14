@@ -111,11 +111,10 @@ public class SnowstormRestClient {
 			LOGGER.debug("===========================request begin================================================");
 			LOGGER.debug("URI         : {}", request.getURI());
 			LOGGER.debug("Method      : {}", request.getMethod());
-			LOGGER.debug("Headers     : {}", request.getHeaders());
 			HttpHeaders headers = request.getHeaders();
 			headers.forEach((k, v) -> {
 				LOGGER.debug("Header      : {}", k);
-				LOGGER.debug("Value       : {}", v);
+				LOGGER.debug("Value       : {}", HttpHeaders.COOKIE.equals(k) ? mask(v.toString()) : v);
 			});
 			LOGGER.debug("Request body: {}", new String(body, "UTF-8"));
 			LOGGER.debug("==========================request end================================================");
@@ -137,6 +136,25 @@ public class SnowstormRestClient {
 
 			return response;
 		}));
+	}
+
+	private String mask(String token) {
+		if (token == null) {
+			return null;
+		}
+		int start = 1;
+		if (token.contains("=")) {
+			start = token.indexOf("=");
+		}
+		char[] maskedToken = new char[token.length()];
+		for (int i = 0; i < maskedToken.length; i++) {
+			maskedToken[i] = '*';
+		}
+		for (int j = 0; j < start; j++) {
+			maskedToken[j] = token.charAt(j);
+		}
+		maskedToken[maskedToken.length - 1] = token.charAt(token.length() - 1);
+		return new String(maskedToken);
 	}
 
 	public SnowstormRestClient(String snowstormUrl, String apiUsername, String apiPassword) {
