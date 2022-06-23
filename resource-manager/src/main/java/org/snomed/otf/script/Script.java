@@ -26,7 +26,7 @@ public abstract class Script implements RF2Constants {
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
 	
 	static Logger sLogger = LoggerFactory.getLogger(Script.class);
-	Logger logger = LoggerFactory.getLogger(this.getClass());
+	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
 	public static List<String> HISTORICAL_REFSETS = new ArrayList<>();
 	static {
