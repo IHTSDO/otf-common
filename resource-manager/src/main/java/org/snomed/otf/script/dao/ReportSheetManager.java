@@ -313,7 +313,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		flush(true, false); //optional, don't wait
 	}
 	
-	private void flush(boolean optional, boolean withWait) throws TermServerScriptException {
+	synchronized private void flush(boolean optional, boolean withWait) throws TermServerScriptException {
 		//Are we ready to flush?
 		//How long is it since we last wrote to the file?  Write every 5 seconds
 		if (lastWriteTime != null) {

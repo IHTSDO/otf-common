@@ -26,6 +26,9 @@ public class Task {
 	String assignedAuthor = null;
 	String reviewer = null;
 	String taskInfo;
+	
+	@Expose
+	Map<String, String> assignee = new HashMap<>();
 
 	/* Call IBatch.addNewTask instead of creating a Task directly */
 	public Task(IBatch batch, String[] author_reviewer) {
@@ -165,4 +168,11 @@ public class Task {
 		return false;
 	}
 
+	public Map<String, String> getAssignee() {
+		return assignee;
+	}
+
+	public void setAssignee(Map<String, String> assignee) {
+		this.assignee = assignee;
+	}
 }

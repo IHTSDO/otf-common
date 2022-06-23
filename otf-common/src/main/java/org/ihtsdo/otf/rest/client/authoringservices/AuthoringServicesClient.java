@@ -171,15 +171,19 @@ public class AuthoringServicesClient {
 	}
 	
 	public Task getTask(String taskKey) throws RestClientException {
+		String json = "Unknown";
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey;
 			JSONResource response = resty.json(endPoint);
-			String json = response.toObject().toString();
+			json = response.toObject().toString();
 			Task taskObj = gson.fromJson(json, Task.class);
+			if (taskObj.getAssignedAuthor() == null && taskObj.getAssignee() != null) {
+				taskObj.setAssignedAuthor(taskObj.getAssignee().get("username"));
+			}
 			return taskObj;
 		} catch (Exception e) {
-			throw new RestClientException("Unable to recover task " + taskKey, e);
+			throw new RestClientException("Unable to recover task '" + taskKey + "' instead received: " + json, e);
 		}
 	}
 
