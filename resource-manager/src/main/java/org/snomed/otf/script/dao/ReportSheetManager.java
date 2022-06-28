@@ -29,7 +29,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
-	private static final int MAX_REQUEST_RATE = 10;
+	private static final int MAX_REQUEST_RATE = 9;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
 	
 	Map<Integer, Integer> tabRowsCount;
@@ -343,10 +343,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 						writeSuccess = true;
 					}catch(Exception e) {
 						//If we're told about an invalid argument, trying again won't improve the situation!
-						if (writeAttempts <= MAX_WRITE_ATTEMPTS && !e.getMessage().contains("INVALID_ARGUMENT")) {
+						if (writeAttempts <= MAX_WRITE_ATTEMPTS && e.getMessage() == null || !e.getMessage().contains("INVALID_ARGUMENT")) {
 							try {
-								Script.warn("Exception from Google Sheets, sleeping then trying again");
-								Thread.sleep(30*1000);
+								Script.warn("Exception from Google Sheets, sleeping then trying again.  Exception was: " + e);
+								Thread.sleep(10*1000);
 							} catch (InterruptedException e1) {}
 							Script.info(e.getMessage() + " trying again...");
 						} else {

@@ -34,6 +34,13 @@ public class StringUtils implements RF2Constants {
 		return true;
 	}
 	
+	public static boolean isEmpty(final Object obj) {
+		if (obj == null) {
+			return true;
+		}
+		return isEmpty(obj.toString());
+	}
+	
 	public static boolean isEmpty(String[] arr) {
 		if (arr == null || arr.length == 0) {
 			return true;
