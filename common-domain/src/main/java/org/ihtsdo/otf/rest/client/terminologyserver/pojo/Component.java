@@ -116,4 +116,13 @@ public abstract class Component {
 	public boolean isDirty() {
 		return this.isDirty;
 	}
+	
+	public String getMutableFields() {
+		return (this.isActive()?"1,":"0,") + this.getModuleId() + ",";
+	}
+	
+	public String toStringWithId() {
+		//Override is only needed if default implemenation does not include Id eg Descriptions or Refset Members.
+		return toString();
+	}
 }
