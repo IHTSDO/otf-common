@@ -46,8 +46,12 @@ public class Metadata {
     @SerializedName("requiredLanguageRefsets")
     @Expose
     private List<Map<String, String>> requiredLanguageRefsets;
+    
+    @SerializedName("optionalLanguageRefsets")
+    @Expose
+    private List<Map<String, String>> optionalLanguageRefsets;
 
-    /**
+	/**
      * No args constructor for use in serialization
      * 
      */
@@ -173,6 +177,15 @@ public class Metadata {
 		this.requiredLanguageRefsets = requiredLanguageRefsets;
 	}
 	
+	public List<Map<String, String>> getOptionalLanguageRefsets() {
+		return optionalLanguageRefsets;
+	}
+
+	public void setOptionalLanguageRefsets(List<Map<String, String>> optionalLanguageRefsets) {
+		this.optionalLanguageRefsets = optionalLanguageRefsets;
+	}
+
+	
 	public Map<String, String> getLangLangRefsetMapping() {
 		Map<String, String> langLangRefsetMapping = new HashMap<>();
 		if (getRequiredLanguageRefsets() != null) {
@@ -187,6 +200,29 @@ public class Metadata {
 		}
 		
 		return langLangRefsetMapping;
+	}
+	
+	public Map<String, String> getLangRefsetLangMapping() {
+		Map<String, String> langRefsetLangMapping = new HashMap<>();
+		if (getRequiredLanguageRefsets() != null) {
+			for (Map<String, String> langEntry : getRequiredLanguageRefsets()) {
+				for (Map.Entry<String, String> langItem : langEntry.entrySet()) {
+					if (langItem.getKey().length() == 2) {
+						//We're assuming two lettered entries are language codes.  Oh dear.
+						langRefsetLangMapping.put(langItem.getValue(), langItem.getKey());
+					}
+				}
+			}
+		}
+		
+		//The optioanlLangRefsets however, have been done right
+		if (getOptionalLanguageRefsets() != null) {
+			for (Map<String, String> langEntry : getOptionalLanguageRefsets()) {
+				langRefsetLangMapping.put(langEntry.get("refsetId"), langEntry.get("language"));
+			}
+		}
+		
+		return langRefsetLangMapping;
 	}
 	
 	public String getDefaultLangRefset() {
