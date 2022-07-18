@@ -170,6 +170,9 @@ public class Metadata {
     }
 
 	public List<Map<String, String>> getRequiredLanguageRefsets() {
+		if (requiredLanguageRefsets == null) {
+			throw new IllegalStateException("Metadata element 'requiredLanguageRefsets' has not been populated");
+		}
 		return requiredLanguageRefsets;
 	}
 
