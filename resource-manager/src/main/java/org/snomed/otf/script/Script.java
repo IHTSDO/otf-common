@@ -44,6 +44,7 @@ public abstract class Script implements RF2Constants {
 	protected ReportManager reportManager;
 	protected RF2Manager rf2Manager;
 	protected Project project;
+	protected String taskKey;
 	protected Date startTime;
 	protected Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	protected boolean quiet = false;
@@ -160,6 +161,14 @@ public abstract class Script implements RF2Constants {
 		return (Integer)info;
 	}
 	
+	public String getTaskKey() {
+		return taskKey;
+	}
+
+	public void setTaskKey(String taskKey) {
+		this.taskKey = taskKey;
+	}
+
 	public void incrementSummaryInformationQuiet(String key) {
 		//There are occasions where we can only capture all information when doing the first pass
 		//When we're looking at ALL information eg which concepts do not require changes.
