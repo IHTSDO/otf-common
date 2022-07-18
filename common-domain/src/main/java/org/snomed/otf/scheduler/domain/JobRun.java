@@ -138,6 +138,7 @@ public class JobRun {
 				+ " with codeSystem '" + codeSystemShortname +"'"
 				+ " in project '" + project + "'" + (task==null?"":(" task " + task))
 				+ " with parameters: " + getParameters()
+				+ " and resultUrl: '" + getResultUrl() + "'"
 				+ (debugInfo == null? "" : " (Reason: " + debugInfo + ")");
 	}
 	
