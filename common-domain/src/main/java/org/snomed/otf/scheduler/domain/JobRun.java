@@ -26,17 +26,24 @@ public class JobRun {
 	JobRunParameters parameters;
 	
 	String terminologyServerUrl;
+	
 	Date requestTime;
+	
 	String user;
 	
 	@Transient
 	String authToken;
+	
 	JobStatus status;
 	
 	@Column(length = 65535,columnDefinition="Text")
 	String debugInfo;
+	
 	Date resultTime;
+	
 	Integer issuesReported;
+	
+	@Column(length = 1024)
 	String resultUrl;
 	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
