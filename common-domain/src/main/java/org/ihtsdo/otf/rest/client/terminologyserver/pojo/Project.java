@@ -2,6 +2,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
 public class Project {
@@ -38,6 +39,7 @@ public class Project {
 	private Boolean projectSpellCheckDisabled;
 	@SerializedName("metadata")
 	@Expose
+	@JsonAdapter(MetadataDeserializer.class)
 	private Metadata metadata;
 	
 	private transient String previousBranchPath;

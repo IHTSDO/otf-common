@@ -58,9 +58,6 @@ public class AuthoringServicesClient {
 		resty.withHeader("Connection", "close");
 		resty.authenticate(this.serverUrl, null,null);
 		
-		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.http.HttpURLConnection").setLevel(PlatformLogger.Level.ALL);
-		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.https.DelegateHttpsURLConnection").setLevel(PlatformLogger.Level.ALL);
-		
 		updateAuthToken(authToken);
 		
 		restTemplate = new RestTemplateBuilder()

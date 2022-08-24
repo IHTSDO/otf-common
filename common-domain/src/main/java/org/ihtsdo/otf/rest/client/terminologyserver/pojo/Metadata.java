@@ -1,6 +1,7 @@
 
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +169,13 @@ public class Metadata {
     public void setShortname(String shortname) {
         this.shortname = shortname;
     }
+    
+	public List<Map<String, String>> getRequiredLanguageRefsets(boolean createIfRequired) {
+		if (requiredLanguageRefsets == null && createIfRequired) {
+			requiredLanguageRefsets = new ArrayList<Map<String, String>>();
+		}
+		return getRequiredLanguageRefsets();
+	}
 
 	public List<Map<String, String>> getRequiredLanguageRefsets() {
 		if (requiredLanguageRefsets == null) {
