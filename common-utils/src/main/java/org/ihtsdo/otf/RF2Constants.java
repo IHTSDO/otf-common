@@ -106,7 +106,7 @@ public interface RF2Constants {
 	//Inactivation Indicator Reasons
 	enum InactivationIndicator {AMBIGUOUS, DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED, NONCONFORMANCE_TO_EDITORIAL_POLICY, 
-		NOT_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASS_DERIVED_COMPONENT, GRAMMATICAL_DESCRIPTION_ERROR};
+		NOT_SEMANTICALLY_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASS_DERIVED_COMPONENT, GRAMMATICAL_DESCRIPTION_ERROR};
 	public static final String SCTID_INACT_AMBIGUOUS ="900000000000484002";  // |Ambiguous component (foundation metadata concept)|
 	public static final String SCTID_INACT_MOVED_ELSEWHERE  ="900000000000487009";  // |Component moved elsewhere (foundation metadata concept)|
 	public static final String SCTID_INACT_CONCEPT_NON_CURRENT  ="900000000000495008";  // |Concept non-current (foundation metadata concept)|
@@ -117,13 +117,13 @@ public interface RF2Constants {
 	public static final String SCTID_INACT_OUTDATED  ="900000000000483008";  // |Outdated component (foundation metadata concept)|
 	public static final String SCTID_INACT_PENDING_MOVE  ="900000000000492006";  // |Pending move (foundation metadata concept)|
 	public static final String SCTID_INACT_NON_CONFORMANCE  = "723277005"; // |Nonconformance to editorial policy component (foundation metadata concept)|
-	public static final String SCTID_INACT_NOT_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
+	public static final String SCTID_INACT_NOT_SEMANTICALLY_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
 	public static final String SCTID_INACT_COMPONENT_MEANING_UNKNOWN  = "1186919006"; // |Meaning of component unknown (foundation metadata concept)|
 	public static final String SCTID_INACT_CLASS_DERIVED_COMPONENT  = "1186917008"; // |Classification derived component (foundation metadata concept)|
 	public static final String SCTID_INACT_GRAMMATICAL_DESCRIPTION_ERROR = "1217318005"; // |Grammatical description error (foundation metadata concept)|
 	
 	// Associations
-	enum Association { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE, ANATOMY_STRUC_ENTIRE, POSS_REPLACED_BY, PARTIALLY_EQUIV_TO, ANATOMY_STRUC_PART }
+	enum Association { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE, ANATOMY_STRUC_ENTIRE, POSS_REPLACED_BY, PARTIALLY_EQUIV_TO, ANATOMY_STRUC_PART, REFERS_TO }
 	public static final String SCTID_ASSOC_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
 	public static final String SCTID_ASSOC_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
 	public static final String SCTID_ASSOC_POSS_REPLACED_BY_REFSETID = "1186921001"; // |POSSIBLY REPLACED BY association reference set (foundation metadata concept)|
@@ -132,6 +132,7 @@ public interface RF2Constants {
 	public static final String SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID = "1186924009" ;// |PARTIALLY EQUIVALENT TO association reference set (foundation metadata concept)|"
 	public static final String SCTID_ASSOC_MOVED_TO_REFSETID = "900000000000524003" ;// |MOVED TO association reference set (foundation metadata concept)|"
 	public static final String SCTID_ASSOC_ALTERNATIVE_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
+	public static final String SCTID_ASSOC_REFERS_TO_REFSETID = "900000000000531004";  //REFERS TO association reference set (foundation metadata concept)
 	
 	public static final String SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID = "734138000";  //Anatomy structure and entire association reference set (foundation metadata concept)
 	public static final String SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID = "734139008";  //Anatomy structure and part association reference set (foundation metadata concept)
