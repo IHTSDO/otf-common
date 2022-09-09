@@ -127,7 +127,7 @@ public class TraceabilityServiceClient {
 	}
 	
 
-	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly) throws InterruptedException {
+	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix) throws InterruptedException {
 		if (conceptId == null) {
 			logger.warn("TraceabilityServiceClient was asked to recover activities for null concept");
 			return new ArrayList<>();
@@ -148,6 +148,9 @@ public class TraceabilityServiceClient {
 		}
 		if (intOnly) {
 			url += "&intOnly=true";
+		}
+		if (branchPrefix != null) {
+			url += "&branchPrefix=" + branchPrefix;
 		}
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
