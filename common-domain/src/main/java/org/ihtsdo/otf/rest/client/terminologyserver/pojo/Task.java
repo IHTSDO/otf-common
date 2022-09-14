@@ -51,6 +51,10 @@ public class Task {
 			return summary;
 		}
 	}
+	
+	public void setSummary(String summary) {
+		this.summary = summary;
+	}
 
 	public String getDescriptionHTML() {
 		StringBuilder html = new StringBuilder();
