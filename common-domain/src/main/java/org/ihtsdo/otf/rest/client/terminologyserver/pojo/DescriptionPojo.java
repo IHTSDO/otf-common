@@ -60,7 +60,7 @@ public class DescriptionPojo implements SnomedComponent {
 
 	public enum Acceptability {
 
-		ACCEPTABLE("900000000000549004"), PREFERRED("900000000000548007");
+		ACCEPTABLE("900000000000549004"), PREFERRED("900000000000548007"), NOT_ACCEPTABLE("NOT_ACCEPTABLE");
 
 		private final String conceptId;
 
