@@ -8,32 +8,56 @@ public abstract class Component {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
-		TEXT_DEFINITION, AXIOM}
+		TEXT_DEFINITION, AXIOM, UNKNOWN}
+	
+	protected String id;
+	protected String moduleId;
+	protected String effectiveTime;
+	protected boolean active;
+	protected ComponentType type;
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
 	private transient String issues = "";
 
-	public abstract String getId();
+	public String getId() {
+		return id;
+	}
 	
-	public abstract void setId(String id);
+	public void setId(String id) {
+		this.id = id;
+	}
 	
-	public abstract String getEffectiveTime();
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
 	
-	public abstract void setEffectiveTime(String effectiveTime);
+	public void setEffectiveTime(String effectiveTime) {
+		this.effectiveTime = effectiveTime;
+	}
 	
-	public abstract boolean isActive();
+	public boolean isActive() {
+		return active;
+	}
 	
-	public abstract void setActive(boolean active);
+	public void setActive(boolean active) {
+		this.active = active;
+	}
 	
-	public abstract String getModuleId();
+	public String getModuleId() {
+		return moduleId;
+	}
 	
-	public abstract void setModuleId(String moduleId);
+	public void setModuleId(String moduleId) {
+		this.moduleId = moduleId;
+	}
 	
 	public abstract String getReportedName();
 	
 	public abstract String getReportedType();
 	
-	public abstract ComponentType getComponentType();
+	public ComponentType getComponentType() {
+		return type;
+	}
 	
 	public abstract String[] toRF2() throws Exception;
 	
