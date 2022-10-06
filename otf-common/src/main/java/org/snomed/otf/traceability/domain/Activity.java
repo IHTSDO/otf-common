@@ -12,6 +12,7 @@ public class Activity {
 	private String sourceBranch;
 	private String highestPromotedBranch;
 	private Date commitDate;
+	private Date promotionDate;
 	private ActivityType activityType;
 	private final List<ConceptChange> conceptChanges = new ArrayList<>();
 
@@ -19,13 +20,14 @@ public class Activity {
 	}
 
 	public Activity(String id, String username, String branch, int branchDepth, String sourceBranch,
-					String highestPromotedBranch, Date commitDate, ActivityType activityType, List<ConceptChange> conceptChanges) {
+					String highestPromotedBranch, Date commitDate, Date promotionDate, ActivityType activityType, List<ConceptChange> conceptChanges) {
 		this.id = id;
 		this.username = username;
 		this.branch = branch;
 		this.branchDepth = branchDepth;
 		this.sourceBranch = sourceBranch;
 		this.highestPromotedBranch = highestPromotedBranch;
+		this.promotionDate = promotionDate;
 		this.commitDate = commitDate;
 		this.activityType = activityType;
 		if (conceptChanges != null) {
@@ -77,7 +79,7 @@ public class Activity {
 		return highestPromotedBranch;
 	}
 
-	public void setHighestPromotedBranch(String highestPromotedBranch) {
+	public void setHighestPromotionBranch(String highestPromotedBranch) {
 		this.highestPromotedBranch = highestPromotedBranch;
 	}
 
@@ -118,5 +120,13 @@ public class Activity {
 		sb.append(", activityType = " + activityType);
 		sb.append("}");
 		return sb.toString();
+	}
+
+	public Date getPromotionDate() {
+		return promotionDate;
+	}
+
+	public void setPromotionDate(Date promotionDate) {
+		this.promotionDate = promotionDate;
 	}
 }

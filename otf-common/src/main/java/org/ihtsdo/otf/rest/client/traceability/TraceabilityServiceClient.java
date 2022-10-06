@@ -126,17 +126,32 @@ public class TraceabilityServiceClient {
 		return activities;
 	}
 	
-
 	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix) throws InterruptedException {
-		if (conceptId == null) {
-			logger.warn("TraceabilityServiceClient was asked to recover activities for null concept");
+		return getComponentActivity(conceptId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPrefix, true, false);
+	}
+	
+	public List<Activity> getComponentActivity(String componentId, String onBranch) throws InterruptedException {
+		return getComponentActivity(componentId, null, null, null, false, false, onBranch, false, true);
+	}
+
+	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix, boolean isConceptId, boolean useOnBranch) throws InterruptedException {
+		if (componentId == null) {
+			logger.warn("TraceabilityServiceClient was asked to recover activities for null id component.");
 			return new ArrayList<>();
 		}
 		
-		String url = this.serverUrl + "traceability-service/activities?activityType=" + activityType;
-		if (conceptId != null) {
-			url += "&conceptId=" + conceptId;
+		String url = this.serverUrl + "traceability-service/activities?";
+		
+		if (isConceptId) {
+			url += "conceptId=" + componentId;
+		} else {
+			url += "componentId=" + componentId;
 		}
+		
+		if (activityType != null) {
+			url += "&activityType=" + activityType;
+		}
+		
 		if (toDate != null) {
 			url += "&commitToDate=" + (toDate.length()==8 ? DateUtils.formatAsISO(toDate) : toDate);
 		}
@@ -150,7 +165,11 @@ public class TraceabilityServiceClient {
 			url += "&intOnly=true";
 		}
 		if (branchPrefix != null) {
-			url += "&branchPrefix=" + branchPrefix;
+			if (useOnBranch) {
+				url += "&branchPrefix=" + branchPrefix;
+			} else {
+				url += "&onBranch=" + branchPrefix;
+			}
 		}
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
@@ -189,7 +208,7 @@ public class TraceabilityServiceClient {
 				isLast = true;
 			}
 		}
-		logger.info("Recovered {} activities for concept {} using {}", activities.size(), conceptId, url);
+		logger.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
 		return activities;
 	}
 	private List<Activity> retryAsSplit(List<String> conceptIds, ActivityType activityType, String user) throws InterruptedException {
@@ -205,5 +224,6 @@ public class TraceabilityServiceClient {
 		}
 		return activity;
 	}
+
 
 }

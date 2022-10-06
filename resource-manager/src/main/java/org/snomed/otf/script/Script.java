@@ -220,7 +220,7 @@ public abstract class Script implements RF2Constants {
 		}
 	}
 	
-	protected boolean report (int reportIdx, Object...details) throws TermServerScriptException {
+	public boolean report (int reportIdx, Object...details) throws TermServerScriptException {
 		boolean writeSuccess = writeToReportFile (reportIdx, writeToString(details));
 		if (writeSuccess) {
 			incrementSummaryInformation("Report lines written");
