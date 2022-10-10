@@ -4,17 +4,39 @@ import java.util.List;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public abstract class Component {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
 		TEXT_DEFINITION, AXIOM, UNKNOWN}
 	
+	//The id takes a different name in most components, don't expose
 	protected String id;
-	protected String moduleId;
-	protected String effectiveTime;
-	protected boolean active;
 	protected ComponentType type;
+	
+	@SerializedName("effectiveTime")
+	@Expose
+	protected String effectiveTime;
+	
+	@SerializedName("moduleId")
+	@Expose
+	protected String moduleId;
+	
+	@SerializedName("active")
+	@Expose
+	protected Boolean active;
+	
+	@SerializedName("released")
+	@Expose
+	protected Boolean released;
+	
+	@SerializedName("releasedEffectiveTime")
+	@Expose
+	protected  Integer releasedEffectiveTime;
+	@SerializedName("memberId")
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
 	private transient String issues = "";
@@ -32,15 +54,15 @@ public abstract class Component {
 	}
 	
 	public void setEffectiveTime(String effectiveTime) {
+		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
+			//Are we resetting this component to mark a change?
+			setDirty();
+		}
 		this.effectiveTime = effectiveTime;
 	}
 	
-	public boolean isActive() {
+	public Boolean isActive() {
 		return active;
-	}
-	
-	public void setActive(boolean active) {
-		this.active = active;
 	}
 	
 	public String getModuleId() {
@@ -48,6 +70,10 @@ public abstract class Component {
 	}
 	
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 	
@@ -60,8 +86,6 @@ public abstract class Component {
 	}
 	
 	public abstract String[] toRF2() throws Exception;
-	
-	public abstract Boolean isReleased();
 	
 	protected boolean isDirty = false;
 	
@@ -149,4 +173,39 @@ public abstract class Component {
 		//Override is only needed if default implemenation does not include Id eg Descriptions or Refset Members.
 		return toString();
 	}
+	
+	public void setActive(boolean newActiveState) {
+		setActive(newActiveState, false);
+	}
+	public void setActive(boolean newActiveState, boolean forceDirty) {
+		if (forceDirty || (this.active != null && this.active != newActiveState)) {
+			setDirty();
+			setEffectiveTime(null);
+		}
+		this.active = newActiveState;
+	}
+	
+	public void setReleased(Boolean released) {
+		this.released = released;
+	}
+
+	public Integer getReleasedEffectiveTime() {
+		return releasedEffectiveTime;
+	}
+
+	public void setReleasedEffectiveTime(Integer releasedEffectiveTime) {
+		this.releasedEffectiveTime = releasedEffectiveTime;
+	}
+
+	public Boolean getReleased() {
+		return released;
+	}
+	
+	public Boolean isReleased() {
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
+		return released;
+	}
+
 }

@@ -27,6 +27,8 @@ public class Task {
 	String reviewer = null;
 	String taskInfo;
 	
+	boolean preExistingTask = false;
+
 	@Expose
 	Map<String, String> assignee = new HashMap<>();
 
@@ -178,5 +180,13 @@ public class Task {
 
 	public void setAssignee(Map<String, String> assignee) {
 		this.assignee = assignee;
+	}
+	
+	public boolean isPreExistingTask() {
+		return preExistingTask;
+	}
+
+	public void setPreExistingTask(boolean preExistingTask) {
+		this.preExistingTask = preExistingTask;
 	}
 }
