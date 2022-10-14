@@ -177,6 +177,11 @@ public class JobRun {
 			this.parameters = parameters;
 		}
 	}
+	
+	public void suppressParameters() {
+		// ...except when we don't want any output at all, eg when returning simple list of jobs run
+		this.parameters = null;
+	}
 
 	public void setParameter(String key, Object value) {
 		if (value instanceof Collection) {
