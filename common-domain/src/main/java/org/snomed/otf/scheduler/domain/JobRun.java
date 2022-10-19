@@ -8,6 +8,11 @@ import javax.persistence.*;
 import org.ihtsdo.otf.utils.StringUtils;
 
 @Entity
+@Table(indexes = {
+			@Index(columnList = "project"),
+			@Index(columnList = "user"),
+			@Index(columnList = "jobName")
+		})
 public class JobRun {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
