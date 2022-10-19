@@ -346,7 +346,13 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 						if (writeAttempts <= MAX_WRITE_ATTEMPTS && e.getMessage() == null || !e.getMessage().contains("INVALID_ARGUMENT")) {
 							try {
 								Script.warn("Exception from Google Sheets, sleeping then trying again.  Exception was: " + e);
-								Thread.sleep(10*1000);
+								int sleepTime = 10*1000;
+								if (e.getMessage() != null && (
+										e.getMessage().contains("insufficient")
+										|| e instanceof ConcurrentModificationException)) {
+									sleepTime = 1 * 1000;
+								}
+								Thread.sleep(sleepTime);
 							} catch (InterruptedException e1) {}
 							Script.info(e.getMessage() + " trying again...");
 						} else {
