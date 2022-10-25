@@ -51,6 +51,8 @@ public class JobRun {
 	@Column(length = 1024)
 	String resultUrl;
 	
+	Long executionTime;
+	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
 	Set<WhiteListedConcept> whiteList;
 	
@@ -171,6 +173,7 @@ public class JobRun {
 		clone.setStatus(getStatus());
 		clone.setTerminologyServerUrl(getTerminologyServerUrl());
 		clone.setUser(getUser());
+		clone.setExecutionTime(getExecutionTime());
 		return clone;
 	}
 
@@ -261,6 +264,14 @@ public class JobRun {
 
 	public void setTask(String task) {
 		this.task = task;
+	}
+
+	public Long getExecutionTime() {
+		return executionTime;
+	}
+
+	public void setExecutionTime(Long executionTime) {
+		this.executionTime = executionTime;
 	}
 
 }
