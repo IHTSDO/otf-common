@@ -51,6 +51,10 @@ public class Metadata {
     @SerializedName("optionalLanguageRefsets")
     @Expose
     private List<Map<String, String>> optionalLanguageRefsets;
+    
+    @SerializedName("expectedExtensionModules")
+    @Expose
+    private List<String> expectedExtensionModules;
 
 	/**
      * No args constructor for use in serialization
@@ -254,6 +258,14 @@ public class Metadata {
 			}
 		}
 		throw new IllegalStateException("Unable to determine lang refset in metadata item: " + langEntry);
+	}
+
+	public List<String> getExpectedExtensionModules() {
+		return expectedExtensionModules;
+	}
+
+	public void setExpectedExtensionModules(List<String> expectedExtensionModules) {
+		this.expectedExtensionModules = expectedExtensionModules;
 	}
 
 }
