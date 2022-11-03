@@ -165,6 +165,10 @@ public class SnowstormRestUrlHelper {
 		return snowstormUrl + "/codesystems";
 	}
 
+    public URI getCodeSystemVersionsUri(String codeSystemShortname, boolean showFutureVersions, boolean showInternalReleases) {
+        return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname + "/versions?showFutureVersions=" + showFutureVersions + "&showInternalReleases=" + showInternalReleases);
+    }
+
 	public URI getUpdateCodeSystemVersionPackageUri(String codeSystemShortname, String effectiveDate) {
 		return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname + "/versions/" + effectiveDate);
 	}

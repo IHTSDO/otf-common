@@ -90,6 +90,7 @@ public class SnowstormRestClient {
 	private static final int INDENT = 2;
 	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<ItemsPage<CodeSystem>>() {};
+	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<ItemsPage<CodeSystemVersion>>() {};
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private SnowstormRestClient(String snowstormUrl) {
@@ -168,6 +169,18 @@ public class SnowstormRestClient {
 	public List<CodeSystem> getCodeSystems() {
 		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
+		return page.getItems();
+	}
+
+	public List<CodeSystemVersion> getCodeSystemVersions(String shortName, Boolean showFutureVersions, Boolean showInternalReleases) {
+		if (showFutureVersions == null) {
+			showFutureVersions = false;
+		}
+		if (showInternalReleases == null) {
+			showInternalReleases = false;
+		}
+		ResponseEntity<ItemsPage<CodeSystemVersion>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemVersionsUri(shortName, showFutureVersions, showInternalReleases), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE);
+		ItemsPage<CodeSystemVersion> page = responseEntity.getBody();
 		return page.getItems();
 	}
 
