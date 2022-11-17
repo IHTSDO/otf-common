@@ -297,5 +297,29 @@ public class StringUtils implements RF2Constants {
 	public static boolean isCapitalized(String word) {
 		return Character.isUpperCase(word.charAt(0));
 	}
+	
+	public static boolean isCapitalized(char c) {
+		return Character.isUpperCase(c);
+	}
 
+	public static boolean isLetter(char c) {
+		//Not using Character.isLetter as it has odd behaviour eg ASCII 255 is considered a letter!?
+		//return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+		//On the other hand, É wasn't recognised as a letter so let's give the Character class a chance
+		return Character.isLetter(c);
+	}
+	
+	public static boolean isDigit(char c) {
+		return (c >= '0' && c <= '9');
+	}
+
+	public static Character getFirstLetter(String term) {
+		for (char c : term.toCharArray()) {
+			if (isLetter(c)) {
+				return c;
+			}
+		}
+		return null;
+	}
+	
 }
