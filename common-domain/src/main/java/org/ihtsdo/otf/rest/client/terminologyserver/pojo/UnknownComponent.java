@@ -6,9 +6,9 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 
 public class UnknownComponent extends Component {
 	
-	public UnknownComponent(String id, ComponentType type) {
+	public UnknownComponent(String id, ComponentType componentType) {
 		this.id = id;
-		this.type = type;
+		this.componentType = componentType;
 	}
 
 	@Override
@@ -18,7 +18,7 @@ public class UnknownComponent extends Component {
 
 	@Override
 	public String getReportedType() {
-		return type.toString();
+		return componentType.toString();
 	}
 
 	@Override

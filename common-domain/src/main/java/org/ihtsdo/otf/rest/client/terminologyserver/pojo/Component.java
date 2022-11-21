@@ -15,7 +15,7 @@ public abstract class Component {
 	
 	//The id takes a different name in most components, don't expose
 	protected String id;
-	protected ComponentType type;
+	protected ComponentType componentType;
 	
 	@SerializedName("effectiveTime")
 	@Expose
@@ -82,7 +82,7 @@ public abstract class Component {
 	public abstract String getReportedType();
 	
 	public ComponentType getComponentType() {
-		return type;
+		return componentType;
 	}
 	
 	public abstract String[] toRF2() throws Exception;
