@@ -10,6 +10,8 @@ public class CodeSystem {
 	private String maintainerType;
 	private String branchPath;
 	private Set <String> userRoles;
+	private Integer dependantVersionEffectiveTime;
+	private CodeSystemVersion latestVersion;
 
 	public String getShortName() {
 		return shortName;
@@ -35,7 +37,23 @@ public class CodeSystem {
 		return userRoles;
 	}
 
-	public void setUserRoles(Set <String> userRoles) {
+	public void setUserRoles(Set<String> userRoles) {
 		this.userRoles = userRoles;
+	}
+
+	public Integer getDependantVersionEffectiveTime() {
+		return dependantVersionEffectiveTime;
+	}
+
+	public void setDependantVersionEffectiveTime(Integer dependantVersionEffectiveTime) {
+		this.dependantVersionEffectiveTime = dependantVersionEffectiveTime;
+	}
+
+	public void setLatestVersion(CodeSystemVersion latestVersion) {
+		this.latestVersion = latestVersion;
+	}
+
+	public CodeSystemVersion getLatestVersion() {
+		return latestVersion;
 	}
 }
