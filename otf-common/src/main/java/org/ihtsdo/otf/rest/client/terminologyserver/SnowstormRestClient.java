@@ -1191,4 +1191,28 @@ public class SnowstormRestClient {
 			throw new RestClientException("Failed to set flag on branch " + branchPath);
 		}
 	}
+
+	public String upgradeCodeSystem(String shortName, Integer newDependantVersion, Boolean contentAutomations) throws BusinessServiceException {
+		Map<String,Object> request = new HashMap<>();
+		request.put("newDependantVersion", newDependantVersion);
+		request.put("contentAutomations", contentAutomations);
+
+		URI uri = urlHelper.getCodeSystemUpgradeUri(shortName);
+
+		RequestEntity<?> post = RequestEntity.post(uri)
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.body(request);
+
+		URI location = restTemplate.postForLocation(uri, post);
+		if (location == null) {
+			throw new ProcessingException("Failed to obtain location of code system upgrade");
+		}
+		return location.toString();
+	}
+
+	public CodeSystemUpgradeJob getCodeSystemUpgradeJob(String jobId) throws RestClientException {
+		URI uri = urlHelper.getCodeSystemUpgradeJobUrl(jobId);
+		return getEntity(uri, CodeSystemUpgradeJob.class);
+	}
 }

@@ -176,4 +176,12 @@ public class SnowstormRestUrlHelper {
 	public URI getSetAuthorFlagUri(String branchPath) {
 		return getUri(snowstormUrl + "/branches/" + branchPath + "/actions/set-author-flag");
 	}
+
+	public URI getCodeSystemUpgradeUri(String shortName) {
+		return getUri(snowstormUrl + "/codesystems/" + shortName + "/upgrade");
+	}
+
+	public URI getCodeSystemUpgradeJobUrl(String jobId) {
+		return getUri(snowstormUrl + "/codesystems/upgrade/" + jobId);
+	}
 }
