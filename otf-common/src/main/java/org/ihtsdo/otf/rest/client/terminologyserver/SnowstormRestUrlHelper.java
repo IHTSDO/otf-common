@@ -184,4 +184,8 @@ public class SnowstormRestUrlHelper {
 	public URI getCodeSystemUpgradeJobUrl(String jobId) {
 		return getUri(snowstormUrl + "/codesystems/upgrade/" + jobId);
 	}
+
+    public URI getIntegrityCheckUrl(String branch) {
+        return getUri(snowstormUrl + "/" + branch + "/integrity-check");
+    }
 }

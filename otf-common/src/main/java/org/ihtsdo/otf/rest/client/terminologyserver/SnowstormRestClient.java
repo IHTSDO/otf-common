@@ -1215,4 +1215,17 @@ public class SnowstormRestClient {
 		URI uri = urlHelper.getCodeSystemUpgradeJobUrl(jobId);
 		return getEntity(uri, CodeSystemUpgradeJob.class);
 	}
+
+	public IntegrityIssueReport integrityCheck(String branch) {
+		URI uri = urlHelper.getIntegrityCheckUrl(branch);
+		RequestEntity<?> post = RequestEntity.post(uri)
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.body(null);
+
+		ParameterizedTypeReference<IntegrityIssueReport> typeRef = new ParameterizedTypeReference<>() {};
+		ResponseEntity<IntegrityIssueReport> response = restTemplate.exchange(post, typeRef);
+
+		return response.getBody();
+	}
 }
