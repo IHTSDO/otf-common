@@ -181,6 +181,11 @@ public class SnowstormRestUrlHelper {
 		return getUri(snowstormUrl + "/codesystems/" + shortName + "/upgrade");
 	}
 
+	public URI getCodeSystemGenerateAdditionalLanguageRefsetDeltaUri(String shortName, String branchPath , String languageRefsetToCopyFrom, boolean completeCopy) {
+		return getUri(snowstormUrl + "/codesystems/" + shortName + "/additional-en-language-refset-delta?branchPath=" + branchPath
+				+ "&languageRefsetToCopyFrom=" + languageRefsetToCopyFrom + "&completeCopy=" + completeCopy);
+	}
+
 	public URI getCodeSystemUpgradeJobUrl(String jobId) {
 		return getUri(snowstormUrl + "/codesystems/upgrade/" + jobId);
 	}

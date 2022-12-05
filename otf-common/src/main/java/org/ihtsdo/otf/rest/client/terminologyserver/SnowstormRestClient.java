@@ -1228,4 +1228,14 @@ public class SnowstormRestClient {
 
 		return response.getBody();
 	}
+
+	public void generateAdditionalLanguageRefsetDelta(String shortName, String branchPath, String languageRefsetToCopyFrom, Boolean completeCopy) {
+		URI uri = urlHelper.getCodeSystemGenerateAdditionalLanguageRefsetDeltaUri(shortName, branchPath, languageRefsetToCopyFrom, Boolean.TRUE.equals(completeCopy));
+		RequestEntity<?> post = RequestEntity.post(uri)
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.body(null);
+
+		restTemplate.exchange(post, Void.class);
+	}
 }
