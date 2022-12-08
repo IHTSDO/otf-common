@@ -52,7 +52,10 @@ public interface RF2Constants {
 	static String UNION = "AND";
 	static String ATTRIBUTE_SEPARATOR = ",";
 	static String DASH = "-";
-	static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
+	//This laxity is causing problems with these odd characters appearing inside a term
+	//Let's stop being generous and be firm:  terms start and end with pipes and if you miss one out,
+	//then we won't parse it correctly.
+	//static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
 	static String BREAK = "===========================================";
 
 	//Description Type SCTIDs
