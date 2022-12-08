@@ -202,9 +202,12 @@ public abstract class Component {
 	}
 	
 	public Boolean isReleased() {
-		if (released == null) {
+		//I know you're going to want to put this back in, but resist the temptation.
+		//We should know for sure if a component has been released or not, don't 
+		//fall back on the effective time, it can't be trusted.
+		/*if (released == null) {
 			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
+		}*/
 		return released;
 	}
 
