@@ -321,5 +321,10 @@ public class StringUtils implements RF2Constants {
 		}
 		return null;
 	}
+
+	public static boolean isMixedCase(String word) {
+		return !word.equals(word.toLowerCase())
+				&& !word.equals(word.toUpperCase());
+	}
 	
 }
