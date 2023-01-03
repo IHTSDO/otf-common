@@ -2,12 +2,13 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.List;
 
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public abstract class Component {
+public abstract class Component implements RF2Constants {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,

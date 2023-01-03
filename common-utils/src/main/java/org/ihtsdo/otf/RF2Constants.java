@@ -156,8 +156,8 @@ public interface RF2Constants {
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";
 	
 	
-	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
-	
+	public enum ActiveState { ACTIVE, INACTIVE, BOTH }
+	 
 	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH, NONE };
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE, INITIAL_CHARACTER_CASE_INSENSITIVE };

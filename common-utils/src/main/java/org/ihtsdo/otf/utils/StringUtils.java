@@ -293,6 +293,16 @@ public class StringUtils implements RF2Constants {
 	public static String getFirstWord(String term) {
 		return term.split(" ")[0];
 	}
+	
+	public static String getFirstWord(String term, boolean tokenizeOnDashAlso) {
+		if (StringUtils.isEmpty(term) || StringUtils.isEmpty(term.replaceAll("[ -]", ""))) {
+			throw new IllegalArgumentException("Unable to get first word of empty String");
+		}
+		if (tokenizeOnDashAlso) {
+			return term.split("[ -]")[0];
+		}
+		return term.split(" ")[0];
+	}
 
 	public static boolean isCapitalized(String word) {
 		return Character.isUpperCase(word.charAt(0));
@@ -325,6 +335,19 @@ public class StringUtils implements RF2Constants {
 	public static boolean isMixedCase(String word) {
 		return !word.equals(word.toLowerCase())
 				&& !word.equals(word.toUpperCase());
+	}
+
+	public static boolean isMixAlphaNumeric(String word) {
+		boolean containsAlpha = false;
+		boolean containsNumeric = false;
+		for (char c : word.toCharArray()) {
+			if (isLetter(c)) {
+				containsAlpha = true;
+			} else if (isDigit(c)) {
+				containsNumeric = true;
+			}
+		}
+		return containsAlpha && containsNumeric;
 	}
 	
 }
