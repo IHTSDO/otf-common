@@ -134,7 +134,7 @@ public class TraceabilityServiceClient {
 		return getComponentActivity(componentId, null, null, null, false, false, onBranch, false, true);
 	}
 
-	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix, boolean isConceptId, boolean useOnBranch) throws InterruptedException {
+	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) throws InterruptedException {
 		if (componentId == null) {
 			logger.warn("TraceabilityServiceClient was asked to recover activities for null id component.");
 			return new ArrayList<>();
@@ -164,11 +164,13 @@ public class TraceabilityServiceClient {
 		if (intOnly) {
 			url += "&intOnly=true";
 		}
-		if (branchPrefix != null) {
+		if (branchPath != null) {
 			if (useOnBranch) {
-				url += "&branchPrefix=" + branchPrefix;
+				url += "&branchPrefix=" + branchPath;
 			} else {
-				url += "&onBranch=" + branchPrefix;
+				//Allow for inclusion of changes made on other projects that have been promoted up and rebased back down 
+				//to the project we're interested in.
+				url += "&includeHigherPromotions=true&onBranch=" + branchPath;
 			}
 		}
 		List<Activity> activities = new ArrayList<>();
