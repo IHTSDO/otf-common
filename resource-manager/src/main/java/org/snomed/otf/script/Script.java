@@ -275,6 +275,7 @@ public abstract class Script implements RF2Constants {
 					sb.append(isNestedFirst?"":COMMA);
 					sb.append(prefix + i );
 					isNestedFirst = false;
+					prefix = "";
 				}
 			} else if (detail instanceof String) {
 				String str = (String) detail;
