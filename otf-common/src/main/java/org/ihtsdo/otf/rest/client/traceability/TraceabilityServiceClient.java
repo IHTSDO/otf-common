@@ -36,7 +36,7 @@ public class TraceabilityServiceClient {
 	private final String serverUrl;
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
-	private final int DATA_SIZE = 1000;
+	private final int DATA_SIZE = 500;
 	public static int BATCH_SIZE = 50;
 	
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
