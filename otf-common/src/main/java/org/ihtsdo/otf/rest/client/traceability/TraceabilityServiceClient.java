@@ -8,6 +8,7 @@ import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.utils.DateUtils;
+import org.ihtsdo.otf.utils.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.traceability.domain.Activity;
@@ -131,7 +132,10 @@ public class TraceabilityServiceClient {
 	}
 	
 	public List<Activity> getComponentActivity(String componentId, String onBranch) throws InterruptedException {
-		return getComponentActivity(componentId, null, null, null, false, false, onBranch, false, true);
+		//This method should only be used to recover traceability at the component level
+		//boolean isConcept = SnomedUtils.isConceptSctid(componentId);
+		boolean isConcept = false;
+		return getComponentActivity(componentId, null, null, null, false, false, onBranch, isConcept, true);
 	}
 
 	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) throws InterruptedException {

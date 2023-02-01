@@ -48,4 +48,12 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return elements;
 	}
+	
+	public static boolean isConceptSctid(String componentId) {
+		//A zero in the penultimate character indicates a concept SCTID
+		if (StringUtils.isEmpty(componentId)) {
+			return false;
+		}
+		return componentId.charAt(componentId.length()-2) == '0';
+	}
 }
