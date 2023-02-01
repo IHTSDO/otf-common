@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -91,14 +92,22 @@ public abstract class Component implements RF2Constants {
 	protected boolean isDirty = false;
 	
 	public void addIssue(String issue) {
+		addIssue(issue, ", ");
+	}
+	
+	public void addIssue(String issue, String separator) {
 		if (this.issues == null) {
 			this.issues = issue;
 		} else {
 			if (!this.issues.isEmpty()) {
-				this.issues += ", ";
+				this.issues += separator;
 			}
 			this.issues += issue;
 		}
+	}
+	
+	public boolean hasIssues() {
+		return !StringUtils.isEmpty(issues);
 	}
 	
 	public String getIssues() {
