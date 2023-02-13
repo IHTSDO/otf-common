@@ -221,7 +221,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public boolean report (int reportIdx, Object...details) throws TermServerScriptException {
-		boolean writeSuccess = writeToReportFile (reportIdx, writeToString(details));
+		boolean writeSuccess = writeToReportFile(reportIdx, writeToString(details));
 		if (writeSuccess) {
 			incrementSummaryInformation("Report lines written");
 		}
@@ -262,7 +262,7 @@ public abstract class Script implements RF2Constants {
 						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
 						str = isNestedNumeric ? str : str.replaceAll("\"", "\"\"");
 					}
-					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
+					sb.append((isNestedNumeric?",":prefix) + str + (isNestedNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
 				}
 			} else if (detail instanceof Object []) {
