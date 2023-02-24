@@ -258,11 +258,15 @@ public abstract class Script implements RF2Constants {
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
 					boolean isNestedNumeric = false;
-					if (str != null) {
-						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
-						str = isNestedNumeric ? str : str.replaceAll("\"", "\"\"");
+					boolean isAlreadyQuoted = str.startsWith("\"") && str.endsWith("\"");
+					if (isAlreadyQuoted) {
+						prefix = "";
 					}
-					sb.append((isNestedNumeric?",":prefix) + str + (isNestedNumeric?"":QUOTE));
+					if (str != null) {
+						isNestedNumeric = StringUtils.isNumeric(str);
+						str = (isNestedNumeric || isAlreadyQuoted) ? str : str.replaceAll("\"", "\"\"");
+					}
+					sb.append(((isNestedNumeric&&!isFirst)?",":prefix) + str + ((isNestedNumeric || isAlreadyQuoted)?"":QUOTE));
 					prefix = COMMA_QUOTE;
 				}
 			} else if (detail instanceof Object []) {
