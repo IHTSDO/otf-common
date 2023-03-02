@@ -177,6 +177,17 @@ public class JobRun {
 		return clone;
 	}
 
+	public JobRun cloneForRerun() {
+		JobRun clone = new JobRun();
+		clone.setId(UUID.randomUUID());
+		clone.setJobName(getJobName());
+		clone.setProject(getProject());
+		clone.setParameters(getParameters());
+		clone.setRequestTime(new Date());
+		clone.setTerminologyServerUrl(getTerminologyServerUrl());
+		return clone;
+	}
+
 	public void setParameters(JobRunParameters parameters) {
 		//Must always have a parameters object, even if it's empty
 		if (parameters == null) {
