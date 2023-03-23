@@ -258,7 +258,7 @@ public abstract class Script implements RF2Constants {
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
 					boolean isNestedNumeric = false;
-					boolean isAlreadyQuoted = str.startsWith("\"") && str.endsWith("\"");
+					boolean isAlreadyQuoted = (str != null) && str.startsWith("\"") && str.endsWith("\"");
 					if (isAlreadyQuoted) {
 						prefix = "";
 					}
