@@ -5,7 +5,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
@@ -27,7 +27,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
-	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static final int MAX_REQUEST_RATE = 9;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
@@ -167,7 +167,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				if (tabIdx == 0) {
 					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
 				} else {
-					properties.setSheetId(new Integer(tabIdx));
+					properties.setSheetId(tabIdx);
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
