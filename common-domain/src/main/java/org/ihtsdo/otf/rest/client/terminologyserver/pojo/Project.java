@@ -200,5 +200,21 @@ public class Project {
 	public String getPreviousBranchPath() {
 		return previousBranchPath;
 	}
+	
+	public Project clone() {
+		Project clone = new Project();
+		clone.key = this.key;
+		clone.title = this.title;
+		clone.projectLead = this.projectLead;
+		clone.branchPath = this.branchPath;
+		clone.branchState = this.branchState;
+		clone.validationStatus = this.validationStatus;
+		clone.projectPromotionDisabled = this.projectPromotionDisabled;
+		clone.projectMrcmDisabled = this.projectMrcmDisabled;
+		clone.projectTemplatesDisabled = this.projectTemplatesDisabled;
+		clone.projectSpellCheckDisabled = this.projectSpellCheckDisabled;
+		clone.metadata = this.metadata;
+		return clone;
+	}
 
 }
