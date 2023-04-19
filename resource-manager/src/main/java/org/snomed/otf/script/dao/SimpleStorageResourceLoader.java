@@ -12,7 +12,7 @@ import org.springframework.core.io.Resource;
 
 import com.amazonaws.services.s3.AmazonS3;
 
-public class SimpleStorageResourceLoader implements ResourceLoader, InitializingBean {
+public class SimpleStorageResourceLoader implements S3ResourceLoader, InitializingBean {
 
 	private final AmazonS3 amazonS3;
 	private final ResourceLoader delegate;
@@ -63,5 +63,10 @@ public class SimpleStorageResourceLoader implements ResourceLoader, Initializing
 	@Override
 	public ClassLoader getClassLoader() {
 		return this.delegate.getClassLoader();
+	}
+
+	@Override
+	public AmazonS3 getS3Client() {
+		return amazonS3;
 	}
 }
