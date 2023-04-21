@@ -66,7 +66,7 @@ public class SimpleStorageResourceLoader implements S3ResourceLoader, Initializi
 	}
 
 	@Override
-	public AmazonS3 getS3Client() {
+	public AmazonS3 getAmazonS3() {
 		return amazonS3;
 	}
 }

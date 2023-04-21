@@ -5,5 +5,5 @@ import org.springframework.core.io.ResourceLoader;
 
 public interface S3ResourceLoader extends ResourceLoader {
 
-	AmazonS3 getS3Client();
+	AmazonS3 getAmazonS3();
 }

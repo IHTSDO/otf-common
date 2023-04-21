@@ -34,14 +34,14 @@ public class ResourceManager {
 	 *
 	 * @param resourceConfiguration Used to get the resource configuration which details
 	 *                              the local/cloud setting.
-	 * @param resourceLoader   The resource loader associated to the cloud
+	 * @param cloudResourceLoader   The resource loader associated to the cloud
 	 *                              service.
 	 */
-	public ResourceManager(final ResourceConfiguration resourceConfiguration, final ResourceLoader resourceLoader) throws NullPointerException {
+	public ResourceManager(final ResourceConfiguration resourceConfiguration, final ResourceLoader cloudResourceLoader) throws NullPointerException {
 		this.resourceConfiguration = Objects.requireNonNull(resourceConfiguration);
 
 		if (resourceConfiguration.isUseCloud()) {
-			this.resourceLoader = checkS3Connection(Objects.requireNonNull(resourceLoader));
+			this.resourceLoader = checkS3Connection(Objects.requireNonNull(cloudResourceLoader));
 		} else {
 			this.resourceLoader = new FileSystemResourceLoader();
 		}
@@ -105,7 +105,7 @@ public class ResourceManager {
 				String resourcePath = resource.getPath().replaceAll("\\\\", "/");
 				resourcePath = (configPath != null ? configPath : "") + resourcePath;
 				String bucketName = resourceConfiguration.getCloud().getBucketName();
-				return ((S3ResourceLoader) resourceLoader).getS3Client().doesObjectExist(bucketName, resourcePath);
+				return ((S3ResourceLoader) resourceLoader).getAmazonS3().doesObjectExist(bucketName, resourcePath);
 			} else {
 				return Files.isReadable(resource.toPath());
 			}
@@ -200,7 +200,7 @@ public class ResourceManager {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
 				final String path = resourceConfiguration.getCloud().getPath();
-				((S3ResourceLoader) resourceLoader).getS3Client().deleteObject(resourceConfiguration.getCloud().getBucketName(),
+				((S3ResourceLoader) resourceLoader).getAmazonS3().deleteObject(resourceConfiguration.getCloud().getBucketName(),
 									  (path != null ? path : "") + resourcePath);
 			} else {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
@@ -282,7 +282,7 @@ public class ResourceManager {
 								final String toResourcePath) throws IOException {
 		final String bucketName = resourceConfiguration.getCloud().getBucketName();
 		final String path = resourceConfiguration.getCloud().getPath();
-		((S3ResourceLoader) resourceLoader).getS3Client().copyObject(bucketName, (path != null ? path : "") + fromResourcePath, bucketName, (path != null ? path : "") + toResourcePath);
+		((S3ResourceLoader) resourceLoader).getAmazonS3().copyObject(bucketName, (path != null ? path : "") + fromResourcePath, bucketName, (path != null ? path : "") + toResourcePath);
 		deleteResource(fromResourcePath);
 	}
 
@@ -376,12 +376,11 @@ public class ResourceManager {
 		if (o == null || getClass() != o.getClass()) return false;
 		ResourceManager that = (ResourceManager) o;
 		return Objects.equals(resourceConfiguration, that.resourceConfiguration) &&
-				Objects.equals(resourceLoader, that.resourceLoader);// &&
-				//Objects.equals(amazonS3, that.amazonS3);
+				Objects.equals(resourceLoader, that.resourceLoader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(resourceConfiguration, resourceLoader); //, amazonS3);
+		return Objects.hash(resourceConfiguration, resourceLoader);
 	}
 }
