@@ -232,6 +232,11 @@ public abstract class Script implements RF2Constants {
 		if (getReportManager() == null) {
 			throw new TermServerScriptException("Attempted to write to report before Report Manager is available. Check postInit() has been called.\n Message was " + line);
 		}
+		
+		if (reportIdx == NOT_SET) {
+			debug("Tab NOT_SET to report: " + line);
+			return false;
+		}
 		return getReportManager().writeToReportFile(reportIdx, line);
 	}
 	

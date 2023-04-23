@@ -95,6 +95,12 @@ public abstract class Component implements RF2Constants {
 		addIssue(issue, ", ");
 	}
 	
+	public void addIssues(List<String> issues, String separator) {
+		for (String issue : issues) {
+			addIssue(issue, separator);
+		}
+	}
+	
 	public void addIssue(String issue, String separator) {
 		if (this.issues == null) {
 			this.issues = issue;
