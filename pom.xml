@@ -5,8 +5,8 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>1.0.4</version>
-	</parent>
+		<version>1.0.7</version>
+	</parent> 
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common-parent</artifactId>
