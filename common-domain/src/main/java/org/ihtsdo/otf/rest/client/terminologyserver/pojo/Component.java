@@ -227,4 +227,8 @@ public abstract class Component implements RF2Constants {
 		return released;
 	}
 
+	public String toWhitelistString() {
+		return (isActive()?"1":"0") + "," + moduleId + ",";
+	}
+
 }
