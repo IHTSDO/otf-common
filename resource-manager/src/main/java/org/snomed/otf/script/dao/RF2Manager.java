@@ -38,7 +38,9 @@ public class RF2Manager implements RF2Constants {
 				if (andClose) {
 					pw.close();
 				}
-			} catch (Exception e) {}
+			} catch (Exception e) {
+				Script.error("Exception while closing RF2 files", e);
+			}
 		}
 		if (andClose) {
 			printWriterMap = new HashMap<>();
