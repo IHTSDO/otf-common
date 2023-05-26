@@ -13,7 +13,7 @@ public abstract class Component implements RF2Constants {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
-		TEXT_DEFINITION, AXIOM, UNKNOWN}
+		TEXT_DEFINITION, AXIOM, ALTERNATE_IDENTIFIER, UNKNOWN}
 	
 	//The id takes a different name in most components, don't expose
 	protected String id;

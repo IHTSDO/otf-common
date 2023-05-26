@@ -45,7 +45,7 @@ public interface RF2Constants {
 	static String SCTID_US_MODULE = "731000124108";
 	static String SCTID_LOINC_PROJECT_MODULE = "715515008";
 	public String SCTID_LOINC_EXTENSION_MODULE = "11010000107";
-	public String SCTID_LOINC_CODE_SYSTEM = "705113004";
+	public String SCTID_LOINC_CODE_SYSTEM = "705114005";
 	static String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|"
 
 	//ECL Constants
