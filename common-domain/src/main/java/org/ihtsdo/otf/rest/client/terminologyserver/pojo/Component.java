@@ -116,6 +116,10 @@ public abstract class Component implements RF2Constants {
 		return !StringUtils.isEmpty(issues);
 	}
 	
+	public boolean hasIssue(String issue) {
+		return !StringUtils.isEmpty(issues) && issues.contains(issue);
+	}
+	
 	public String getIssues() {
 		return issues;
 	}
