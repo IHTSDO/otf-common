@@ -56,4 +56,17 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return componentId.charAt(componentId.length()-2) == '0';
 	}
+
+	public static String getNamespace(String sctId) {
+		//We'll reverse the string to make the calculations easier
+		String revSctId = new StringBuffer(sctId).reverse().toString();
+		if (revSctId.charAt(2) == '0') {
+			return "0";
+		}
+		if (revSctId.length() < 11) {
+			throw new IllegalArgumentException("Non 0 partition SCTID missing namespace: " + sctId);
+		}
+		String revNameSpace = revSctId.substring(3,10);
+		return new StringBuffer(revNameSpace).reverse().toString();
+	}
 }
