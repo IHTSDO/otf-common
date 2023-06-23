@@ -1,6 +1,5 @@
 package org.ihtsdo.otf;
 
-
 public interface RF2Constants {
 
 	static int NOT_SET = -1;
@@ -160,6 +159,13 @@ public interface RF2Constants {
 	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";
+	
+	//Content types
+	public static final String SCTID_PRE_COORDINATED_CONTENT = "723594008"; //All precoordinated SNOMED CT content");
+	public static final String SCTID_POST_COORDINATED_CONTENT = "723595009"; //"All postcoordinated SNOMED CT content");
+	public static final String SCTID_ALL_CONTENT = "723596005"; // All SNOMED CT content
+	public static final String SCTID_NEW_PRE_COORDINATED_CONTENT = "723593002"; //All new precoordinated SNOMED CT content
+
 
 
 	public enum ActiveState { ACTIVE, INACTIVE, BOTH }
@@ -282,4 +288,7 @@ public interface RF2Constants {
 	public static final int REF_IDX_REFCOMPID = 5;
 	public static final int REF_IDX_FIRST_ADDITIONAL = 6;
 	public static final int REF_IDX_AXIOM_STR = 6;
+	
+	//MRCM Attribute Range columns
+	public static final int MRCM_ATTRIB_CONTENT_TYPE = 9;
 }
