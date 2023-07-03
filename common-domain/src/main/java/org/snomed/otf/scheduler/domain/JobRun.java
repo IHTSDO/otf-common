@@ -244,6 +244,14 @@ public class JobRun {
 	public boolean getParamBoolean(String key) {
 		return parameters.getBoolean(key);
 	}
+	
+	public boolean getMandatoryParamBoolean(String key) {
+		String value = parameters.getValue(key);
+		if (value == null || StringUtils.isEmpty(value.trim())) {
+			throw new IllegalArgumentException("Mandatory boolean parameter '" + key + "' was not supplied");
+		}
+		return parameters.getBoolean(key);
+	}
 
 	public Set<WhiteListedConcept> getWhiteList() {
 		return whiteList;

@@ -111,7 +111,8 @@ public class JobParameters {
 	
 	public boolean getBoolean(String key) {
 		String value = getValue(key);
-		if (value != null && (value.toUpperCase().equals("Y") || value.toUpperCase().equals("TRUE"))) {
+		if (value != null && (value.toUpperCase().equals("Y") || 
+				value.toUpperCase().equals("TRUE"))) {
 			return true;
 		}
 		return false;
