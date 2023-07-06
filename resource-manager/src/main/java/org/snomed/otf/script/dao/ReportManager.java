@@ -86,7 +86,7 @@ public class ReportManager implements RF2Constants {
 		return reportFileManager.getPrintWriter(fileName);
 	}
 
-	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
+	public void flushFiles(boolean andClose) throws TermServerScriptException {
 		//Watch that we might have written to RF2 files, even if writeToFile is set to false
 		if (writeToFile) {
 			reportFileManager.flushFiles(andClose);

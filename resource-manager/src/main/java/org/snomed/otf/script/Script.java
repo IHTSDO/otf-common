@@ -193,19 +193,18 @@ public abstract class Script implements RF2Constants {
 		getReportManager().flushFilesSoft();
 	}
 	
-	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
+	public void flushFiles(boolean andClose) throws TermServerScriptException {
 		if (getRF2Manager() != null) {
 			getRF2Manager().flushFiles(andClose);
 		}
 		if (getReportManager() != null) {
-			getReportManager().flushFiles(andClose, withWait);
+			getReportManager().flushFiles(andClose);
 		}
 	}
 	
 	public void flushFilesSafely(boolean andClose) {
 		try {
-			boolean andWait = false;
-			flushFiles(andClose, andWait);
+			flushFiles(andClose);
 		} catch (Exception e) {
 			error("Failed to flush files.", e);
 		}
@@ -213,8 +212,7 @@ public abstract class Script implements RF2Constants {
 	
 	public void flushFilesWithWait(boolean andClose) {
 		try {
-			boolean andWait = true;
-			flushFiles(andClose, andWait);
+			flushFiles(andClose);
 		} catch (Exception e) {
 			error("Failed to flush files.", e);
 		}
