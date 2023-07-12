@@ -114,7 +114,7 @@ public interface RF2Constants {
 	//Inactivation Indicator Reasons
 	enum InactivationIndicator {AMBIGUOUS, DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE,
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED, NONCONFORMANCE_TO_EDITORIAL_POLICY,
-		NOT_SEMANTICALLY_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASS_DERIVED_COMPONENT, GRAMMATICAL_DESCRIPTION_ERROR};
+		NOT_SEMANTICALLY_EQUIVALENT, COMPONENT_MEANING_UNKNOWN, CLASSIFICATION_DERIVED_COMPONENT, GRAMMATICAL_DESCRIPTION_ERROR};
 	public static final String SCTID_INACT_AMBIGUOUS ="900000000000484002";  // |Ambiguous component (foundation metadata concept)|
 	public static final String SCTID_INACT_MOVED_ELSEWHERE  ="900000000000487009";  // |Component moved elsewhere (foundation metadata concept)|
 	public static final String SCTID_INACT_CONCEPT_NON_CURRENT  ="900000000000495008";  // |Concept non-current (foundation metadata concept)|
@@ -137,7 +137,7 @@ public interface RF2Constants {
 	public static final String SCTID_ASSOC_POSS_REPLACED_BY_REFSETID = "1186921001"; // |POSSIBLY REPLACED BY association reference set (foundation metadata concept)|
 	public static final String SCTID_ASSOC_SAME_AS_REFSETID = "900000000000527005"; // |SAME AS association reference set (foundation metadata concept)|"
 	public static final String SCTID_ASSOC_POSS_EQUIV_REFSETID = "900000000000523009" ;// |POSSIBLY EQUIVALENT TO association reference set (foundation metadata concept)|"
-	public static final String SCTID_ASSOC_PARTIALLY_EQUIV_REFSETID = "1186924009" ;// |PARTIALLY EQUIVALENT TO association reference set (foundation metadata concept)|"
+	public static final String SCTID_ASSOC_PART_EQUIV_REFSETID = "1186924009" ;// |PARTIALLY EQUIVALENT TO association reference set (foundation metadata concept)|"
 	public static final String SCTID_ASSOC_MOVED_TO_REFSETID = "900000000000524003" ;// |MOVED TO association reference set (foundation metadata concept)|"
 	public static final String SCTID_ASSOC_ALTERNATIVE_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
 	public static final String SCTID_ASSOC_REFERS_TO_REFSETID = "900000000000531004";  //REFERS TO association reference set (foundation metadata concept)
