@@ -102,18 +102,23 @@ public class ResourceManager {
 		if (resourceConfiguration.isUseCloud()) {
 			try {
 				Cloud cloud = resourceConfiguration.getCloud();
-				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), cloud.getPath() + "/" + prefix);
+                //In case we're running on a PC we need to convert backslashes to forward
+                String configPath = cloud.getPath().replaceAll("\\\\", "/");
+                if (configPath != null && !configPath.endsWith("/")) {
+                    configPath += "/";
+                }
+
+				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), configPath + prefix);
 				Iterator iterator = objectListing.getObjectSummaries().iterator();
 				while(iterator.hasNext()) {
 					S3ObjectSummary summary = (S3ObjectSummary)iterator.next();
-					fileNames.add(summary.getKey().substring(cloud.getPath().length()));
+					fileNames.add(summary.getKey().substring(configPath.length()));
 				}
 			} catch (AmazonS3Exception e) {
 				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);
 			}
 		} else {
-			File directory = new File(resourceConfiguration.getLocal().getPath());
-			File[] files = directory.listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+			File[] files = resourceLoader.getResource(resourceConfiguration.getLocal().getPath()).getFile().listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
 			Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
 		}
 
