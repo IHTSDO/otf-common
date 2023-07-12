@@ -3,6 +3,10 @@ package org.ihtsdo.otf.resourcemanager;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.apache.commons.io.IOCase;
+import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
@@ -10,14 +14,11 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 import org.springframework.util.StreamUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Service to read, write, delete and move file resources from S3 or local
@@ -89,11 +90,39 @@ public class ResourceManager {
 			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
 		}
 	}
+
+	/**
+	 * Return a list of filenames for given resource
+	 * @param prefix File prefix
+	 * @return Set of all relevant filenames
+	 * @throws IOException If an error occurs while trying to load the resource.
+	 */
+	public Set<String> listFilenames(String prefix) throws IOException {
+		Set<String> fileNames = new HashSet<>();
+		if (resourceConfiguration.isUseCloud()) {
+			try {
+				Cloud cloud = resourceConfiguration.getCloud();
+				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), cloud.getPath() + "/" + prefix);
+				Iterator iterator = objectListing.getObjectSummaries().iterator();
+				while(iterator.hasNext()) {
+					S3ObjectSummary summary = (S3ObjectSummary)iterator.next();
+					fileNames.add(summary.getKey().substring(cloud.getPath().length()));
+				}
+			} catch (AmazonS3Exception e) {
+				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);
+			}
+		} else {
+			File directory = new File(resourceConfiguration.getLocal().getPath());
+			File[] files = directory.listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+			Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
+		}
+
+		return fileNames;
+	}
 	
 	/**
 	 * Determine existence of resource from the given <code>resourcePath</code>.
 	 *
-	 * @param resourcePath Path to the resource.
 	 * @return boolean true if the resource exists
 	 * @throws IOException If an error occurs while trying to examine
 	 *                     the resource.
