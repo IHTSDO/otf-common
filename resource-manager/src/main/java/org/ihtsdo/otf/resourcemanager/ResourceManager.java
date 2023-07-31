@@ -12,13 +12,16 @@ import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.ClassUtils;
+import org.springframework.util.ResourceUtils;
 import org.springframework.util.StreamUtils;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service to read, write, delete and move file resources from S3 or local
@@ -102,11 +105,9 @@ public class ResourceManager {
 		if (resourceConfiguration.isUseCloud()) {
 			try {
 				Cloud cloud = resourceConfiguration.getCloud();
-                //In case we're running on a PC we need to convert backslashes to forward
-                String configPath = cloud.getPath().replaceAll("\\\\", "/");
-                if (configPath != null && !configPath.endsWith("/")) {
-                    configPath += "/";
-                }
+				//In case we're running on a PC we need to convert backslashes to forward
+				String configPath = cloud.getPath().replaceAll("\\\\", "/");
+                configPath = configurePath(configPath);
 
 				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), configPath + prefix);
 				Iterator iterator = objectListing.getObjectSummaries().iterator();
@@ -118,13 +119,24 @@ public class ResourceManager {
 				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);
 			}
 		} else {
-			File[] files = resourceLoader.getResource(resourceConfiguration.getLocal().getPath()).getFile().listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
-			Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
+			String localPath = resourceConfiguration.getLocal().getPath();
+			if (localPath.startsWith(ResourceLoader.CLASSPATH_URL_PREFIX)) {
+				ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
+				PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(classLoader);
+				Resource[] resources = resolver.getResources(configurePath(localPath) + prefix + "*.*");
+				fileNames.addAll(Arrays.stream(resources)
+						.map(Resource::getFilename)
+						.filter(Objects::nonNull)
+						.collect(Collectors.toSet()));
+			} else {
+				File[] files = ResourceUtils.getFile(localPath).listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+				Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
+			}
 		}
 
 		return fileNames;
 	}
-	
+
 	/**
 	 * Determine existence of resource from the given <code>resourcePath</code>.
 	 *
