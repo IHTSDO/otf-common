@@ -49,8 +49,7 @@ public class JobType {
 	
 	@Override
 	public boolean equals (Object other) {
-		if (other instanceof JobType) {
-			JobType otherType = (JobType)other;
+		if (other instanceof JobType otherType) {
 			return name.equals(otherType.getName());
 		}
 		return false;

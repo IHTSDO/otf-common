@@ -217,7 +217,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	@Override
 	public boolean writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
-		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx).intValue() >= tabRowsCount.get(tabIdx)) {
+		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx) >= tabRowsCount.get(tabIdx)) {
 			//We're already hit the max and will have reported failure
 			//Do not attempt to add any more data.
 			return false;
@@ -239,7 +239,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		int maxRows = tabRowsCount.get(tabIdx);
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
 		
-		if (linesWrittenPerTab.get(tabIdx).intValue() >= (maxRows-1)) {
+		if (linesWrittenPerTab.get(tabIdx) >= (maxRows-1)) {
 			//Do we have sufficient cells left to extend this tab further?
 			int requestCellIncrement = maxTabColumns.get(tabIdx) * MAX_ROW_INCREMENT;
 			if (currentCellCount + requestCellIncrement < MAX_CELLS) {
@@ -247,7 +247,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				tabRowsCount.put(tabIdx, maxRows + MAX_ROW_INCREMENT);
 				Script.debug("Expanding rows in tabIdx " + tabIdx + " to " + tabRowsCount.get(tabIdx));
 				expandTabRows(tabIdx);
-			} else if (linesWrittenPerTab.get(tabIdx).intValue() == (maxRows - 1)) {
+			} else if (linesWrittenPerTab.get(tabIdx) == (maxRows - 1)) {
 				linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
 				addDataToBWritten(tabIdx, "Data truncated at " + maxRows + " rows");
 				Script.warn("Number of rows written to tab idx " + tabIdx + " hit limit of " + maxRows);
@@ -280,7 +280,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	private void addDataToBWritten(int tabIdx, String line) throws TermServerScriptException {
 		List<Object> data = CVSUtils.csvSplitAsObject(line);
-		List<List<Object>> cells = Arrays.asList(data);
+		List<List<Object>> cells = List.of(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
 		if (!maxTabColumns.containsKey(tabIdx)) {
@@ -350,7 +350,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 								if (e.getMessage() != null && (
 										e.getMessage().contains("insufficient")
 										|| e instanceof ConcurrentModificationException)) {
-									sleepTime = 1 * 1000;
+									sleepTime = 1000;
 								}
 								Thread.sleep(sleepTime);
 							} catch (InterruptedException e1) {}

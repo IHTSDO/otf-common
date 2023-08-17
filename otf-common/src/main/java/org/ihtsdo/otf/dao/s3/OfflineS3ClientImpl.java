@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -89,7 +88,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
 			//Mac appears to return these objects in a sorted list, Ubuntu does not.
 			//Sorting programatically for now until we can get this nailed down.
-			Collections.sort(objectSummaries, new S3ObjectSummaryComparator());
+			objectSummaries.sort(new S3ObjectSummaryComparator());
 		}
 		return listing;
 	}
@@ -229,11 +228,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	}
 
 	@Override
-	/**
-	 * Part of the TestS3Client interface.
-	 * For clearing down before and after testing.
-	 */
-	public void freshBucketStore() throws IOException {
+    public void freshBucketStore() throws IOException {
 		if (bucketsDirectory.exists() && bucketsDirectory.isDirectory()) {
 			Files.walk(bucketsDirectory.toPath())
 					.sorted(Comparator.reverseOrder())
@@ -289,7 +284,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		return path;
 	}
 
-	public class S3ObjectSummaryComparator implements Comparator<S3ObjectSummary> {
+	public static class S3ObjectSummaryComparator implements Comparator<S3ObjectSummary> {
 		@Override
 		public int compare(S3ObjectSummary o1, S3ObjectSummary o2) {
 			return o1.getKey().compareTo(o2.getKey());

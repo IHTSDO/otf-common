@@ -1,6 +1,7 @@
 package org.snomed.otf.traceability.domain;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class ConceptChange {
@@ -42,7 +43,7 @@ public class ConceptChange {
 
 		ConceptChange that = (ConceptChange) o;
 
-		if (conceptId != null ? !conceptId.equals(that.conceptId) : that.conceptId != null) return false;
+		if (!Objects.equals(conceptId, that.conceptId)) return false;
 		return componentChanges != null ? componentChanges.equals(that.componentChanges) : that.componentChanges == null;
 
 	}

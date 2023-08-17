@@ -1,5 +1,7 @@
 package org.snomed.otf.traceability.domain;
 
+import java.util.Objects;
+
 public class ComponentChange {
 
 	private String componentId;
@@ -56,9 +58,9 @@ public class ComponentChange {
 
 		ComponentChange that = (ComponentChange) o;
 
-		if (componentId != null ? !componentId.equals(that.componentId) : that.componentId != null) return false;
+		if (!Objects.equals(componentId, that.componentId)) return false;
 		if (componentType != that.componentType) return false;
-		if (componentSubType != that.componentSubType) return false;
+		if (!Objects.equals(componentSubType, that.componentSubType)) return false;
 		return changeType == that.changeType;
 
 	}

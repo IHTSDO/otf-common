@@ -89,8 +89,10 @@ public class SnowstormRestClient {
 	private static final int MAX_PAGE_SIZE = 10_000;
 	private static final int INDENT = 2;
 	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
-	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<ItemsPage<CodeSystem>>() {};
-	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<ItemsPage<CodeSystemVersion>>() {};
+	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
+    };
+	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
+    };
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private SnowstormRestClient(String snowstormUrl) {
@@ -132,7 +134,7 @@ public class SnowstormRestClient {
 				LOGGER.debug("Header      : {}", k);
 				LOGGER.debug("Value       : {}", v);
 			});
-			LOGGER.debug("Response body: {}", body.toString());
+			LOGGER.debug("Response body: {}", Arrays.toString(body));
 			LOGGER.debug("=======================response end=================================================");
 
 			return response;
@@ -245,7 +247,7 @@ public class SnowstormRestClient {
 	public Branch getBranch(String branchPath) throws RestClientException {
 		Branch branch = getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
 		if (branch != null && branch.getMetadata() == null) {
-			branch.setMetadata(new HashMap<String, Object>());
+			branch.setMetadata(new HashMap<>());
 		}
 		return branch;
 	}
@@ -260,7 +262,7 @@ public class SnowstormRestClient {
 	}
 	
 	public String getFsn(String branchPath, String conceptId) throws RestClientException {
-		return getFsns(branchPath, Arrays.asList(conceptId)).get(conceptId);
+		return getFsns(branchPath, Collections.singletonList(conceptId)).get(conceptId);
 	}
 	
 	public Map<String, Set<SimpleDescriptionPojo>> getDescriptions(String branchPath, Collection<String> conceptIds) throws RestClientException {
@@ -864,43 +866,42 @@ public class SnowstormRestClient {
 			if (moduleIds != null) {
 				jsonObj.put("moduleIds", moduleIds);
 			}
-			switch (exportCategory) {
-				case UNPUBLISHED:
-					String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
-					jsonObj.put("transientEffectiveTime", tet);
-					if (flatIndexExportStyle) {
-						jsonObj.put("type", ExportType.DELTA);
-					}
-					break;
-				case PUBLISHED:
-					if (effectiveDate == null) {
-						throw new ProcessingException("Cannot export published data without an effective date");
-					}
-					if (flatIndexExportStyle) {
-						jsonObj.put("startEffectiveTime", effectiveDate);
+            switch (exportCategory) {
+                case UNPUBLISHED -> {
+                    String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
+                    jsonObj.put("transientEffectiveTime", tet);
+                    if (flatIndexExportStyle) {
+                        jsonObj.put("type", ExportType.DELTA);
+                    }
+                }
+                case PUBLISHED -> {
+                    if (effectiveDate == null) {
+                        throw new ProcessingException("Cannot export published data without an effective date");
+                    }
+                    if (flatIndexExportStyle) {
+                        jsonObj.put("startEffectiveTime", effectiveDate);
 
-					} else {
-						jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-						jsonObj.put("deltaEndEffectiveTime", effectiveDate);
-						jsonObj.put("transientEffectiveTime", effectiveDate);
-					}
-					break;
-				case FEEDBACK_FIX:
-					if (effectiveDate == null) {
-						throw new ProcessingException("Cannot export feedback-fix data without an effective date");
-					}
-					if (flatIndexExportStyle) {
-						jsonObj.put("startEffectiveTime", effectiveDate);
-						jsonObj.put("includeUnpublished", true);
+                    } else {
+                        jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+                        jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+                        jsonObj.put("transientEffectiveTime", effectiveDate);
+                    }
+                }
+                case FEEDBACK_FIX -> {
+                    if (effectiveDate == null) {
+                        throw new ProcessingException("Cannot export feedback-fix data without an effective date");
+                    }
+                    if (flatIndexExportStyle) {
+                        jsonObj.put("startEffectiveTime", effectiveDate);
+                        jsonObj.put("includeUnpublished", true);
 
-					} else {
-						jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-					}
-					jsonObj.put("transientEffectiveTime", effectiveDate);
-					break;
-				default:
-					throw new BadRequestException("Export type " + exportCategory + " not recognised");
-			}
+                    } else {
+                        jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+                    }
+                    jsonObj.put("transientEffectiveTime", effectiveDate);
+                }
+                default -> throw new BadRequestException("Export type " + exportCategory + " not recognised");
+            }
 		} catch (JSONException e) {
 			throw new ProcessingException("Failed to prepare JSON for export request.", e);
 		}
@@ -1156,7 +1157,8 @@ public class SnowstormRestClient {
 							.accept(MediaType.APPLICATION_JSON)
 							.body(request);
 					ResponseEntity<List<ConceptPojo>> response = null;
-					ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<List<ConceptPojo>>() {};
+					ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<>() {
+                    };
 					response = restTemplate.exchange(post, typeRef);
 					if (response == null) {
 						throw new ResourceNotFoundException("Bulk search returned null result on branch " + branchPath);

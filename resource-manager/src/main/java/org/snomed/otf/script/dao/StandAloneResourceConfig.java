@@ -34,7 +34,7 @@ public class StandAloneResourceConfig extends ResourceConfiguration {
 		LocalProperties properties = new LocalProperties(prefix);
 		if (!isConfigurationValid(properties)) {
 			throw new TermServerScriptException("Check application.properties for correct S3 config: "
-					+ CONFIGURATION.values());
+					+ Arrays.toString(CONFIGURATION.values()));
 		}
 
 		setReadonly(properties.getBooleanProperty(CONFIGURATION.READ_ONLY.value));

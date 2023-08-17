@@ -110,11 +110,9 @@ public class ResourceManager {
                 configPath = configurePath(configPath);
 
 				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), configPath + prefix);
-				Iterator iterator = objectListing.getObjectSummaries().iterator();
-				while(iterator.hasNext()) {
-					S3ObjectSummary summary = (S3ObjectSummary)iterator.next();
-					fileNames.add(summary.getKey().substring(configPath.length()));
-				}
+                for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
+                    fileNames.add(summary.getKey().substring(configPath.length()));
+                }
 			} catch (AmazonS3Exception e) {
 				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);
 			}

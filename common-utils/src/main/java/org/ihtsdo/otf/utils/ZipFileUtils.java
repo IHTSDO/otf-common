@@ -121,7 +121,8 @@ public class ZipFileUtils {
     	}
     	if(node.isDirectory()){
     		final String[] subNote = node.list();
-    		for(final String filename : subNote){
+            assert subNote != null;
+            for(final String filename : subNote){
     			generateFileList(new File(node, filename),fileList);
     		}
     	}

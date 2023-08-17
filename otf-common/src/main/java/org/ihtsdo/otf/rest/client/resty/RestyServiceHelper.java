@@ -86,12 +86,10 @@ public class RestyServiceHelper {
 					exceptionMessage = jsonObj.getString(ERROR_MESSAGE);
 				} catch (JSONException e) {}
 			}
-			switch (httpStatus.intValue()) {
-			case HttpStatus.SC_NOT_FOUND:
-				throw new ResourceNotFoundException(exceptionMessage);
-			case HttpStatus.SC_CONFLICT:
-				throw new EntityAlreadyExistsException(exceptionMessage);
-			}
+            switch (httpStatus) {
+                case HttpStatus.SC_NOT_FOUND -> throw new ResourceNotFoundException(exceptionMessage);
+                case HttpStatus.SC_CONFLICT -> throw new EntityAlreadyExistsException(exceptionMessage);
+            }
 		}
 
 	}

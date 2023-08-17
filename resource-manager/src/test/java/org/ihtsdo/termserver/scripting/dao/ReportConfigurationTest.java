@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class ReportConfigurationTest {
 
@@ -38,28 +37,28 @@ public class ReportConfigurationTest {
     public void testEmptyCreation() {
         ReportConfiguration reportConfiguration =
                 new ReportConfiguration(null, "CSV");
-        assertEquals(reportConfiguration.getReportOutputTypes(), null);
+        assertNull(reportConfiguration.getReportOutputTypes());
         assertFalse(reportConfiguration.isValid());
 
         reportConfiguration =
                 new ReportConfiguration("", "CSV");
-        assertEquals(reportConfiguration.getReportOutputTypes(), null);
+        assertNull(reportConfiguration.getReportOutputTypes());
         assertFalse(reportConfiguration.isValid());
 
 
         reportConfiguration =
                 new ReportConfiguration("S3|GOOGLE", null);
-        assertEquals(reportConfiguration.getReportFormatTypes(), null);
+        assertNull(reportConfiguration.getReportFormatTypes());
         assertFalse(reportConfiguration.isValid());
 
         reportConfiguration =
                 new ReportConfiguration("S3|GOOGLE", "");
-        assertEquals(reportConfiguration.getReportFormatTypes(), null);
+        assertNull(reportConfiguration.getReportFormatTypes());
         assertFalse(reportConfiguration.isValid());
 
         reportConfiguration =
                 new ReportConfiguration("S3|GOOGLE", "");
-        assertEquals(reportConfiguration.getReportFormatTypes(), null);
+        assertNull(reportConfiguration.getReportFormatTypes());
         assertFalse(reportConfiguration.isValid());
     }
 

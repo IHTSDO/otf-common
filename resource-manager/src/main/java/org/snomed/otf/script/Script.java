@@ -46,7 +46,7 @@ public abstract class Script implements RF2Constants {
 	protected Project project;
 	protected String taskKey;
 	protected Date startTime;
-	protected Map<String, Object> summaryDetails = new TreeMap<String, Object>();
+	protected Map<String, Object> summaryDetails = new TreeMap<>();
 	protected boolean quiet = false;
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
@@ -178,14 +178,14 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public void initialiseSummaryInformation(String key) {
-		summaryDetails.put(key, Integer.valueOf(0));
+		summaryDetails.put(key, 0);
 	}
 	
 	public void incrementSummaryInformation(String key, int incrementAmount) {
 		if (!summaryDetails.containsKey(key)) {
-			summaryDetails.put(key, Integer.valueOf(0));
+			summaryDetails.put(key, 0);
 		}
-		int newValue = ((Integer)summaryDetails.get(key)).intValue() + incrementAmount;
+		int newValue = (Integer) summaryDetails.get(key) + incrementAmount;
 		summaryDetails.put(key, newValue);
 	}
 	
@@ -243,7 +243,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	protected String writeToString(Object[] details) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		boolean isFirst = true;
 		for (Object detail : details) {
 			if (detail == null) {
@@ -269,41 +269,39 @@ public abstract class Script implements RF2Constants {
 						isNestedNumeric = StringUtils.isNumeric(str);
 						str = (isNestedNumeric || isAlreadyQuoted) ? str : str.replaceAll("\"", "\"\"");
 					}
-					sb.append(((isNestedNumeric&&!isFirst)?",":prefix) + str + ((isNestedNumeric || isAlreadyQuoted)?"":QUOTE));
+					sb.append((isNestedNumeric && !isFirst) ? "," : prefix).append(str).append((isNestedNumeric || isAlreadyQuoted) ? "" : QUOTE);
 					prefix = COMMA_QUOTE;
 				}
 			} else if (detail instanceof Object []) {
 				addObjectArray(sb,detail, prefix, isNumeric);
-			} else if (detail instanceof int[]) {
+			} else if (detail instanceof int[] arr) {
 				prefix = isFirst ? "" : COMMA;
 				boolean isNestedFirst = true;
-				int[] arr = (int[]) detail;
 				for (int i : arr) {
 					sb.append(isNestedFirst?"":COMMA);
-					sb.append(prefix + i );
+					sb.append(prefix).append(i);
 					isNestedFirst = false;
 					prefix = "";
 				}
-			} else if (detail instanceof String) {
-				String str = (String) detail;
+			} else if (detail instanceof String str) {
 				str = isNumeric ? str : str.replaceAll("\"", "\"\"");
-				sb.append(prefix + str + (isNumeric?"":QUOTE));
+				sb.append(prefix).append(str).append(isNumeric ? "" : QUOTE);
 			} else {
-				sb.append(prefix + detail + (isNumeric?"":QUOTE));
+				sb.append(prefix).append(detail).append(isNumeric ? "" : QUOTE);
 			}
 			isFirst = false;
 		}
 		return sb.toString();
 	}
 
-	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
+	private void addObjectArray(StringBuilder sb, Object detail, String prefix, boolean isNumeric) {
 		Object[] arr = (Object[]) detail;
 		for (Object obj : arr) {
-			if (obj instanceof String[] || obj instanceof Object[]) {
+			if (obj instanceof Object[]) {
 				addObjectArray(sb,obj, prefix, isNumeric);
 			} else if (obj instanceof int[]) {
 				for (int data : ((int[])obj)) {
-					sb.append(COMMA + data);
+					sb.append(COMMA).append(data);
 				}
 			} else {
 				if (obj instanceof Boolean) {
@@ -311,7 +309,7 @@ public abstract class Script implements RF2Constants {
 				}
 				String data = (obj==null?"":obj.toString());
 				data = isNumeric ? data : data.replaceAll("\"", "\"\"");
-				sb.append(prefix + data + (isNumeric?"":QUOTE));
+				sb.append(prefix).append(data).append(isNumeric ? "" : QUOTE);
 				prefix = COMMA_QUOTE;
 			}
 		}

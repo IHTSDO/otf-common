@@ -22,7 +22,7 @@ public class Task {
 	String summary;
 	
 	IBatch batch;
-	List<Component> components = new ArrayList<Component>();
+	List<Component> components = new ArrayList<>();
 	String assignedAuthor = null;
 	String reviewer = null;
 	String taskInfo;
@@ -167,8 +167,7 @@ public class Task {
 	}
 	
 	public boolean equals(Object other) {
-		if (other instanceof Task) {
-			Task t2 = ((Task)other);
+		if (other instanceof Task t2) {
 			return uniqueTaskId == t2.uniqueTaskId;
 		}
 		return false;

@@ -53,11 +53,12 @@ public class JobRunParameters extends JobParameters {
 
 		@Override
 		public JobRunParameters deserialize(JsonParser p, DeserializationContext ctxt)
-				throws IOException, JsonProcessingException {
+				throws IOException {
 			JobRunParameters jobParameters = new JobRunParameters();
 			ObjectMapper mapper = (ObjectMapper) p.getCodec();
 			JsonNode node = mapper.readTree(p);
-			TypeReference<HashMap<String, JobParameter>> typeRef = new TypeReference<HashMap<String, JobParameter>>() {};
+			TypeReference<HashMap<String, JobParameter>> typeRef = new TypeReference<>() {
+            };
 			Map<String,JobParameter> map = mapper.readValue(node.toString(), typeRef);
 			jobParameters.setParameterMap(map);
 			return jobParameters;

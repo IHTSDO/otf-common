@@ -11,7 +11,7 @@ public class StringUtils implements RF2Constants {
 	public static String EMPTY = "";
 
 	public static List<String> removeBlankLines(List<String> lines) {
-		List<String> unixLines = new ArrayList<String>();
+		List<String> unixLines = new ArrayList<>();
 		for (String thisLine : lines) {
 			if (!thisLine.isEmpty()) {
 				unixLines.add(thisLine);

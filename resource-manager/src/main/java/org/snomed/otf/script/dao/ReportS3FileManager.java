@@ -127,11 +127,11 @@ public class ReportS3FileManager extends ReportFileManager {
     private void deleteReports() {
         if (deleteTempFiles) {
             Script.info("Deleting local report file...");
-            deleteFiles(localReportsToTransformedReports.keySet().stream().toArray(File[]::new));
+            deleteFiles(localReportsToTransformedReports.keySet().toArray(File[]::new));
         }
         if (deleteLocalReports) {
             Script.info("Deleting local transformed report file...");
-            deleteFiles(localReportsToTransformedReports.values().stream().toArray(File[]::new));
+            deleteFiles(localReportsToTransformedReports.values().toArray(File[]::new));
         }
     }
 
@@ -174,7 +174,7 @@ public class ReportS3FileManager extends ReportFileManager {
         // get the path for all the reports (this is the way it's done for csv files)
         return cleanFileName(reportDataUploader.getUploadLocation(S3_BUCKET_PROTOCOL, S3_BUCKET_DOMAIN) +
                 File.separator +
-                transformedReportsToS3Reports.values().stream().findFirst().get().getParentFile()) + File.separator;
+                transformedReportsToS3Reports.values().stream().findFirst().orElseThrow().getParentFile()) + File.separator;
     }
 
     public boolean isDeleteLocalReports() {

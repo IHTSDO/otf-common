@@ -176,7 +176,7 @@ public class Metadata {
     
 	public List<Map<String, String>> getRequiredLanguageRefsets(boolean createIfRequired) {
 		if (requiredLanguageRefsets == null && createIfRequired) {
-			requiredLanguageRefsets = new ArrayList<Map<String, String>>();
+			requiredLanguageRefsets = new ArrayList<>();
 		}
 		return getRequiredLanguageRefsets();
 	}

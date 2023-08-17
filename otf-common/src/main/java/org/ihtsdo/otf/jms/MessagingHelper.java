@@ -28,13 +28,10 @@ public class MessagingHelper {
 	public static final String ERROR_FLAG = "error";
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	public static final MessagePostProcessor postProcessorSetErrorFlag = new MessagePostProcessor() {
-		@Override
-		public Message postProcessMessage(Message message) throws JMSException {
-			message.setBooleanProperty(ERROR_FLAG, true);
-			return message;
-		}
-	};
+	public static final MessagePostProcessor postProcessorSetErrorFlag = message -> {
+        message.setBooleanProperty(ERROR_FLAG, true);
+        return message;
+    };
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -68,14 +65,11 @@ public class MessagingHelper {
 
 	public void sendResponse(final TextMessage incomingMessage, Object payload, final Map<String, Object> messageProperties) {
 		final Destination replyToDestination = getReplyToDestination(incomingMessage);
-		sendWithQueueErrorHandling(replyToDestination, payload, new MessagePostProcessor() {
-			@Override
-			public Message postProcessMessage(Message message) throws JMSException {
-				copyProperties(incomingMessage, message, REQUEST_PROPERTY_NAME_PREFIX);
-				setProperties(message, messageProperties);
-				return message;
-			}
-		});
+		sendWithQueueErrorHandling(replyToDestination, payload, message -> {
+            copyProperties(incomingMessage, message, REQUEST_PROPERTY_NAME_PREFIX);
+            setProperties(message, messageProperties);
+            return message;
+        });
 	}
 
 	private void setProperties(Message message, Map<String, Object> messageProperties) throws JMSException {
@@ -113,20 +107,17 @@ public class MessagingHelper {
 		JmsTemplate template = getJmsTemplate();
 		if (timeToLive > 0) {
 			template.setExplicitQosEnabled(true);
-			template.setTimeToLive(timeToLive * 1000); 
+			template.setTimeToLive(timeToLive * 1000L);
 		}
 
 		final Map<String, Object> finalMessageProperties = messageProperties;
-		template.convertAndSend(destination, message, new MessagePostProcessor() {
-			@Override
-			public Message postProcessMessage(Message message) throws JMSException {
-				setProperties(message, finalMessageProperties);
-				if (responseDestination != null) {
-					message.setJMSReplyTo(responseDestination);
-				}
-				return message;
-			}
-		});
+		template.convertAndSend(destination, message, message1 -> {
+            setProperties(message1, finalMessageProperties);
+            if (responseDestination != null) {
+                message1.setJMSReplyTo(responseDestination);
+            }
+            return message1;
+        });
 	}
 
 	private String limitSize(Object obj) {
@@ -171,7 +162,7 @@ public class MessagingHelper {
 	 * @param e
 	 */
 	public void sendError(Destination destination, Exception e) {
-		logger.info("Sending error - destination {}, payload {}", getDestinationLabel(destination), e);
+		logger.info("Sending error - destination {}", getDestinationLabel(destination), e);
 		String errorMessageString = null;
 		try {
 			errorMessageString = objectMapper.writeValueAsString(e);
@@ -202,12 +193,10 @@ public class MessagingHelper {
 				return replyTo;
 			} else {
 				final Destination jmsDestination = message.getJMSDestination();
-				if (jmsDestination instanceof Queue) {
-					Queue q = (Queue) jmsDestination;
+				if (jmsDestination instanceof Queue q) {
 					final String queueName = q.getQueueName();
 					return new ActiveMQQueue(queueName + RESPONSE_POSTFIX);
-				} else if (jmsDestination instanceof Topic) {
-					Topic topic = (Topic) jmsDestination;
+				} else if (jmsDestination instanceof Topic topic) {
 					return new ActiveMQTopic(topic.getTopicName() + RESPONSE_POSTFIX);
 				} else {
 					throw new java.lang.UnsupportedOperationException("Support of this destination type has not been implemented.");

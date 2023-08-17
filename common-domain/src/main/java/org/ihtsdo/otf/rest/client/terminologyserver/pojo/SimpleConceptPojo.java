@@ -151,7 +151,7 @@ public class SimpleConceptPojo {
 		return builder.toString();
 	}
 	
-	public class FsnPojo {
+	public static class FsnPojo {
 		
 		private String id;
 		private boolean active;

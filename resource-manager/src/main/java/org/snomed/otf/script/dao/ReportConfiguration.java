@@ -69,8 +69,7 @@ public class ReportConfiguration {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ReportConfiguration)) return false;
-        ReportConfiguration that = (ReportConfiguration) o;
+        if (!(o instanceof ReportConfiguration that)) return false;
         return Objects.equals(reportOutputTypes, that.reportOutputTypes) &&
                 Objects.equals(reportFormatTypes, that.reportFormatTypes);
     }

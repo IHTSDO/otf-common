@@ -1,5 +1,6 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,6 +14,7 @@ import com.fasterxml.jackson.annotation.*;
 @Entity
 public class JobCategory implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = -3051153469536899317L;
 	
 	public static final String GENERAL_QA = "General QA";
@@ -79,8 +81,7 @@ public class JobCategory implements Serializable {
 	}
 	@Override
 	public boolean equals (Object other) {
-		if (other instanceof JobCategory) {
-			JobCategory otherCat = (JobCategory)other;
+		if (other instanceof JobCategory otherCat) {
 			if (type!=null) {
 				if (type.equals(otherCat.getType())) {
 					return name.equals(otherCat.getName());

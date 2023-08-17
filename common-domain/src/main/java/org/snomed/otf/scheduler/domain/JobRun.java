@@ -190,11 +190,7 @@ public class JobRun {
 
 	public void setParameters(JobRunParameters parameters) {
 		//Must always have a parameters object, even if it's empty
-		if (parameters == null) {
-			this.parameters = new JobRunParameters();
-		} else {
-			this.parameters = parameters;
-		}
+        this.parameters = Objects.requireNonNullElseGet(parameters, JobRunParameters::new);
 	}
 	
 	public void suppressParameters() {
@@ -205,7 +201,7 @@ public class JobRun {
 	public void setParameter(String key, Object value) {
 		if (value instanceof Collection) {
 			List<String> values = ((Collection<?>)value).stream()
-					.map(v -> v.toString())
+					.map(Object::toString)
 					.collect(Collectors.toList());
 			parameters.setValues(key, values);
 		} else {

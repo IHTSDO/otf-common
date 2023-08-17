@@ -10,7 +10,7 @@ public class MapUtils {
 	public static String NEWLINE = "\n";
 
 	public static String toString(Map<String, String> map) {
-		StringBuffer response = new StringBuffer();
+		StringBuilder response = new StringBuilder();
 		boolean isFirstEntry = true;
 		for (Entry<String, String> entry : map.entrySet()) {
 			if (!isFirstEntry) {

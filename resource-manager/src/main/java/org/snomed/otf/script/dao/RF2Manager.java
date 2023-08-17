@@ -48,7 +48,7 @@ public class RF2Manager implements RF2Constants {
 	}
 
 	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
-		StringBuffer line = new StringBuffer();
+		StringBuilder line = new StringBuilder();
 		for (int x=0; x<columns.length; x++) {
 			if (x > 0) {
 				line.append(TSV_FIELD_DELIMITER);

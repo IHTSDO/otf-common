@@ -130,8 +130,7 @@ public class Job {
 	@Override
 	public boolean equals (Object other) {
 		//Job may be missing a category as we hide that in the json
-		if (other instanceof Job) {
-			Job otherJob = (Job)other;
+		if (other instanceof Job otherJob) {
 			if (category == null || otherJob.getCategory() == null || category.equals(otherJob.getCategory())) {
 				//If neither object has a job name, compare object ids
 				if (getName() == null && otherJob.getName() == null) {

@@ -15,7 +15,7 @@ public class DateUtils {
 		if (dateAsYYYYMMDD == null || dateAsYYYYMMDD.length() != 8) {
 			throw new NumberFormatException ("Date '" + dateAsYYYYMMDD + "' cannot be formatted as ISO YYYY-MM-DD");
 		}
-		StringBuffer buff = new StringBuffer();
+		StringBuilder buff = new StringBuilder();
 		buff.append(dateAsYYYYMMDD.substring(0, 4))
 			.append(DATE_SEPARATOR)
 			.append(dateAsYYYYMMDD.substring(4, 6))

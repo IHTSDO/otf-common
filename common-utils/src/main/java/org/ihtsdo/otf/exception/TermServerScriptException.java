@@ -1,7 +1,10 @@
 package org.ihtsdo.otf.exception;
 
+import java.io.Serial;
+
 public class TermServerScriptException extends Exception {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	public TermServerScriptException(String msg, Throwable t) {

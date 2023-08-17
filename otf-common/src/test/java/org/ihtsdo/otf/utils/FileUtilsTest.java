@@ -26,15 +26,7 @@ public class FileUtilsTest {
 		//This would need Apache Commons Exec and it's such a bad idea that I'm not going to do it.
 		//Have copied MD5 generated from the Mac command line instead.
 		Assert.assertEquals ("c56243ebe22a12dba48b023daf3e2937", md5);
-		/*
-		if (SystemUtils.IS_OS_UNIX) {
-			String line = "md5 " + testFile.getAbsolutePath();
-			CommandLine cmdLine = CommandLine.parse(line);
-			ByteArrayOutputStream output = new ByteArrayOutputStream();
-			executor.setStreamHandler(new PumpStreamHandler(output));
-			DefaultExecutor executor = new DefaultExecutor();
-			int exitValue = executor.execute(cmdLine);
-		}*/
+
 	}
 
 }

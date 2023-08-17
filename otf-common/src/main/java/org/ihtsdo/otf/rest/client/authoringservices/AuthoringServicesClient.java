@@ -15,9 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
@@ -67,13 +64,10 @@ public class AuthoringServicesClient {
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate to add cookies as required
-		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
-			@Override
-			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-				request.getHeaders().addAll(headers);
-				return execution.execute(request, body);
-			}
-		}); 
+		restTemplate.getInterceptors().add((request, body, execution) -> {
+            request.getHeaders().addAll(headers);
+            return execution.execute(request, body);
+        });
 	}
 
 	public void updateAuthToken(String authToken) {
@@ -87,7 +81,7 @@ public class AuthoringServicesClient {
 		JsonObject requestJson = new JsonObject();
 		requestJson.addProperty("summary", summary);
 		requestJson.addProperty("description", description);
-		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
+		HttpEntity<Object> requestEntity = new HttpEntity<>(requestJson, headers);
 		Task task = restTemplate.postForObject(endPoint, requestEntity, Task.class);
 		return task.getKey();
 	}
@@ -132,7 +126,7 @@ public class AuthoringServicesClient {
 			requestJson.add("reviewers", reviewers);
 		}
 		
-		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
+		HttpEntity<Object> requestEntity = new HttpEntity<>(requestJson, headers);
 		restTemplate.put(endPoint, requestEntity);
 		return taskKey;
 	}
@@ -188,7 +182,7 @@ public class AuthoringServicesClient {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/classifications";
-			HttpEntity<Object> requestEntity = new HttpEntity<Object>("", headers);
+			HttpEntity<Object> requestEntity = new HttpEntity<>("", headers);
 			return restTemplate.postForObject(endPoint, requestEntity, Classification.class);
 		} catch (Exception e) {
 			throw new RestClientException("Unable to classify " + taskKey, e);
@@ -210,7 +204,8 @@ public class AuthoringServicesClient {
 
 	public List<Project> listProjects() {
 		String endPoint = serverUrl + apiRoot + "projects";
-		ParameterizedTypeReference<List<Project>> type = new ParameterizedTypeReference<List<Project>>(){};
+		ParameterizedTypeReference<List<Project>> type = new ParameterizedTypeReference<>() {
+        };
 		logger.info("Recovering list of visible projects from {}", endPoint);
 		return restTemplate.exchange(endPoint, HttpMethod.GET, null, type).getBody();
 	}

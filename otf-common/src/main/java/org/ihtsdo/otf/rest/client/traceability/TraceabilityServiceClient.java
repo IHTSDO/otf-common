@@ -8,21 +8,16 @@ import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.utils.DateUtils;
-import org.ihtsdo.otf.utils.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
-import org.springframework.http.client.ClientHttpRequestExecution;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,13 +49,10 @@ public class TraceabilityServiceClient {
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
- 		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
-			@Override
-			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-				request.getHeaders().addAll(headers);
-				return execution.execute(request, body);
-			}
-		});
+ 		restTemplate.getInterceptors().add((request, body, execution) -> {
+             request.getHeaders().addAll(headers);
+             return execution.execute(request, body);
+         });
 
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
@@ -77,7 +69,7 @@ public class TraceabilityServiceClient {
 			url += "&user=" + user;
 		}
 		List<Long> conceptIdsL = conceptIds.stream()
-				.map(c -> Long.parseLong(c))
+				.map(Long::parseLong)
 				.collect(Collectors.toList());
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIdsL, headers);
 		List<Activity> activities = new ArrayList<>();
@@ -88,7 +80,7 @@ public class TraceabilityServiceClient {
 		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
 		int failureCount = 0;
 		while (!isLast) {
-			ResponseEntity<Object> responseEntity = null;
+			ResponseEntity<Object> responseEntity;
 			try {
 				responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
 			} catch (RestClientResponseException e) {

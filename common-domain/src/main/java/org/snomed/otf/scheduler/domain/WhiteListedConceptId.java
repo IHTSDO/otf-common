@@ -1,5 +1,6 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -7,6 +8,7 @@ import javax.persistence.Embeddable;
 
 @Embeddable
 public class WhiteListedConceptId implements Serializable {
+	@Serial
 	private static final long serialVersionUID = -3951203459129549849L;
 
 	private String sctId;
@@ -37,8 +39,7 @@ public class WhiteListedConceptId implements Serializable {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof WhiteListedConceptId) {
-			WhiteListedConceptId otherWLCI = (WhiteListedConceptId)other;
+		if (other instanceof WhiteListedConceptId otherWLCI) {
 			return this.hashCode() == otherWLCI.hashCode();
 		}
 		return false;
