@@ -159,9 +159,14 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				tabRowsCount.put(tabIdx, maxRows);
 				currentCellCount += maxColumns * maxRows;
 				Script.debug("Tab " + tabIdx + " rows/cols set to " + maxRows + "/" + maxColumns);
+
+				GridProperties gridProperties = new GridProperties()
+						.setRowCount(maxRows)
+						.setColumnCount(maxColumns)
+						.setFrozenRowCount(1);
 				SheetProperties properties = new SheetProperties()
 						.setTitle(owner.getTabNames().get(tabIdx))
-						.setGridProperties(new GridProperties().setRowCount(maxRows).setColumnCount(maxColumns));
+						.setGridProperties(gridProperties);
 				
 				//Sheet 0 already exists, just update - it it's been specified
 				if (tabIdx == 0) {
