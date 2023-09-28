@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.core.MessagePostProcessor;
 
-import javax.jms.*;
+import jakarta.jms.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
