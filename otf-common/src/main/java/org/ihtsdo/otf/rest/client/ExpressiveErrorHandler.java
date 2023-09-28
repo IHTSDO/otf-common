@@ -3,6 +3,7 @@ package org.ihtsdo.otf.rest.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestClientResponseException;
@@ -23,9 +24,8 @@ public class ExpressiveErrorHandler extends DefaultResponseErrorHandler {
 		String statusText = "";
 		String errMsg;
 		try {
-			HttpStatus httpStatus = response.getStatusCode();
-			statusCode = httpStatus.value();
-			statusText = httpStatus.getReasonPhrase();
+			statusCode = response.getStatusCode().value();
+			statusText = response.getStatusText();
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getBody()))) {
 				errMsg = reader.lines().collect(Collectors.joining("\n"));
 			}
