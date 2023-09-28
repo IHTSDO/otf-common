@@ -1,8 +1,9 @@
 package org.snomed.otf.script.dao;
 
+import io.awspring.cloud.s3.InMemoryBufferingS3OutputStreamProvider;
+import io.awspring.cloud.s3.PropertiesS3ObjectContentTypeResolver;
+import io.awspring.cloud.s3.S3Resource;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.cloud.aws.core.io.s3.SimpleStorageResource;
-import org.springframework.cloud.aws.core.support.documentation.RuntimeUse;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.task.SyncTaskExecutor;
@@ -10,11 +11,11 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.util.ClassUtils;
 import org.springframework.core.io.Resource;
 
-import com.amazonaws.services.s3.AmazonS3;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class SimpleStorageResourceLoader implements ResourceLoader, InitializingBean {
 
-	private final AmazonS3 amazonS3;
+	private final S3Client s3Client;
 	private final ResourceLoader delegate;
 
 	/**
@@ -23,21 +24,20 @@ public class SimpleStorageResourceLoader implements ResourceLoader, Initializing
 	 */
 	private TaskExecutor taskExecutor;
 
-	public SimpleStorageResourceLoader(AmazonS3 amazonS3, ResourceLoader delegate) {
-		this.amazonS3 = amazonS3;
+	public SimpleStorageResourceLoader(S3Client s3Client, ResourceLoader delegate) {
+		this.s3Client = s3Client;
 		this.delegate = delegate;
 	}
 
-	public SimpleStorageResourceLoader(AmazonS3 amazonS3, ClassLoader classLoader) {
-		this.amazonS3 = amazonS3;
+	public SimpleStorageResourceLoader(S3Client s3Client, ClassLoader classLoader) {
+		this.s3Client = s3Client;
 		this.delegate = new DefaultResourceLoader(classLoader);
 	}
 
-	public SimpleStorageResourceLoader(AmazonS3 amazonS3) {
-		this(amazonS3, ClassUtils.getDefaultClassLoader());
+	public SimpleStorageResourceLoader(S3Client s3Client) {
+		this(s3Client, ClassUtils.getDefaultClassLoader());
 	}
 
-	@RuntimeUse
 	public void setTaskExecutor(TaskExecutor taskExecutor) {
 		this.taskExecutor = taskExecutor;
 	}
@@ -52,11 +52,8 @@ public class SimpleStorageResourceLoader implements ResourceLoader, Initializing
 	@Override
 	public Resource getResource(String location) {
 		if (SimpleStorageNameUtils.isSimpleStorageResource(location)) {
-			return new SimpleStorageResource(this.amazonS3, SimpleStorageNameUtils.getBucketNameFromLocation(location),
-					SimpleStorageNameUtils.getObjectNameFromLocation(location), this.taskExecutor,
-					SimpleStorageNameUtils.getVersionIdFromLocation(location));
+			return new S3Resource(location, s3Client, new InMemoryBufferingS3OutputStreamProvider(s3Client, new PropertiesS3ObjectContentTypeResolver()));
 		}
-
 		return this.delegate.getResource(location);
 	}
 

@@ -1,64 +1,95 @@
 package org.ihtsdo.otf.dao.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3Object;
-import org.apache.commons.io.FileUtils;
+import io.awspring.cloud.s3.ObjectMetadata;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
-public class S3ClientImpl extends AmazonS3Client implements S3Client {
+public class S3ClientImpl implements S3Client {
 
-	public S3ClientImpl(AWSCredentials awsCredentials) {
-		super(awsCredentials);
-	}
-
-	public PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata)
-			throws AmazonClientException {
-		// Memory problems with large files necessitate writing to disk before
-		// uploading to AWS
-		File cachedFile = cacheLocally(input, key);
-		PutObjectRequest putRequest = new PutObjectRequest(bucketName, key, cachedFile);
-		putRequest.setMetadata(metadata);
-		try {
-			return super.putObject(putRequest);
-		} finally {
-			cachedFile.delete();
-		}
-	}
-
-	public PutObjectResult putObject(PutObjectRequest putRequest) throws AmazonClientException {
-		// If we have an inputstream, modify the putRequest with a file of known size instead
-		if (putRequest.getFile() == null && putRequest.getInputStream() != null) {
-			File cachedFile = cacheLocally(putRequest.getInputStream(), putRequest.getKey());
-			putRequest.setInputStream(null);
-			putRequest.setFile(cachedFile);
-			PutObjectResult result = super.putObject(putRequest);
-			cachedFile.delete();
-			return result;
-		}
-		return super.putObject(putRequest);
-	}
-
-	private File cacheLocally(InputStream inputStream, String key) throws AmazonClientException {
-		try {
-			File cachedFile = File.createTempFile(key, ".cached");
-			FileUtils.copyInputStreamToFile(inputStream, cachedFile);
-			return cachedFile; // Make sure this gets deleted after use!
-		} catch (IOException e) {
-			throw new AmazonClientException("Failed to cache input stream locally", e);
-		}
+	private final software.amazon.awssdk.services.s3.S3Client amazonS3Client;
+	public S3ClientImpl(software.amazon.awssdk.services.s3.S3Client s3Client) {
+		this.amazonS3Client = s3Client;
 	}
 
 	@Override
+	public ListObjectsResponse listObjects(String bucketName, String prefix) throws S3Exception {
+		return amazonS3Client.listObjects(lr -> lr.bucket(bucketName).prefix(prefix));
+	}
+
+	@Override
+	public ListObjectsResponse listObjects(ListObjectsRequest listObjectsRequest) throws S3Exception {
+		return amazonS3Client.listObjects(listObjectsRequest);
+	}
+
+	@Override
+	public ResponseInputStream<GetObjectResponse> getObject(String bucketName, String key) throws S3Exception {
+		return amazonS3Client.getObject(rq -> rq.bucket(bucketName).key(key));
+
+	}
+
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception {
+		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromFile(file));
+	}
+
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception {
+		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
+		if (metadata != null) {
+			requestBuilder.metadata(metadata.getMetadata());
+		}
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, -1));
+	}
+
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception {
+		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
+		if (size != null) {
+			requestBuilder.contentLength(size);
+		}
+		if (md5 != null) {
+			requestBuilder.contentMD5(md5);
+		}
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, -1));
+	}
+
+	@Override
+	public PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception {
+		return amazonS3Client.putObject(putObjectRequest, path);
+	}
+
+	@Override
+	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception {
+		return amazonS3Client.copyObject(cr -> cr.copy().sourceBucket(sourceBucketName)
+				.sourceKey(sourceKey)
+				.destinationBucket(destinationBucketName)
+				.destinationKey(destinationKey))
+				.copyObjectResult();
+	}
+
+	@Override
+	public void deleteObject(String bucketName, String key) throws S3Exception {
+		amazonS3Client.deleteObject(dr -> dr.bucket(bucketName).key(key));
+	}
+
+	@Override
+	public boolean exists(String bucketName, String key) throws S3Exception {
+		try {
+			amazonS3Client.headObject(hr -> hr.bucket(bucketName).key(key));
+			return true;
+		} catch (NoSuchKeyException e) {
+			return false;
+		}
+	}
+
+
+	@Override
 	public String getString(String bucketName, String key) {
-		try (S3Object obj = getObject(bucketName, key)) {
-			InputStream is = obj.getObjectContent();
+		try (InputStream is = getObject(bucketName, key)) {
 			BufferedReader streamReader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 			StringBuilder responseStrBuilder = new StringBuilder();
 
@@ -69,7 +100,7 @@ public class S3ClientImpl extends AmazonS3Client implements S3Client {
 
 			return responseStrBuilder.toString();
 		} catch (IOException e) {
-			throw new AmazonClientException("Failed to load resource.", e);
+			throw new RuntimeException("Failed to load resource.", e);
 		}
 	}
 

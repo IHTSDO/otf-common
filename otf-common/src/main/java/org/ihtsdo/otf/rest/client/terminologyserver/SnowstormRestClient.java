@@ -27,7 +27,6 @@ import org.ihtsdo.otf.utils.DateUtils;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
@@ -48,6 +47,8 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
+
+import static org.springframework.util.Assert.notNull;
 
 // TODO: This whole class is a mess and needs refactoring.
 public class SnowstormRestClient {
@@ -479,7 +480,7 @@ public class SnowstormRestClient {
 	}
 
 	private <T, R> T doExchange(RequestEntity<R> request, Class<T> responseType) throws RestClientException {
-		HttpStatus statusCode;
+		HttpStatusCode statusCode;
 		ResponseEntity<T> responseEntity = null;
 		try {
 			responseEntity = restTemplate.exchange(request, responseType);
@@ -504,7 +505,7 @@ public class SnowstormRestClient {
 				.header(COOKIE, singleSignOnCookie)
 				.body(request);
 
-		HttpStatus statusCode;
+		HttpStatusCode statusCode;
 		ResponseEntity<String> responseEntity = null;
 		try {
 			responseEntity = restTemplate.exchange(post, String.class);
@@ -650,7 +651,7 @@ public class SnowstormRestClient {
 	
 	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
 			throws RestClientException {
-		Assert.notNull(rf2ZipFileStream, "Archive to import should not be null.");
+		notNull(rf2ZipFileStream, "Archive to import should not be null.");
 
 		try {
 			// Create import
@@ -1033,12 +1034,10 @@ public class SnowstormRestClient {
 		this.useExternalClassificationService = useExternalClassificationService;
 	}
 
-	@Required
 	public void setImportTimeoutMinutes(int importTimeoutMinutes) {
 		this.importTimeoutMinutes = importTimeoutMinutes;
 	}
 
-	@Required
 	public void setClassificationTimeoutMinutes(int classificationTimeoutMinutes) {
 		this.classificationTimeoutMinutes = classificationTimeoutMinutes;
 	}

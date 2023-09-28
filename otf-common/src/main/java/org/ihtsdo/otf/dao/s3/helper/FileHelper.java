@@ -1,15 +1,14 @@
 package org.ihtsdo.otf.dao.s3.helper;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.*;
-
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.dao.s3.S3Client;
 import org.ihtsdo.otf.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,41 +21,25 @@ import java.util.List;
 @Repository
 public class FileHelper {
 
-	private S3Client s3Client;
-
-	public void setS3Client(S3Client s3Client) {
-		this.s3Client = s3Client;
-	}
-
-	private final S3ClientHelper s3ClientHelper;
+	private final S3Client s3Client;
 
 	private final String bucketName;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileHelper.class);
 
-	public FileHelper(String bucketName, S3Client s3Client, S3ClientHelper s3ClientHelper) {
+	public FileHelper(String bucketName, @Autowired S3Client s3Client) {
 		this.bucketName = bucketName;
 		this.s3Client = s3Client;
-		this.s3ClientHelper = s3ClientHelper;
-	}
-
-	public FileHelper(String bucketName, S3Client s3Client) {
-		this.bucketName = bucketName;
-		this.s3Client = s3Client;
-		this.s3ClientHelper = new S3ClientHelper(s3Client);
 	}
 
 	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) {
-		S3PutRequestBuilder s3PutRequestBuilder = s3ClientHelper.newPutRequest(bucketName, targetFilePath, fileStream);
-		S3PutRequestBuilder length = s3PutRequestBuilder.length(fileSize);
-		S3PutRequestBuilder putRequest = length.useBucketAcl();
-		s3Client.putObject(putRequest);
+		LOGGER.debug("Putting file to {}/{}", bucketName, targetFilePath);
+		s3Client.putObject(bucketName, targetFilePath, fileStream, fileSize, null);
 	}
 
 	public void putFile(InputStream fileStream, String targetFilePath) {
-		S3PutRequestBuilder putRequest = s3ClientHelper.newPutRequest(bucketName, targetFilePath, fileStream).useBucketAcl();
 		LOGGER.debug("Putting file to {}/{}", bucketName, targetFilePath);
-		s3Client.putObject(putRequest);
+		s3Client.putObject(bucketName, targetFilePath, fileStream, null);
 	}
 
 	public String putFile(File file, String targetFilePath) throws NoSuchAlgorithmException, IOException, DecoderException {
@@ -69,15 +52,12 @@ public class FileHelper {
 		InputStream is = new FileInputStream(file);
 		String md5Received = "MD5 not received";
 		try {
-			S3PutRequestBuilder putRequest = s3ClientHelper.newPutRequest(bucketName, targetFilePath, is).length(file.length())
-					.useBucketAcl();
 			String localMd5 = null;
 			if (calcMD5) {
 				localMd5 = FileUtils.calculateMD5(file);
-				putRequest.withMD5(localMd5);
 			}
-			PutObjectResult putResult = s3Client.putObject(putRequest);
-			md5Received = (putResult == null ? null : putResult.getContentMd5());
+			PutObjectResponse response = s3Client.putObject(bucketName, targetFilePath, is, file.length(), localMd5);
+			md5Received = (response == null ? null : response.sseCustomerKeyMD5());
 			LOGGER.debug("S3Client put request returned MD5: " + md5Received);
 
 			if (calcMD5) {
@@ -85,25 +65,19 @@ public class FileHelper {
 				String md5TargetPath = targetFilePath + ".md5";
 				File md5File = FileUtils.createMD5File(file, localMd5);
 				InputStream isMD5 = new FileInputStream(md5File);
-				S3PutRequestBuilder md5PutRequest = s3ClientHelper.newPutRequest(bucketName, md5TargetPath, isMD5).length(md5File.length())
-						.useBucketAcl();
-				s3Client.putObject(md5PutRequest);
+				s3Client.putObject(bucketName, md5TargetPath, isMD5, md5File.length(), null);
 			}
 		} finally {
 			IOUtils.closeQuietly(is);
 		}
-
 		return md5Received;
 	}
 
 	public InputStream getFileStream(String filePath) {
 		try {
-			S3Object s3Object = s3Client.getObject(bucketName, filePath);
-			if (s3Object != null) {
-				return s3Object.getObjectContent();
-			}
-		} catch (AmazonS3Exception e) {
-			if (404 != e.getStatusCode()) {
+			return s3Client.getObject(bucketName, filePath);
+		} catch (S3Exception e) {
+			if (404 != e.statusCode()) {
 				throw e;
 			}
 		}
@@ -113,11 +87,11 @@ public class FileHelper {
 	public List<String> listFiles(String directoryPath) {
 		List<String> files = new ArrayList<>();
 		try {
-			ObjectListing objectListing = s3Client.listObjects(bucketName, directoryPath);
-			for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
-				files.add(summary.getKey().substring(directoryPath.length()));
+			ListObjectsResponse objectListing = s3Client.listObjects(bucketName, directoryPath);
+			for (S3Object s3Object : objectListing.contents()) {
+				files.add(s3Object.key().substring(directoryPath.length()));
 			}
-		} catch (AmazonServiceException e) {
+		} catch (S3Exception e) {
 			//Trying to list files in a directory that doesn't exist isn't a problem, we'll just return an empty array
 			LOGGER.info("Probable attempt to get listing on non-existent directory: {} error {}", directoryPath, e.getLocalizedMessage());
 		}
@@ -131,8 +105,8 @@ public class FileHelper {
 
 	/**
 	 * Copies a file from one S3 location to another
-	 * @param sourcePath
-	 * @param targetPath
+	 * @param sourcePath source path
+	 * @param targetPath target path
 	 */
 	public void copyFile(String sourcePath, String targetPath) {
 		LOGGER.debug("Copy file '{}' to '{}'", sourcePath, targetPath);
@@ -152,20 +126,11 @@ public class FileHelper {
 	}
 
 	/**
-	 * @param targetFilePath
+	 * @param targetFilePath the path to check
 	 * @return true if the target file actually exists in the fileStore (online or offline)
 	 */
 	public boolean exists(String targetFilePath) {
-		try {
-			s3Client.getObjectMetadata(bucketName, targetFilePath);
-			return true; // No 404 exception .. object exists
-		} catch (AmazonS3Exception e) {
-			if (e.getStatusCode() == 404) {
-				return false;
-			} else {
-				throw e;
-			}
-		}
+		return s3Client.exists(bucketName, targetFilePath);
 	}
 
 }

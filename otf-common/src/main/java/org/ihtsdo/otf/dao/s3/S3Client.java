@@ -1,34 +1,34 @@
 package org.ihtsdo.otf.dao.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.services.s3.model.*;
+import io.awspring.cloud.s3.ObjectMetadata;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 
 public interface S3Client {
 
-	ObjectListing listObjects(String bucketName, String prefix) throws AmazonClientException;
+	ListObjectsResponse listObjects(String bucketName, String prefix) throws S3Exception;
 
-	ObjectListing listObjects(ListObjectsRequest listObjectsRequest) throws AmazonClientException;
+	ListObjectsResponse listObjects(ListObjectsRequest listObjectsRequest) throws S3Exception;
 
-	S3Object getObject(String bucketName, String key) throws AmazonClientException;
+	ResponseInputStream<GetObjectResponse> getObject(String bucketName, String key) throws S3Exception;
 
-	PutObjectResult putObject(String bucketName, String key, File file) throws AmazonClientException;
+	PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception;
 
-	PutObjectResult putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws AmazonClientException;
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception;
 
-	PutObjectResult putObject(PutObjectRequest putRequest) throws AmazonClientException;
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception;
 
-	CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException;
+	PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception;
 
-	void deleteObject(String bucketName, String key) throws AmazonClientException;
+	CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception;
 
-	AccessControlList getBucketAcl(String bucketName);
+	void deleteObject(String bucketName, String key) throws S3Exception;
 
-	ObjectMetadata getObjectMetadata(String bucketName, String key) throws AmazonClientException;
-
-	ObjectListing listNextBatchOfObjects(ObjectListing objectListing);
+	boolean exists(String bucketName, String key) throws S3Exception;
 
 	String getString(String bucketName, String key);
 

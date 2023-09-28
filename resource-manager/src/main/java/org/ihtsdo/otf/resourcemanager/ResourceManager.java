@@ -1,10 +1,5 @@
 package org.ihtsdo.otf.resourcemanager;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
@@ -16,6 +11,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StreamUtils;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -32,7 +31,8 @@ public class ResourceManager {
 
 	private final ResourceConfiguration resourceConfiguration;
 	private final ResourceLoader resourceLoader;
-	private AmazonS3 amazonS3;
+
+	private S3Client s3Client;
 
 	/**
 	 * Creates the {@link ResourceManager} with the corresponding <code>resourceConfiguration</code>
@@ -49,7 +49,11 @@ public class ResourceManager {
 		this.resourceConfiguration = Objects.requireNonNull(resourceConfiguration);
 		if (resourceConfiguration.isUseCloud()) {
 			this.resourceLoader = checkS3Connection(Objects.requireNonNull(cloudResourceLoader));
-			this.amazonS3 = AmazonS3ClientBuilder.standard().build();
+			s3Client = S3Client.builder()
+					.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
+					.credentialsProvider(ProfileCredentialsProvider.create())
+					.build();
+
 		} else {
 			this.resourceLoader = new FileSystemResourceLoader();
 		}
@@ -58,7 +62,7 @@ public class ResourceManager {
 	/**
 	 * Checks to make sure that a GET request to the S3 bucket/path can be
 	 * performed successfully. If not, it will throw an {@link
-	 * com.amazonaws.services.s3.model.AmazonS3Exception}. Although, It will
+	 * software.amazon.awssdk.services.s3.model.S3Exception}. Although, It will
 	 * ignore the {@link org.apache.http.HttpStatus#SC_FORBIDDEN} status because
 	 * an anonymous client may be used to access a partially public bucket.
 	 *
@@ -68,8 +72,8 @@ public class ResourceManager {
 	private ResourceLoader checkS3Connection(final ResourceLoader cloudResourceLoader) {
 		try {
 			cloudResourceLoader.getResource(getFullPath("does-not-exist.txt")).exists();
-		} catch (AmazonS3Exception e) {
-			if (!e.getErrorCode().equals("403 Forbidden")) {
+		} catch (S3Exception e) {
+			if (e.statusCode() != 403) {
 				throw e;
 			}
 		}
@@ -89,7 +93,7 @@ public class ResourceManager {
 		final String fullPath = getFullPath(resourcePath);
 		try {
 			return resourceLoader.getResource(fullPath).getInputStream();
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
 		}
 	}
@@ -107,13 +111,13 @@ public class ResourceManager {
 				Cloud cloud = resourceConfiguration.getCloud();
 				//In case we're running on a PC we need to convert backslashes to forward
 				String configPath = cloud.getPath().replaceAll("\\\\", "/");
-                configPath = configurePath(configPath);
-
-				ObjectListing objectListing = amazonS3.listObjects(cloud.getBucketName(), configPath + prefix);
-                for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
-                    fileNames.add(summary.getKey().substring(configPath.length()));
-                }
-			} catch (AmazonS3Exception e) {
+				final String s3Path = configurePath(configPath);
+				ListObjectsResponse response = s3Client.listObjects(builder -> builder.bucket(cloud.getBucketName()).prefix(s3Path + prefix));
+				List<S3Object> s3Objects = response.contents();
+				for (S3Object object : s3Objects) {
+					fileNames.add(object.key().substring(s3Path.length()));
+				}
+			} catch (S3Exception e) {
 				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);
 			}
 		} else {
@@ -152,12 +156,11 @@ public class ResourceManager {
 				}
 				String resourcePath = resource.getPath().replaceAll("\\\\", "/");
 				resourcePath = (configPath != null ? configPath : "") + resourcePath;
-				String bucketName = resourceConfiguration.getCloud().getBucketName();
-				return amazonS3.doesObjectExist(bucketName, resourcePath);
+				return resourceLoader.getResource(getFullPath(resourcePath)).exists();
 			} else {
 				return Files.isReadable(resource.toPath());
 			}
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to determine existence of '" + resource + "'.", e);
 		}
 	}
@@ -176,7 +179,7 @@ public class ResourceManager {
 		try {
 			final Resource resource = resourceLoader.getResource(getFullPath(resourcePath));
 			return resource.exists() ? resource.getInputStream() : null;
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to load resource '" + resourcePath + "'.", e);
 		}
 	}
@@ -199,7 +202,7 @@ public class ResourceManager {
 				 final InputStream inputStream = resourceInputStream) {
 				StreamUtils.copy(inputStream, outputStream);
 			}
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
 		}
 	}
@@ -224,7 +227,7 @@ public class ResourceManager {
 			final Resource resource = resourceLoader.getResource(fullPath);
 			final WritableResource writableResource = (WritableResource) resource;
 			return writableResource.getOutputStream();
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to retrieve writable resource '" + resourcePath + "'.", e);
 		}
 	}
@@ -233,8 +236,7 @@ public class ResourceManager {
 	 * Deletes the specified object inside S3, given the
 	 * bucket name and object key. This uses the {@code AmazonS3}
 	 * client to perform this operation so a prerequisite is
-	 * required that AWS credentials are provided, see {@link
-	 * com.amazonaws.auth.DefaultAWSCredentialsProviderChain}.
+	 * required that AWS credentials are provided.
 	 * But if the configuration is pointing to local storage,
 	 * it will delete the local resource from the specified
 	 * resource path.
@@ -248,12 +250,11 @@ public class ResourceManager {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
 				final String path = resourceConfiguration.getCloud().getPath();
-				amazonS3.deleteObject(resourceConfiguration.getCloud().getBucketName(),
-									  (path != null ? path : "") + resourcePath);
+				s3Client.deleteObject(delete -> delete.bucket(resourceConfiguration.getCloud().getBucketName()).key((path != null ? path : "") + resourcePath));
 			} else {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
 			}
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to delete the resource: '" + resourcePath + "'.", e);
 		}
 	}
@@ -264,8 +265,7 @@ public class ResourceManager {
 	 * been performed, it will delete the resource from the
 	 * source location. This uses the {@code AmazonS3} client
 	 * to perform this operation so a prerequisite is required
-	 * that AWS credentials are provided, see {@link
-	 * com.amazonaws.auth.DefaultAWSCredentialsProviderChain}.
+	 * that AWS credentials are provided.
 	 * But if the configuration is pointing to local storage,
 	 * it will move the resource locally from the specified resource
 	 * path, to the desired resource location.
@@ -286,10 +286,10 @@ public class ResourceManager {
 			} else {
 				localMoveResource(fromResourcePath, toResourcePath);
 			}
-		} catch (AmazonS3Exception e) {
+		} catch (S3Exception e) {
 			throw new IOException("Failed to move resource from '" +
-										  fromResourcePath + "' to '" +
-										  toResourcePath + "'.", e);
+					fromResourcePath + "' to '" +
+					toResourcePath + "'.", e);
 		}
 	}
 
@@ -308,8 +308,8 @@ public class ResourceManager {
 	private void localMoveResource(final String fromResourcePath,
 								   final String toResourcePath) throws IOException {
 		Files.move(new File(getFullPath(fromResourcePath)).toPath(),
-				   new File(getFullPath(toResourcePath)).toPath(),
-				   StandardCopyOption.REPLACE_EXISTING);
+				new File(getFullPath(toResourcePath)).toPath(),
+				StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	/**
@@ -330,7 +330,10 @@ public class ResourceManager {
 								final String toResourcePath) throws IOException {
 		final String bucketName = resourceConfiguration.getCloud().getBucketName();
 		final String path = resourceConfiguration.getCloud().getPath();
-		amazonS3.copyObject(bucketName, (path != null ? path : "") + fromResourcePath, bucketName, (path != null ? path : "") + toResourcePath);
+		s3Client.copyObject(copy -> copy.sourceBucket(bucketName)
+				.sourceKey((path != null ? path : "") + fromResourcePath)
+				.destinationBucket(bucketName)
+				.destinationKey((path != null ? path : "") + toResourcePath));
 		deleteResource(fromResourcePath);
 	}
 
@@ -374,8 +377,8 @@ public class ResourceManager {
 	private String getCloudPath(final String relativePath) {
 		final Cloud cloud = resourceConfiguration.getCloud();
 		return String.format("s3://%s/%s",
-							 cloud.getBucketName(),
-							 getPathAndRelative(cloud.getPath(), relativePath));
+				cloud.getBucketName(),
+				getPathAndRelative(cloud.getPath(), relativePath));
 	}
 
 	/**
@@ -425,11 +428,11 @@ public class ResourceManager {
 		ResourceManager that = (ResourceManager) o;
 		return Objects.equals(resourceConfiguration, that.resourceConfiguration) &&
 				Objects.equals(resourceLoader, that.resourceLoader) &&
-				Objects.equals(amazonS3, that.amazonS3);
+				Objects.equals(s3Client, that.s3Client);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(resourceConfiguration, resourceLoader, amazonS3);
+		return Objects.hash(resourceConfiguration, resourceLoader, s3Client);
 	}
 }

@@ -18,7 +18,7 @@ package org.snomed.otf.script.dao;
  * limitations under the License.
  */
 
-import org.springframework.util.Assert;
+import static org.springframework.util.Assert.notNull;
 
 /**
  * Utility class that provides utility method to work with s3 storage resources
@@ -38,12 +38,12 @@ final class SimpleStorageNameUtils {
 	}
 
 	static boolean isSimpleStorageResource(String location) {
-		Assert.notNull(location, "Location must not be null");
+		notNull(location, "Location must not be null");
 		return location.toLowerCase().startsWith(S3_PROTOCOL_PREFIX);
 	}
 
 	static String getBucketNameFromLocation(String location) {
-		Assert.notNull(location, "Location must not be null");
+		notNull(location, "Location must not be null");
 		if (!isSimpleStorageResource(location)) {
 			throw new IllegalArgumentException("The location :'" + location + "' is not a valid S3 location");
 		}
@@ -55,7 +55,7 @@ final class SimpleStorageNameUtils {
 	}
 
 	static String getObjectNameFromLocation(String location) {
-		Assert.notNull(location, "Location must not be null");
+		notNull(location, "Location must not be null");
 		if (!isSimpleStorageResource(location)) {
 			throw new IllegalArgumentException("The location :'" + location + "' is not a valid S3 location");
 		}
@@ -76,7 +76,7 @@ final class SimpleStorageNameUtils {
 	}
 	
 	static String getVersionIdFromLocation(String location) {
-		Assert.notNull(location, "Location must not be null");
+		notNull(location, "Location must not be null");
 		if (!isSimpleStorageResource(location)) {
 			throw new IllegalArgumentException("The location :'" + location + "' is not a valid S3 location");
 		}
@@ -93,8 +93,8 @@ final class SimpleStorageNameUtils {
 	}
 
 	static String getLocationForBucketAndObject(String bucketName, String objectName) {
-		Assert.notNull(bucketName, "Bucket name must not be null");
-		Assert.notNull(objectName, "ObjectName name must not be null");
+		notNull(bucketName, "Bucket name must not be null");
+		notNull(objectName, "ObjectName name must not be null");
 		StringBuilder location = new StringBuilder(S3_PROTOCOL_PREFIX.length() + bucketName.length() +
 				PATH_DELIMITER.length() + objectName.length());
 		location.append(S3_PROTOCOL_PREFIX);
@@ -110,7 +110,7 @@ final class SimpleStorageNameUtils {
 	}
 
 	static String stripProtocol(String location) {
-		Assert.notNull(location, "Location must not be null");
+		notNull(location, "Location must not be null");
 		if (!isSimpleStorageResource(location)) {
 			throw new IllegalArgumentException("The location :'" + location + "' is not a valid S3 location");
 		}

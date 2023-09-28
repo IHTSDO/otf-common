@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.scripting.transformer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.snomed.otf.script.dao.transformer.CSVToJSONDataTransformer;
 import org.snomed.otf.script.dao.transformer.DataTransformer;
 
@@ -9,7 +9,7 @@ import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CSVToJSONDataTransformerTest {
 

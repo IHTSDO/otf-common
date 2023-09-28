@@ -1,12 +1,13 @@
 package org.ihtsdo.termserver.scripting.dao;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.snomed.otf.script.dao.ReportConfiguration;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class ReportConfigurationTest {
 

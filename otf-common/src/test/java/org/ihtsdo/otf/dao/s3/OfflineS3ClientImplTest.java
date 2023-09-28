@@ -1,15 +1,14 @@
 package org.ihtsdo.otf.dao.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.*;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import io.awspring.cloud.s3.ObjectMetadata;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +17,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class OfflineS3ClientImplTest {
 	
@@ -30,19 +33,19 @@ public class OfflineS3ClientImplTest {
 
 	private static final String TEST_BUCKET = "test-bucket";
 
-	@Before
+	@BeforeEach
 	public void setup() throws IOException {
 		streamsToClose = new ArrayList<>();
 		Path tempDirectory = Files.createTempDirectory(getClass().getName());
-		Assert.assertTrue(new File(tempDirectory.toFile(), TEST_BUCKET).mkdirs());
+		assertTrue(new File(tempDirectory.toFile(), TEST_BUCKET).mkdirs());
 		s3Client = new OfflineS3ClientImpl(tempDirectory.toFile());
-		Assert.assertNotNull(getTestFileStream());
+		assertNotNull(getTestFileStream());
 	}
 
 	@Test
 	public void testListObjects() throws IOException {
 		String productDir = "products/123/";
-		Assert.assertEquals(0, s3Client.listObjects(TEST_BUCKET, productDir).getObjectSummaries().size());
+		assertEquals(0, s3Client.listObjects(TEST_BUCKET, productDir).contents().size());
 
 		s3Client.putObject(TEST_BUCKET, productDir + "execA/file1.txt", getTestFileStream(), null);
 		s3Client.putObject(TEST_BUCKET, productDir + "exec1/file1.txt", getTestFileStream(), null);
@@ -51,36 +54,34 @@ public class OfflineS3ClientImplTest {
 		s3Client.putObject(TEST_BUCKET, productDir + "exec2/file2.txt", getTestFileStream(), null);
 		s3Client.putObject(TEST_BUCKET, productDir + "exec2/file1.txt", getTestFileStream(), null);
 
-		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(TEST_BUCKET, productDir).getObjectSummaries();
-
-		Assert.assertEquals(6, objectSummaries.size());
-		Assert.assertEquals("products/123/exec1/file1.txt", objectSummaries.get(0).getKey());
-		Assert.assertEquals("products/123/exec1/file2.txt", objectSummaries.get(1).getKey());
-		Assert.assertEquals("products/123/exec2/file1.txt", objectSummaries.get(2).getKey());
-		Assert.assertEquals("products/123/exec2/file2.txt", objectSummaries.get(3).getKey());
-		Assert.assertEquals("products/123/execA/file1.txt", objectSummaries.get(4).getKey());
-		Assert.assertEquals("products/123/execZ/file1.txt", objectSummaries.get(5).getKey());
+		List<S3Object> objectSummaries = s3Client.listObjects(TEST_BUCKET, productDir).contents();
+		assertEquals(6, objectSummaries.size());
+		assertEquals("products/123/exec1/file1.txt", objectSummaries.get(0).key());
+		assertEquals("products/123/exec1/file2.txt", objectSummaries.get(1).key());
+		assertEquals("products/123/exec2/file1.txt", objectSummaries.get(2).key());
+		assertEquals("products/123/exec2/file2.txt", objectSummaries.get(3).key());
+		assertEquals("products/123/execA/file1.txt", objectSummaries.get(4).key());
+		assertEquals("products/123/execZ/file1.txt", objectSummaries.get(5).key());
 	}
 
 	@Test
 	public void testListObjectsWithPartFilenamePrefix() throws IOException {
 		String prefix = "products/123/exec1/file";
-		Assert.assertEquals(0, s3Client.listObjects(TEST_BUCKET, prefix).getObjectSummaries().size());
+		assertEquals(0, s3Client.listObjects(TEST_BUCKET, prefix).contents().size());
 
 		s3Client.putObject(TEST_BUCKET, prefix + "1.txt", getTestFileStream(), null);
 		s3Client.putObject(TEST_BUCKET, prefix + "2.txt", getTestFileStream(), null);
 
-		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(TEST_BUCKET, prefix).getObjectSummaries();
-
-		Assert.assertEquals(2, objectSummaries.size());
-		Assert.assertEquals("products/123/exec1/file1.txt", objectSummaries.get(0).getKey());
-		Assert.assertEquals("products/123/exec1/file2.txt", objectSummaries.get(1).getKey());
+		List<S3Object> s3Objects = s3Client.listObjects(TEST_BUCKET, prefix).contents();
+		assertEquals(2, s3Objects.size());
+		assertEquals("products/123/exec1/file1.txt", s3Objects.get(0).key());
+		assertEquals("products/123/exec1/file2.txt", s3Objects.get(1).key());
 	}
 
 	@Test
 	public void testListObjectsUsingListObjectsRequest() throws IOException {
 		String productDir = "products/123/";
-		Assert.assertEquals(0, s3Client.listObjects(TEST_BUCKET, productDir).getObjectSummaries().size());
+		assertEquals(0, s3Client.listObjects(TEST_BUCKET, productDir).contents().size());
 
 		s3Client.putObject(TEST_BUCKET, productDir + "execA/file1.txt", getTestFileStream(), null);
 		s3Client.putObject(TEST_BUCKET, productDir + "exec1/file1.txt", getTestFileStream(), null);
@@ -89,15 +90,14 @@ public class OfflineS3ClientImplTest {
 		s3Client.putObject(TEST_BUCKET, productDir + "exec2/file2.txt", getTestFileStream(), null);
 		s3Client.putObject(TEST_BUCKET, productDir + "exec2/file1.txt", getTestFileStream(), null);
 
-		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(new ListObjectsRequest(TEST_BUCKET, productDir, null, null, null)).getObjectSummaries();
-
-		Assert.assertEquals(6, objectSummaries.size());
-		Assert.assertEquals("products/123/exec1/file1.txt", objectSummaries.get(0).getKey());
-		Assert.assertEquals("products/123/exec1/file2.txt", objectSummaries.get(1).getKey());
-		Assert.assertEquals("products/123/exec2/file1.txt", objectSummaries.get(2).getKey());
-		Assert.assertEquals("products/123/exec2/file2.txt", objectSummaries.get(3).getKey());
-		Assert.assertEquals("products/123/execA/file1.txt", objectSummaries.get(4).getKey());
-		Assert.assertEquals("products/123/execZ/file1.txt", objectSummaries.get(5).getKey());
+		List<S3Object> s3Objects = s3Client.listObjects(TEST_BUCKET, productDir).contents();
+		assertEquals(6, s3Objects.size());
+		assertEquals("products/123/exec1/file1.txt", s3Objects.get(0).key());
+		assertEquals("products/123/exec1/file2.txt", s3Objects.get(1).key());
+		assertEquals("products/123/exec2/file1.txt", s3Objects.get(2).key());
+		assertEquals("products/123/exec2/file2.txt", s3Objects.get(3).key());
+		assertEquals("products/123/execA/file1.txt", s3Objects.get(4).key());
+		assertEquals("products/123/execZ/file1.txt", s3Objects.get(5).key());
 	}
 
 	@Test
@@ -107,18 +107,15 @@ public class OfflineS3ClientImplTest {
 
 		s3Client.putObject(TEST_BUCKET, key, getTestFileStream(), null);
 
-		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(TEST_BUCKET, "").getObjectSummaries();
-		Assert.assertEquals(1, objectSummaries.size());
-		Assert.assertEquals("products/123/execA/file1.txt", objectSummaries.get(0).getKey());
+		List<S3Object> objectSummaries = s3Client.listObjects(TEST_BUCKET, "").contents();
+		assertEquals(1, objectSummaries.size());
+		assertEquals("products/123/execA/file1.txt", objectSummaries.get(0).key());
 
-		S3Object s3Object = s3Client.getObject(TEST_BUCKET, key);
-		Assert.assertEquals(TEST_BUCKET, s3Object.getBucketName());
-		Assert.assertEquals(key, s3Object.getKey());
-		S3ObjectInputStream objectContent = s3Object.getObjectContent();
-		Assert.assertNotNull(objectContent);
-		Assert.assertTrue(objectContent.available() > 0);
+		InputStream objectContent = s3Client.getObject(TEST_BUCKET, key);
+		assertNotNull(objectContent);
+		assertTrue(objectContent.available() > 0);
 		String content = StreamUtils.copyToString(objectContent, Charset.defaultCharset());
-		Assert.assertEquals("Some content".trim(), content.trim());
+		assertEquals("Some content".trim(), content.trim());
 	}
 
 	@Test
@@ -128,14 +125,11 @@ public class OfflineS3ClientImplTest {
 
 		s3Client.putObject(TEST_BUCKET, key, getTestFile());
 
-		S3Object s3Object = s3Client.getObject(TEST_BUCKET, key);
-		Assert.assertEquals(TEST_BUCKET, s3Object.getBucketName());
-		Assert.assertEquals(key, s3Object.getKey());
-		S3ObjectInputStream objectContent = s3Object.getObjectContent();
-		Assert.assertNotNull(objectContent);
-		Assert.assertTrue(objectContent.available() > 0);
+		InputStream objectContent = s3Client.getObject(TEST_BUCKET, key);
+		assertNotNull(objectContent);
+		assertTrue(objectContent.available() > 0);
 		String content = StreamUtils.copyToString(objectContent, Charset.defaultCharset());
-		Assert.assertEquals("Some content".trim(), content.trim());
+		assertEquals("Some content".trim(), content.trim());
 	}
 
 	@Test
@@ -147,32 +141,24 @@ public class OfflineS3ClientImplTest {
 		s3Client.putObject(TEST_BUCKET, key, getTestFile());
 
 		// get first file
-		S3Object s3Object = s3Client.getObject(TEST_BUCKET, key);
-
-		// test first file
-		Assert.assertEquals(TEST_BUCKET, s3Object.getBucketName());
-		Assert.assertEquals(key, s3Object.getKey());
-		S3ObjectInputStream objectContent = s3Object.getObjectContent();
-		Assert.assertNotNull(objectContent);
-		Assert.assertTrue(objectContent.available() > 0);
+		InputStream objectContent = s3Client.getObject(TEST_BUCKET, key);
+		assertNotNull(objectContent);
+		assertTrue(objectContent.available() > 0);
 		String content = StreamUtils.copyToString(objectContent, Charset.defaultCharset());
-		Assert.assertEquals("Some content".trim(), content.trim());
+		assertEquals("Some content".trim(), content.trim());
 
 		// copy file
 		String destinationKey = key + "2";
 		s3Client.copyObject(TEST_BUCKET, key, TEST_BUCKET, destinationKey);
 
 		// get copy
-		S3Object s3Object2 = s3Client.getObject(TEST_BUCKET, destinationKey);
+		InputStream object2Content = s3Client.getObject(TEST_BUCKET, key);
 
 		// test copy
-		Assert.assertEquals(TEST_BUCKET, s3Object2.getBucketName());
-		Assert.assertEquals(destinationKey, s3Object2.getKey());
-		S3ObjectInputStream object2Content = s3Object2.getObjectContent();
-		Assert.assertNotNull(object2Content);
-		Assert.assertTrue(object2Content.available() > 0);
+		assertNotNull(object2Content);
+		assertTrue(object2Content.available() > 0);
 		String content2 = StreamUtils.copyToString(object2Content, Charset.defaultCharset());
-		Assert.assertEquals("Some content".trim(), content2.trim());
+		assertEquals("Some content".trim(), content2.trim());
 	}
 
 	@Test
@@ -180,30 +166,22 @@ public class OfflineS3ClientImplTest {
 		String productDir = "products/123/";
 		String key = productDir + "execA/file1.txt";
 
-		ObjectMetadata metadata = new ObjectMetadata();
-		PutObjectRequest putRequest = new PutObjectRequest(TEST_BUCKET, key, getTestFileStream(), metadata);
-		metadata.setContentLength(13);
-
-		s3Client.putObject(putRequest);
-
-		S3Object s3Object = s3Client.getObject(TEST_BUCKET, key);
-		Assert.assertEquals(TEST_BUCKET, s3Object.getBucketName());
-		Assert.assertEquals(key, s3Object.getKey());
-		S3ObjectInputStream objectContent = s3Object.getObjectContent();
-		Assert.assertNotNull(objectContent);
-		Assert.assertTrue(objectContent.available() > 0);
+		ObjectMetadata.Builder metadataBuilder = ObjectMetadata.builder();
+		metadataBuilder.contentDisposition("13");
+		s3Client.putObject(TEST_BUCKET, key, getTestFileStream(), metadataBuilder.build());
+		InputStream objectContent = s3Client.getObject(TEST_BUCKET, key);
+		assertNotNull(objectContent);
+		assertTrue(objectContent.available() > 0);
 		String content = StreamUtils.copyToString(objectContent, Charset.defaultCharset());
-		Assert.assertEquals("Some content".trim(), content.trim());
+		assertEquals("Some content".trim(), content.trim());
 	}
 
 	@Test
 	public void testPutObjectNoInput() {
-		try {
-			s3Client.putObject(TEST_BUCKET, "123", null, null);
-			Assert.fail("Should have thrown Exception");
-		} catch (AmazonClientException e) {
-			// pass
-		}
+
+		S3Exception thrown = assertThrows(S3Exception.class, () -> s3Client.putObject(TEST_BUCKET, "123", null, null));
+		assertEquals("Failed to store object, no input given.", thrown.getMessage());
+
 	}
 
 	@Test
@@ -212,11 +190,11 @@ public class OfflineS3ClientImplTest {
 		boolean exceptionDetected = false;
 		try {
 			s3Client.deleteObject(TEST_BUCKET, "file-does-not-exist.txt");
-		} catch (AmazonServiceException ase) {
+		} catch (S3Exception ase) {
 			exceptionDetected = true;
 		}
 		
-		Assert.assertTrue("Expected to see exception thrown when attempting to delete non-existant object", exceptionDetected);
+		assertTrue(exceptionDetected, "Expected to see exception thrown when attempting to delete non-existant object");
 	}
 
 	@Test
@@ -224,16 +202,16 @@ public class OfflineS3ClientImplTest {
 		String productDir = "products/123/";
 		String key = productDir + "execA/file1.txt";
 		s3Client.putObject(TEST_BUCKET, key, getTestFileStream(), null);
-		List<S3ObjectSummary> objectSummaries = s3Client.listObjects(TEST_BUCKET, "").getObjectSummaries();
-		Assert.assertEquals(1, objectSummaries.size());
-		Assert.assertEquals("products/123/execA/file1.txt", objectSummaries.get(0).getKey());
+		List<S3Object> objectSummaries = s3Client.listObjects(TEST_BUCKET, "").contents();
+		assertEquals(1, objectSummaries.size());
+		assertEquals("products/123/execA/file1.txt", objectSummaries.get(0).key());
 
 		s3Client.deleteObject(TEST_BUCKET, key);
 
-		Assert.assertEquals(0, s3Client.listObjects(TEST_BUCKET, "").getObjectSummaries().size());
+		assertEquals(0, s3Client.listObjects(TEST_BUCKET, "").contents().size());
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		for (InputStream inputStream : streamsToClose) {
 			try {
@@ -254,9 +232,9 @@ public class OfflineS3ClientImplTest {
 	}
 
 	private File getTestFile() {
-		File testFile = new File(getClass().getResource(TEST_FILE_TXT).getFile());
+		File testFile = new File(Objects.requireNonNull(getClass().getResource(TEST_FILE_TXT)).getFile());
 		if (!testFile.exists()) {
-			LOGGER.warn("Failed to recover test resource from: " + getClass().getResource(".").getPath());
+			LOGGER.warn("Failed to recover test resource from: " + Objects.requireNonNull(getClass().getResource(".")).getPath());
 		}
 		return testFile;
 	}

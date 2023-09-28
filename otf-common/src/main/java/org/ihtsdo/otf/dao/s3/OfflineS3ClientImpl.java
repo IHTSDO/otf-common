@@ -1,21 +1,20 @@
 package org.ihtsdo.otf.dao.s3;
-
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.*;
-
-import org.apache.commons.lang.NotImplementedException;
+import io.awspring.cloud.s3.ObjectMetadata;
 import org.ihtsdo.otf.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 
 /**
  * Offers an offline version of S3 cloud storage for testing or working offline.
@@ -23,7 +22,7 @@ import java.util.List;
  */
 public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
-	private File bucketsDirectory;
+	private final File bucketsDirectory;
 
 	private static final boolean REPLACE_SEPARATOR = !File.pathSeparator.equals("/");
 	private static final Logger LOGGER = LoggerFactory.getLogger(OfflineS3ClientImpl.class);
@@ -56,10 +55,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	}
 
 	@Override
-	public ObjectListing listObjects(String bucketName, String prefix) throws AmazonClientException {
-		ObjectListing listing = new ObjectListing();
-		List<S3ObjectSummary> objectSummaries = listing.getObjectSummaries();
-
+	public ListObjectsResponse listObjects(String bucketName, String prefix) throws S3Exception {
 		String searchLocation = getPlatformDependantPath(prefix);
 		// Go up a directory, prefix could include partial filename
 		if (searchLocation.indexOf("/") > 1) {
@@ -71,61 +67,52 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
 		File bucket = getBucket(bucketName);
 		searchStartDir = new File(bucket, searchLocation);
+
+		ListObjectsResponse.Builder responseBuilder = ListObjectsResponse.builder();
+		ArrayList<S3Object> s3Objects = new ArrayList<>();
 		if (searchStartDir.isDirectory()) {
 			Collection<File> list = org.apache.commons.io.FileUtils.listFiles(searchStartDir, null, true); //No filter files, yes search recursively
 			if (list != null) {
 				for (File file : list) {
 					String key = getRelativePathAsKey(bucketName, file);
 					if (key.startsWith(prefix)) {
-						S3ObjectSummary summary = new S3ObjectSummary();
-						summary.setKey(key);
-						summary.setBucketName(bucketName);
-						objectSummaries.add(summary);
+						s3Objects.add(S3Object.builder().key(key).build());
 					}
 				}
 			}
-			listing.setBucketName(bucketName);
-
-			//Mac appears to return these objects in a sorted list, Ubuntu does not.
-			//Sorting programatically for now until we can get this nailed down.
-			objectSummaries.sort(new S3ObjectSummaryComparator());
 		}
-		return listing;
+		s3Objects.sort(Comparator.comparing(S3Object::key));
+		return responseBuilder.contents(s3Objects).build();
 	}
 
 	@Override
-	/**
-	 * Only bucketName and prefix is used from the ListObjectsRequest.
-	 */
-	public ObjectListing listObjects(ListObjectsRequest listObjectsRequest) throws AmazonClientException {
-		return listObjects(listObjectsRequest.getBucketName(), listObjectsRequest.getPrefix());
+	public ListObjectsResponse listObjects(ListObjectsRequest listObjectsRequest) throws S3Exception {
+		return listObjects(listObjectsRequest.bucket(), listObjectsRequest.prefix());
 	}
 
 	@Override
-	public S3Object getObject(String bucketName, String key) {
+	public ResponseInputStream<GetObjectResponse> getObject(String bucketName, String key) {
 		File file = getFile(bucketName, key);
 		if (file.isFile()) {
-			return new OfflineS3Object(bucketName, key, file);
+			try {
+				return new ResponseInputStream<>(GetObjectResponse.builder().build(), new FileInputStream(file));
+			} catch (FileNotFoundException e) {
+				throw S3Exception.builder().message("Object does not exist.").statusCode(404).build();
+			}
 		} else {
-			AmazonS3Exception amazonS3Exception = new AmazonS3Exception("Object does not exist.");
-			amazonS3Exception.setStatusCode(404);
-			throw amazonS3Exception;
+			throw S3Exception.builder().message("Object does not exist.").statusCode(404).build();
 		}
+
 	}
 
-	@Override
-	public ObjectMetadata getObjectMetadata(String bucketName, String key) {
-		getObject(bucketName, key);
-		return new ObjectMetadata();
-	}
 
 	@Override
-	public PutObjectResult putObject(String bucketName, String key, File file) throws AmazonClientException {
+	public PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception {
 		return putObject(bucketName, key, getInputStream(file), null);
 	}
 
 	@Override
-	public PutObjectResult putObject(String bucketName, String key, InputStream inputStream, ObjectMetadata metadata) throws AmazonClientException {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream inputStream, ObjectMetadata metadata) throws S3Exception {
 		File outFile = getFile(bucketName, key);
 
 		// Create the target directory
@@ -139,10 +126,10 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
 		if (inputStream != null) {
 			try {
-				//As per the online implmentation, if the file is already there we will overwrite it.
+				//As per the online implementation, if the file is already there we will overwrite it.
 				Files.copy(inputStream, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
-				throw new AmazonServiceException(String.format("Failed to store object, bucket:%s, objectKey:%s", bucketName, key), e);
+				throw S3Exception.builder().message(String.format("Failed to store object, bucket:%s, objectKey:%s", bucketName, key)).cause(e).build();
 			} finally {
 				try {
 					inputStream.close();
@@ -152,28 +139,26 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 				}
 			}
 		} else {
-			throw new AmazonClientException("Failed to store object, no input given.");
+			throw S3Exception.builder().message("Failed to store object, no input given.").build();
 		}
 
-		PutObjectResult result = new PutObjectResult();
-		//For the offline implmentation we'll just copy the incoming MD5 and say we received the same thing
+
+		// For the offline implementation we'll just copy the incoming MD5 and say we received the same thing
+		PutObjectResponse.Builder responseBuilder = PutObjectResponse.builder();
 		if (metadata != null) {
-			result.setContentMd5(metadata.getContentMD5());
+			responseBuilder.sseCustomerKeyMD5(metadata.getSseCustomerKeyMD5()).build();
 		}
-
-		return result;
+		return responseBuilder.build();
 	}
 
 	@Override
-	public PutObjectResult putObject(PutObjectRequest putRequest) throws AmazonClientException {
-		String bucketName = putRequest.getBucketName();
-		String key = putRequest.getKey();
-		InputStream inputStream = putRequest.getInputStream();
-		if (inputStream == null) {
-			File inFile = putRequest.getFile();
-			inputStream = getInputStream(inFile);
-		}
-		return putObject(bucketName, key, inputStream, putRequest.getMetadata());
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception {
+		return putObject(bucketName, key, input, ObjectMetadata.builder().contentDisposition(String.valueOf(size)).sseCustomerKeyMD5(md5).build());
+	}
+
+	@Override
+	public PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception {
+		return putObject(putObjectRequest.bucket(), putObjectRequest.key(), path.toFile());
 	}
 
 	private InputStream getInputStream(File inFile) {
@@ -181,21 +166,23 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 			try {
 				return new FileInputStream(inFile);
 			} catch (FileNotFoundException e) {
-				throw new AmazonClientException(String.format("File not found:%s", inFile.getAbsoluteFile()), e);
+				throw S3Exception.builder().message(String.format("File not found:%s", inFile.getAbsoluteFile())).cause(e).build();
 			}
 		}
 		return null;
 	}
 
 	@Override
-	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws AmazonClientException {
-		S3Object object = getObject(sourceBucketName, sourceKey);
-		putObject(destinationBucketName, destinationKey, object.getObjectContent(), null);
-		return null;
+	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception {
+		InputStream sourceInput = getObject(sourceBucketName, sourceKey);
+		putObject(destinationBucketName, destinationKey, sourceInput, null);
+		CopyObjectResult.Builder builder = CopyObjectResult.builder();
+		builder.lastModified(Instant.now());
+		return builder.build();
 	}
 
 	@Override
-	public void deleteObject(String bucketName, String key) throws AmazonClientException {
+	public void deleteObject(String bucketName, String key) throws S3Exception {
 		File file = getFile(bucketName, key);
 
 		//Are we deleting a file or a directory?
@@ -204,27 +191,27 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 				LOGGER.warn("Deleting directory {}.", file.getAbsoluteFile());
 				org.apache.commons.io.FileUtils.deleteDirectory(file);
 			} catch (IOException e) {
-				throw new AmazonServiceException("Failed to delete directory: " + file.getAbsolutePath(), e);
+				throw S3Exception.builder().message("Failed to delete directory: " + file.getAbsolutePath()).cause(e).build();
 			}
 		} else if (file.isFile()) {
 			LOGGER.debug("Deleting file {}.", file.getAbsoluteFile());
 			boolean deletedOK = file.delete();
 			if (!deletedOK) {
-				throw new AmazonServiceException("Failed to delete " + file.getAbsoluteFile());
+				throw S3Exception.builder().message("Failed to delete " + file.getAbsoluteFile()).build();
 			}
 		} else {
 			//Does it, in fact, not exist already? No foul if so
 			if (!file.exists()) {
-				throw new AmazonServiceException("Attempted to delete entity, but it does not exist: " + file.getAbsoluteFile());
+				throw S3Exception.builder().message("Attempted to delete entity, but it does not exist: " + file.getAbsoluteFile()).build();
 			} else {
-				throw new AmazonServiceException("Encountered unexpected thing: " + file.getAbsolutePath());
+				throw S3Exception.builder().message("Encountered unexpected thing: " + file.getAbsolutePath()).build();
 			}
 		}
 	}
 
 	@Override
-	public AccessControlList getBucketAcl(String bucketName) {
-		return null;
+	public boolean exists(String bucketName, String key) throws S3Exception {
+		return getFile(bucketName, key).exists();
 	}
 
 	@Override
@@ -245,7 +232,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 			//Attempt to create - will fail if file already exists at that location.
 			boolean success = bucket.mkdirs();
 			if (!success && !bucket.exists()) {
-				throw new AmazonServiceException("Could neither find nor create Bucket at: " + bucketsDirectory + File.separator + bucketName);
+				throw S3Exception.builder().message("Could neither find nor create Bucket at: " + bucketsDirectory + File.separator + bucketName).build();
 			}
 		}
 		return bucket;
@@ -259,7 +246,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	}
 
 	/**
-	 * @param file
+	 * @param file file to get the relative path of
 	 * @return The path relative to the bucket directory and bucket
 	 */
 	private String getRelativePathAsKey(String bucketName, File file) {
@@ -284,27 +271,14 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		return path;
 	}
 
-	public static class S3ObjectSummaryComparator implements Comparator<S3ObjectSummary> {
-		@Override
-		public int compare(S3ObjectSummary o1, S3ObjectSummary o2) {
-			return o1.getKey().compareTo(o2.getKey());
-		}
-	}
-
-	@Override
-	public ObjectListing listNextBatchOfObjects(ObjectListing objectListing) {
-		// This could be implemented for consistency with the online version.
-		throw new NotImplementedException("Offline S3 Client does not need batching.");
-	}
-
 	@Override
 	public String getString(String bucketName, String key) {
-		String result = null;
+		String result;
 		try {
 			File file = getFile(bucketName, key);
-			result = org.apache.commons.io.FileUtils.readFileToString(file);
+			result = org.apache.commons.io.FileUtils.readFileToString(file, StandardCharsets.UTF_8);
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw new RuntimeException("Failed to get string from file", e);
 		}
 		return result;
 	}
