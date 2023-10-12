@@ -1,8 +1,8 @@
 package org.snomed.otf.script.dao;
 
-import io.awspring.cloud.core.io.s3.SimpleStorageResource;
-import io.awspring.cloud.core.support.documentation.RuntimeUse;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.cloud.aws.core.io.s3.SimpleStorageResource;
+import org.springframework.cloud.aws.core.support.documentation.RuntimeUse;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.task.SyncTaskExecutor;
@@ -54,7 +54,7 @@ public class SimpleStorageResourceLoader implements ResourceLoader, Initializing
 		if (SimpleStorageNameUtils.isSimpleStorageResource(location)) {
 			return new SimpleStorageResource(this.amazonS3, SimpleStorageNameUtils.getBucketNameFromLocation(location),
 					SimpleStorageNameUtils.getObjectNameFromLocation(location), this.taskExecutor,
-					SimpleStorageNameUtils.getVersionIdFromLocation(location), null);
+					SimpleStorageNameUtils.getVersionIdFromLocation(location));
 		}
 
 		return this.delegate.getResource(location);
