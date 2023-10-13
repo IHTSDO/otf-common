@@ -129,9 +129,22 @@ public abstract class Component implements RF2Constants {
 	}
 
 	@Override
+	public int hashCode() {
+		return getIdOrThrow().hashCode();
+	}
+
+	private String getIdOrThrow() {
+		if (id != null) {
+			return id;
+		} else {
+			throw new RuntimeException("Attmpt to hash/equal component with no id.  Use concrete class check of values instead");
+		}
+	}
+
+	@Override
 	public boolean equals(Object other) {
 		if (other instanceof Component) {
-			return this.getId().equals(((Component)other).getId());
+			return this.getIdOrThrow().equals(((Component)other).getId());
 		}
 		return false;
 	}
