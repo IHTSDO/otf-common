@@ -17,13 +17,18 @@ import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.utils.CVSUtils;
 
 public class ReportSheetManager implements RF2Constants, ReportProcessor {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportSheetManager.class);
 
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
@@ -367,6 +372,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 					writeAttempts++;
 				}
 			} catch (IOException e) {
+				LOGGER.warn("Exception received while trying to write: " + dataToBeWritten.stream().map(v -> {
+					try {
+						return v.toPrettyString();
+					} catch (IOException e1) { return "Error expanding data: " + e1; }
+				}).collect(Collectors.joining(",\n")));
 				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
 			} finally {
 				lastWriteTime = new Date();
