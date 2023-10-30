@@ -2,7 +2,7 @@ package org.snomed.otf.traceability.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class Branch {

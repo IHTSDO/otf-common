@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
