@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 

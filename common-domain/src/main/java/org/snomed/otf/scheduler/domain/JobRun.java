@@ -3,7 +3,7 @@ package org.snomed.otf.scheduler.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
 
@@ -56,10 +56,10 @@ public class JobRun {
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
 	Set<WhiteListedConcept> whiteList;
 	
-	private JobRun () {
+	public JobRun () {
 		parameters = new JobRunParameters();
 	}
-	
+
 	static public JobRun create(String jobName, String user) {
 		JobRun j = new JobRun();
 		j.id = UUID.randomUUID();

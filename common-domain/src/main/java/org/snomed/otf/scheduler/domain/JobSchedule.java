@@ -2,7 +2,7 @@ package org.snomed.otf.scheduler.domain;
 
 import java.util.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class JobSchedule {

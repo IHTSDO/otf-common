@@ -1,7 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
