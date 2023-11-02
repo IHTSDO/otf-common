@@ -51,7 +51,6 @@ public class ResourceManager {
 			this.resourceLoader = checkS3Connection(Objects.requireNonNull(cloudResourceLoader));
 			s3Client = S3Client.builder()
 					.region(DefaultAwsRegionProviderChain.builder().build().getRegion())
-					.credentialsProvider(ProfileCredentialsProvider.create())
 					.build();
 
 		} else {
