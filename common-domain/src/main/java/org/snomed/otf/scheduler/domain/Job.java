@@ -1,10 +1,9 @@
 package org.snomed.otf.scheduler.domain;
 
-import java.util.*;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.*;
 
 @Entity
 public class Job {
@@ -42,7 +41,8 @@ public class Job {
 	@MapKey(name = "codeSystemShortname")
 	@JsonIgnore
 	Map<String, WhiteList> whiteListMap;
-	
+
+	@Column(columnDefinition="int default 15") //Default to 15 minutes
 	int expectedDuration = 15;
 	
 	public int getExpectedDuration() {
