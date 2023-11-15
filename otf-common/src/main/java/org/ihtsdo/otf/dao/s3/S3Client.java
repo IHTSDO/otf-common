@@ -20,9 +20,13 @@ public interface S3Client {
 
 	PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception;
 
-	PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception, IOException;
+	PutObjectResponse putObject(String bucketName, String key, byte[] bytes) throws S3Exception;
 
-	PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException, DecoderException;
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata, long size) throws S3Exception;
+
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, long size, String md5) throws S3Exception, DecoderException;
+
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception, DecoderException;
 
 	PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception;
 

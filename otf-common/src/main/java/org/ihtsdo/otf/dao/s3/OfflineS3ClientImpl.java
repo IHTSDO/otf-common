@@ -95,7 +95,7 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		File file = getFile(bucketName, key);
 		if (file.isFile()) {
 			try {
-				return new ResponseInputStream<>(GetObjectResponse.builder().build(), new FileInputStream(file));
+				return new ResponseInputStream<>(GetObjectResponse.builder().contentLength(file.length()).build(), new FileInputStream(file));
 			} catch (FileNotFoundException e) {
 				throw S3Exception.builder().message("Object does not exist.").statusCode(404).build();
 			}
@@ -108,11 +108,31 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
 	@Override
 	public PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception {
-		return putObject(bucketName, key, getInputStream(file), null);
+		return putObject(bucketName, key, getInputStream(file),file.length(), null);
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream inputStream, ObjectMetadata metadata) throws S3Exception {
+	public PutObjectResponse putObject(String bucketName, String key, byte[] bytes) throws S3Exception {
+		File tempFile = null;
+		try {
+			tempFile = File.createTempFile("file-", ".tmp", null);
+			FileOutputStream fos = new FileOutputStream(tempFile);
+			fos.write(bytes);
+			return putObject(bucketName, key, tempFile);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (tempFile != null) {
+				boolean deletedOK = tempFile.delete();
+				if (!deletedOK) {
+					throw S3Exception.builder().message("Failed to delete " + tempFile.getAbsoluteFile()).build();
+				}
+			}
+		}
+	}
+
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream inputStream, ObjectMetadata metadata, long size) throws S3Exception {
 		File outFile = getFile(bucketName, key);
 
 		// Create the target directory
@@ -152,8 +172,13 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception {
-		return putObject(bucketName, key, input, ObjectMetadata.builder().contentDisposition(String.valueOf(size)).sseCustomerKeyMD5(md5).build());
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception {
+		return putObject(bucketName, key, input, null, size);
+	}
+
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size, String md5) throws S3Exception {
+		return putObject(bucketName, key, input, ObjectMetadata.builder().sseCustomerKeyMD5(md5).build(), size);
 	}
 
 	@Override
@@ -174,8 +199,8 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 
 	@Override
 	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception {
-		InputStream sourceInput = getObject(sourceBucketName, sourceKey);
-		putObject(destinationBucketName, destinationKey, sourceInput, null);
+		ResponseInputStream<GetObjectResponse> sourceInput = getObject(sourceBucketName, sourceKey);
+		putObject(destinationBucketName, destinationKey, sourceInput, sourceInput.response().contentLength(), null);
 		CopyObjectResult.Builder builder = CopyObjectResult.builder();
 		builder.lastModified(Instant.now());
 		return builder.build();

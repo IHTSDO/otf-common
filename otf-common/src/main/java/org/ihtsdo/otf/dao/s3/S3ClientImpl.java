@@ -41,21 +41,23 @@ public class S3ClientImpl implements S3Client {
 	public PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception {
 		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromFile(file));
 	}
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, byte[] bytes) throws S3Exception {
+		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromBytes(bytes));
+	}
 
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception, IOException {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata, long size) throws S3Exception {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
 		if (metadata != null) {
 			requestBuilder.metadata(metadata.getMetadata());
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromBytes(input.readAllBytes()));
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException, DecoderException {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size, String md5) throws S3Exception, DecoderException {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
-		if (size != null) {
-			requestBuilder.contentLength(size);
-		}
+		requestBuilder.contentLength(size);
 		if (md5 != null) {
 			byte[] decodedHex = Hex.decodeHex(md5.toCharArray());
 
@@ -64,7 +66,12 @@ public class S3ClientImpl implements S3Client {
 
 			requestBuilder.contentMD5(md5Base64);
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromBytes(input.readAllBytes()));
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
+	}
+
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception, DecoderException {
+		return putObject(bucketName, key, input, size, null);
 	}
 
 	@Override
