@@ -37,27 +37,24 @@ public class S3ClientImpl implements S3Client {
 		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromFile(file));
 	}
 
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata, long size) throws S3Exception {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception, IOException {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
 		if (metadata != null) {
 			requestBuilder.metadata(metadata.getMetadata());
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromBytes(input.readAllBytes()));
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size, String md5) throws S3Exception {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
-		requestBuilder.contentLength(size);
+		if (size != null) {
+			requestBuilder.contentLength(size);
+		}
 		if (md5 != null) {
 			requestBuilder.contentMD5(md5);
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
-	}
-
-	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception {
-		return putObject(bucketName, key, input, size, null);
+		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromBytes(input.readAllBytes()));
 	}
 
 	@Override
