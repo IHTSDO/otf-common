@@ -67,11 +67,13 @@ public class S3ClientImpl implements S3Client {
 
 	@Override
 	public CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception {
-		return amazonS3Client.copyObject(cr -> cr.copy().sourceBucket(sourceBucketName)
+		CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+				.sourceBucket(sourceBucketName)
 				.sourceKey(sourceKey)
 				.destinationBucket(destinationBucketName)
-				.destinationKey(destinationKey))
-				.copyObjectResult();
+				.destinationKey(destinationKey)
+				.build();
+		return amazonS3Client.copyObject(copyRequest).copyObjectResult();
 	}
 
 	@Override
