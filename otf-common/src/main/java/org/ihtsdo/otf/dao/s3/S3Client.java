@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.dao.s3;
 
 import io.awspring.cloud.s3.ObjectMetadata;
+import org.apache.commons.codec.DecoderException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -21,7 +22,7 @@ public interface S3Client {
 
 	PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata) throws S3Exception, IOException;
 
-	PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException;
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException, DecoderException;
 
 	PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception;
 

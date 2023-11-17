@@ -32,7 +32,7 @@ public class FileHelper {
 		this.s3Client = s3Client;
 	}
 
-	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) throws IOException {
+	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) throws IOException, DecoderException {
 		LOGGER.debug("Putting file to {}/{}", bucketName, targetFilePath);
 		s3Client.putObject(bucketName, targetFilePath, fileStream, fileSize, null);
 	}

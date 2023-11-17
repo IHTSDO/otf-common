@@ -1,6 +1,9 @@
 package org.ihtsdo.otf.dao.s3;
 
 import io.awspring.cloud.s3.ObjectMetadata;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.*;
@@ -8,6 +11,8 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 public class S3ClientImpl implements S3Client {
 
@@ -46,13 +51,18 @@ public class S3ClientImpl implements S3Client {
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException {
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, Long size, String md5) throws S3Exception, IOException, DecoderException {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
 		if (size != null) {
 			requestBuilder.contentLength(size);
 		}
 		if (md5 != null) {
-			requestBuilder.contentMD5(md5);
+			byte[] decodedHex = Hex.decodeHex(md5.toCharArray());
+
+			//Apparently we need the unchunked string encoding method here to match what AWS is expecting.
+			String md5Base64 = Base64.encodeBase64String(decodedHex);
+
+			requestBuilder.contentMD5(md5Base64);
 		}
 		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromBytes(input.readAllBytes()));
 	}
