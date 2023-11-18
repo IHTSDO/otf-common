@@ -59,7 +59,7 @@ public class AuthoringServicesClient {
 		
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.serverUrl)
-				.additionalMessageConverters(new GsonHttpMessageConverter())
+				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		

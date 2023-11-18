@@ -11,7 +11,7 @@ public class Classification {
 	private String status;
 
 	@Expose
-	private String message;
+	private String errorMessage;
 	
 	@Expose
 	private ClassificationResults results;
@@ -24,7 +24,7 @@ public class Classification {
 		ClassificationResults runObj = new ClassificationResults();
 		runObj.setStatus(ClassificationStatus.FAILED);
 		results = runObj;
-		message = errorMsg;
+		errorMessage = errorMsg;
 	}
 
 	public String getStatus() {
@@ -32,12 +32,12 @@ public class Classification {
 
 	}
 
-	public String getMessage() {
-		return message;
+	public String getErrorMessage() {
+		return errorMessage;
 	}
 
-	public void setMessage(String message) {
-		this.message = message;
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
 	}
 
 	public String getId() {
