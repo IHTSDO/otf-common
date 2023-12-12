@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client;
 
+import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,10 @@ public class ExpressiveErrorHandler extends DefaultResponseErrorHandler {
 			}
 		} catch (IOException ignored) {
 			errMsg = "Unable to recover failure reason";
+		}
+
+		if (StringUtils.isEmpty(errMsg)) {
+			errMsg = "HTTP Status " + statusCode + " received";
 		}
 
 		logger.info("Got REST client error {} - {}", statusCode, statusText);
