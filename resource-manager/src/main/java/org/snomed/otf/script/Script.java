@@ -268,6 +268,8 @@ public abstract class Script implements RF2Constants {
 					if (str != null) {
 						isNestedNumeric = StringUtils.isNumeric(str);
 						str = (isNestedNumeric || isAlreadyQuoted) ? str : str.replaceAll("\"", "\"\"");
+					} else {
+						str = "";
 					}
 					sb.append((isNestedNumeric && !isFirst) ? "," : prefix).append(str).append((isNestedNumeric || isAlreadyQuoted) ? "" : QUOTE);
 					prefix = COMMA_QUOTE;
