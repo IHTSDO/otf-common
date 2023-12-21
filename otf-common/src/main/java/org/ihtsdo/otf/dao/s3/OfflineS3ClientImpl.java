@@ -186,6 +186,11 @@ public class OfflineS3ClientImpl implements S3Client, TestS3Client {
 		return putObject(putObjectRequest.bucket(), putObjectRequest.key(), path.toFile());
 	}
 
+	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input) throws S3Exception {
+		return putObject(bucketName, key, input, null, Long.MAX_VALUE);
+	}
+
 	private InputStream getInputStream(File inFile) {
 		if (inFile != null && inFile.isFile()) {
 			try {

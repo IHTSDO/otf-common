@@ -6,7 +6,6 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
@@ -26,9 +25,11 @@ public interface S3Client {
 
 	PutObjectResponse putObject(String bucketName, String key, InputStream input, long size, String md5) throws S3Exception, DecoderException;
 
-	PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception, DecoderException;
+	PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception;
 
 	PutObjectResponse putObject(PutObjectRequest putObjectRequest, Path path) throws S3Exception;
+
+	PutObjectResponse putObject(String bucketName, String key, InputStream input) throws S3Exception;
 
 	CopyObjectResult copyObject(String sourceBucketName, String sourceKey, String destinationBucketName, String destinationKey) throws S3Exception;
 

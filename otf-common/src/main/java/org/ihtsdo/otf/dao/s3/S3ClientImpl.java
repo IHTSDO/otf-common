@@ -4,6 +4,7 @@ import io.awspring.cloud.s3.ObjectMetadata;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.*;
@@ -11,8 +12,6 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 public class S3ClientImpl implements S3Client {
 
@@ -38,6 +37,18 @@ public class S3ClientImpl implements S3Client {
 	}
 
 	@Override
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input) throws S3Exception {
+		// Memory problems with large files necessitate writing to disk before
+		// uploading to S3
+		File cachedFile = cacheLocally(input, key);
+		try {
+			return putObject(bucketName, key, cachedFile);
+		} finally {
+			cachedFile.delete();
+		}
+	}
+
+	@Override
 	public PutObjectResponse putObject(String bucketName, String key, File file) throws S3Exception {
 		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromFile(file));
 	}
@@ -46,12 +57,18 @@ public class S3ClientImpl implements S3Client {
 		return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromBytes(bytes));
 	}
 
+
+	@Override
 	public PutObjectResponse putObject(String bucketName, String key, InputStream input, ObjectMetadata metadata, long size) throws S3Exception {
 		PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder().bucket(bucketName).key(key);
 		if (metadata != null) {
 			requestBuilder.metadata(metadata.getMetadata());
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
+		try (InputStream inputStream = input) {
+			return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(inputStream, size));
+		} catch (IOException e) {
+			throw S3Exception.builder().message(String.format("Failed to upload %s to bucket %s", key, bucketName)).cause(e).build();
+		}
 	}
 
 	@Override
@@ -60,18 +77,24 @@ public class S3ClientImpl implements S3Client {
 		requestBuilder.contentLength(size);
 		if (md5 != null) {
 			byte[] decodedHex = Hex.decodeHex(md5.toCharArray());
-
-			//Apparently we need the unchunked string encoding method here to match what AWS is expecting.
+			// Apparently we need the unchunked string encoding method here to match what AWS is expecting.
 			String md5Base64 = Base64.encodeBase64String(decodedHex);
-
 			requestBuilder.contentMD5(md5Base64);
 		}
-		return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(input, size));
+		try (InputStream inputStream = input) {
+			return amazonS3Client.putObject(requestBuilder.build(), RequestBody.fromInputStream(inputStream, size));
+		} catch (IOException e) {
+			throw S3Exception.builder().message(String.format("Failed to upload %s to bucket %s", key, bucketName)).cause(e).build();
+		}
 	}
 
 	@Override
-	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception, DecoderException {
-		return putObject(bucketName, key, input, size, null);
+	public PutObjectResponse putObject(String bucketName, String key, InputStream input, long size) throws S3Exception {
+		try (InputStream inputStream = input) {
+			return amazonS3Client.putObject(pr -> pr.bucket(bucketName).key(key).build(), RequestBody.fromInputStream(inputStream, size));
+		} catch (IOException e) {
+			throw S3Exception.builder().message(String.format("Failed to upload %s to bucket %s", key, bucketName)).cause(e).build();
+		}
 	}
 
 	@Override
@@ -93,6 +116,16 @@ public class S3ClientImpl implements S3Client {
 	@Override
 	public void deleteObject(String bucketName, String key) throws S3Exception {
 		amazonS3Client.deleteObject(dr -> dr.bucket(bucketName).key(key));
+	}
+
+	private File cacheLocally(InputStream inputStream, String key) {
+		try (InputStream input = inputStream) {
+			File cachedFile = File.createTempFile(key, ".cached");
+			FileUtils.copyInputStreamToFile(input, cachedFile);
+			return cachedFile; // Make sure this gets deleted after use!
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to cache input stream locally", e);
+		}
 	}
 
 	@Override

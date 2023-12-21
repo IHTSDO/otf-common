@@ -32,9 +32,13 @@ public class FileHelper {
 		this.s3Client = s3Client;
 	}
 
-	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) throws IOException, DecoderException {
+	public void putFile(InputStream fileStream, long fileSize, String targetFilePath) throws S3Exception {
 		LOGGER.debug("Putting file to {}/{}", bucketName, targetFilePath);
-		s3Client.putObject(bucketName, targetFilePath, fileStream, fileSize, null);
+		s3Client.putObject(bucketName, targetFilePath, fileStream, fileSize);
+	}
+	public void putFile(InputStream fileStream, String targetFilePath) {
+		LOGGER.debug("Putting file to {}/{}", bucketName, targetFilePath);
+		s3Client.putObject(bucketName, targetFilePath, fileStream);
 	}
 
 	public String putFile(File file, String targetFilePath) throws NoSuchAlgorithmException, IOException, DecoderException {
