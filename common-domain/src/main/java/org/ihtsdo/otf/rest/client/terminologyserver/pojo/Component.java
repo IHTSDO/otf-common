@@ -64,6 +64,9 @@ public abstract class Component implements RF2Constants {
 	}
 	
 	public Boolean isActive() {
+		if (active == null) {
+			throw new IllegalStateException("Attempt to check active status on non-populated " + this.getClass().getSimpleName() + " component: " + getId());
+		}
 		return active;
 	}
 	
