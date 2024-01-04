@@ -57,6 +57,17 @@ public class ResourceManager {
 		}
 	}
 
+	public ResourceManager(final ResourceConfiguration resourceConfiguration,
+						   final ResourceLoader cloudResourceLoader, final S3Client s3Client) throws NullPointerException {
+		this.resourceConfiguration = Objects.requireNonNull(resourceConfiguration);
+		if (resourceConfiguration.isUseCloud()) {
+			this.resourceLoader = checkS3Connection(Objects.requireNonNull(cloudResourceLoader));
+			this.s3Client = s3Client;
+		} else {
+			this.resourceLoader = new FileSystemResourceLoader();
+		}
+	}
+
 	/**
 	 * Checks to make sure that a GET request to the S3 bucket/path can be
 	 * performed successfully. If not, it will throw an {@link
