@@ -3,6 +3,7 @@ package org.snomed.otf.scheduler.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
@@ -50,8 +51,12 @@ public class JobRun {
 	
 	@Column(length = 1024)
 	String resultUrl;
-	
+
 	Long executionTime;
+
+	@JsonIgnore
+	@ManyToOne
+	JobRunBatch runBatch;
 	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
 	Set<WhiteListedConcept> whiteList;
@@ -289,4 +294,11 @@ public class JobRun {
 		this.executionTime = executionTime;
 	}
 
+	public JobRunBatch getRunBatch() {
+		return runBatch;
+	}
+
+	public void setBatch(JobRunBatch runBatch) {
+		this.runBatch = runBatch;
+	}
 }
