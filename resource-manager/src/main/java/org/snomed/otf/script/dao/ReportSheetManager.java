@@ -146,7 +146,6 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 							.setProperties(new SpreadsheetProperties()
 									.setTitle(titleStr))
 									.setFields("title")));
-			
 			tabRowsCount = new HashMap<>();
 			populateColumnsPerTab(columnHeaders);
 			int tabIdx = 0;
@@ -176,6 +175,17 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
+				requests.add(new Request()
+						.setRepeatCell(new RepeatCellRequest()
+								.setRange(new GridRange()
+										.setSheetId(tabIdx)
+										.setStartRowIndex(0)
+										.setEndRowIndex(1))
+								.setCell(new CellData()
+										.setUserEnteredFormat(new CellFormat()
+												.setTextFormat(new TextFormat()
+														.setBold(true))))
+								.setFields("userEnteredFormat(textFormat)")));
 				writeToReportFile(tabIdx, header, true);
 				tabIdx++;
 				numberOfSheets++;
