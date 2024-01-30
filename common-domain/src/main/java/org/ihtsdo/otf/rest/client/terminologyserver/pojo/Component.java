@@ -137,8 +137,8 @@ public abstract class Component implements RF2Constants {
 	}
 
 	private String getIdOrThrow() {
-		if (id != null) {
-			return id;
+		if (getId() != null) {
+			return getId();  //This might be coming from memberId if loaded directly from API
 		} else {
 			throw new RuntimeException("Attmpt to hash/equal component with no id.  Use concrete class check of values instead");
 		}
