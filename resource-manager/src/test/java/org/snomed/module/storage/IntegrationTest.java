@@ -5,6 +5,8 @@ import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.SimpleStorageResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -19,6 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
 public class IntegrationTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTest.class);
+    private static final String BUCKET_NAME = "otf-common";
+    private static final String BUCKET_PATH = "files";
+
     @Container
     public static LocalStackContainer localStackContainer = new TestLocalStackContainer();
 
@@ -27,34 +33,50 @@ public class IntegrationTest {
     protected final ResourceConfiguration resourceConfiguration;
     protected final ResourceManager resourceManager;
     protected final S3ClientWrapper s3ClientWrapper;
+    protected final ModuleStorageCoordinator moduleStorageCoordinatorDev;
+    protected final ModuleStorageCoordinator moduleStorageCoordinatorProd;
+    protected final RF2Service rf2Service;
 
     public IntegrationTest() {
+        this.rf2Service = new RF2Service();
         this.s3Client = s3Client();
         this.resourceLoader = resourceLoader();
         this.resourceConfiguration = resourceConfiguration();
         this.resourceManager = resourceManager();
         this.s3ClientWrapper = new S3ClientWrapper(s3Client);
+        this.moduleStorageCoordinatorDev = ModuleStorageCoordinator.initDev(resourceManager);
+        this.moduleStorageCoordinatorProd = ModuleStorageCoordinator.initProd(resourceManager);
     }
 
     @BeforeEach
     public void setUp() {
+        LOGGER.info("Setting up before test...");
 
+        LOGGER.info("Creating bucket {}", BUCKET_NAME);
+        boolean success = s3ClientWrapper.createBucket(BUCKET_NAME);
+        assertTrue(success);
+
+        List<Bucket> buckets = s3ClientWrapper.readBuckets();
+        assertEquals(1, buckets.size());
     }
 
     @AfterEach
     public void tearDown() {
+        LOGGER.info("Tearing down after test...");
         // Delete all data
         List<Bucket> buckets = s3ClientWrapper.readBuckets();
         for (Bucket bucket : buckets) {
             String bucketName = bucket.name();
             List<String> objectKeys = s3ClientWrapper.readObjectKeys(bucketName);
             for (String objectKey : objectKeys) {
+                LOGGER.info("Deleting object {}", objectKey);
                 s3ClientWrapper.deleteObject(bucketName, objectKey);
             }
 
             objectKeys = s3ClientWrapper.readObjectKeys(bucketName);
             assertEquals(0, objectKeys.size());
 
+            LOGGER.info("Deleting bucket {}", bucketName);
             s3ClientWrapper.deleteBucket(bucketName);
         }
 
@@ -78,7 +100,7 @@ public class IntegrationTest {
     }
 
     private ResourceConfiguration resourceConfiguration() {
-        ResourceConfiguration.Cloud cloud = new ResourceConfiguration.Cloud("otf-common", "files");
+        ResourceConfiguration.Cloud cloud = new ResourceConfiguration.Cloud(BUCKET_NAME, BUCKET_PATH);
 
         return new ManualResourceConfiguration(false, true, null, cloud);
     }
