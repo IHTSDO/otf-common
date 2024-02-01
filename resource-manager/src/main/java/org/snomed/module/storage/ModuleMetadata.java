@@ -1,8 +1,11 @@
 package org.snomed.module.storage;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.File;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 public class ModuleMetadata {
 
@@ -52,6 +55,15 @@ public class ModuleMetadata {
 
 	public Integer getEffectiveTime() {
 		return effectiveTime;
+	}
+
+	@JsonIgnore
+	public String getEffectiveTimeString() {
+		if (effectiveTime == null) {
+			return null;
+		}
+
+		return String.valueOf(effectiveTime);
 	}
 
 	public void setEffectiveTime(Integer effectiveTime) {
@@ -106,5 +118,17 @@ public class ModuleMetadata {
 		this.file = file;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		ModuleMetadata that = (ModuleMetadata) o;
+		return Objects.equals(filename, that.filename) && Objects.equals(codeSystemShortName, that.codeSystemShortName) && Objects.equals(identifyingModuleId, that.identifyingModuleId) && Objects.equals(compositionModuleIds, that.compositionModuleIds) && Objects.equals(effectiveTime, that.effectiveTime) && Objects.equals(fileTimeStamp, that.fileTimeStamp) && Objects.equals(fileMD5, that.fileMD5) && Objects.equals(isPublished, that.isPublished) && Objects.equals(isEdition, that.isEdition) && Objects.equals(dependencies, that.dependencies);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, isPublished, isEdition, dependencies);
+	}
 }
 

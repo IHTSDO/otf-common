@@ -3,6 +3,7 @@ package org.ihtsdo.otf.resourcemanager;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
+import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -69,6 +70,26 @@ public class ResourceManager {
 	}
 
 	/**
+	 * Return concatenated bucketName and path.
+	 *
+	 * @return concatenated bucketName and path.
+	 */
+	public Optional<String> getBucketNamePath() {
+		if (resourceConfiguration != null) {
+			Cloud cloud = resourceConfiguration.getCloud();
+			if (cloud != null) {
+				String bucketName = cloud.getBucketName();
+				String path = cloud.getPath();
+				if (bucketName != null && path != null) {
+					return Optional.of(bucketName + "/" + path);
+				}
+			}
+		}
+
+		return Optional.empty();
+	}
+
+	/**
 	 * Checks to make sure that a GET request to the S3 bucket/path can be
 	 * performed successfully. If not, it will throw an {@link
 	 * software.amazon.awssdk.services.s3.model.S3Exception}. Although, It will
@@ -104,6 +125,21 @@ public class ResourceManager {
 			return resourceLoader.getResource(fullPath).getInputStream();
 		} catch (S3Exception e) {
 			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
+		}
+	}
+
+	public File doReadResourceFile(String resourcePath) {
+		try {
+			InputStream inputStream = this.readResourceStream(resourcePath);
+			if (inputStream == null) {
+				return null;
+			}
+
+			File tmpFile = FileUtils.doCreateTempFile(UUID.randomUUID() + ".zip");
+			FileUtils.copyInputStreamToFile(inputStream, tmpFile);
+			return tmpFile;
+		} catch (IOException e) {
+			return null;
 		}
 	}
 
@@ -158,6 +194,17 @@ public class ResourceManager {
 		return fileNames;
 	}
 
+	public Set<String> doListFilenames(String prefix, String suffix) {
+		try {
+			Set<String> packages = this.listFilenames(prefix);
+			packages.removeIf(p -> !p.endsWith(suffix));
+
+			return packages;
+		} catch (IOException e) {
+			return Collections.emptySet();
+		}
+	}
+
 	/**
 	 * Determine existence of resource from the given <code>resourcePath</code>.
 	 *
@@ -181,6 +228,18 @@ public class ResourceManager {
 			}
 		} catch (S3Exception e) {
 			throw new IOException("Failed to determine existence of '" + resource + "'.", e);
+		}
+	}
+
+	public boolean doesObjectExist(String resourcePath) throws IOException {
+		return readResourceStream(resourcePath) != null;
+	}
+
+	public boolean doDoesObjectExist(String resourcePath) {
+		try {
+			return this.doesObjectExist(resourcePath);
+		} catch (IOException e) {
+			return false;
 		}
 	}
 
@@ -223,6 +282,15 @@ public class ResourceManager {
 			}
 		} catch (S3Exception e) {
 			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
+		}
+	}
+
+	public boolean doWriteResource(String resourcePath, InputStream resourceInputStream) {
+		try {
+			this.writeResource(resourcePath, resourceInputStream);
+			return true;
+		} catch (IOException e) {
+			return false;
 		}
 	}
 
@@ -269,12 +337,21 @@ public class ResourceManager {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
 				final String path = resourceConfiguration.getCloud().getPath();
-				s3Client.deleteObject(delete -> delete.bucket(resourceConfiguration.getCloud().getBucketName()).key((path != null ? path : "") + resourcePath));
+				s3Client.deleteObject(delete -> delete.bucket(resourceConfiguration.getCloud().getBucketName()).key((path != null ? path + "/" : "") + resourcePath));
 			} else {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
 			}
 		} catch (S3Exception e) {
 			throw new IOException("Failed to delete the resource: '" + resourcePath + "'.", e);
+		}
+	}
+
+	public boolean doDeleteResource(String resourcePath) {
+		try {
+			this.deleteResource(resourcePath);
+			return true;
+		} catch (IOException e) {
+			return false;
 		}
 	}
 
@@ -301,7 +378,7 @@ public class ResourceManager {
 							 final String toResourcePath) throws IOException {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
-				s3MoveResource(fromResourcePath, toResourcePath);
+				s3MoveResource(fromResourcePath, toResourcePath, true);
 			} else {
 				localMoveResource(fromResourcePath, toResourcePath);
 			}
@@ -309,6 +386,31 @@ public class ResourceManager {
 			throw new IOException("Failed to move resource from '" +
 					fromResourcePath + "' to '" +
 					toResourcePath + "'.", e);
+		}
+	}
+
+	public void copyResource(final String fromResourcePath,
+							 final String toResourcePath) throws IOException {
+		try {
+			if (resourceConfiguration.isUseCloud()) {
+				s3MoveResource(fromResourcePath, toResourcePath, false);
+			} else {
+				localMoveResource(fromResourcePath, toResourcePath);
+			}
+		} catch (S3Exception e) {
+			throw new IOException("Failed to move resource from '" +
+					fromResourcePath + "' to '" +
+					toResourcePath + "'.", e);
+		}
+	}
+
+	public boolean doCopyResource(final String fromResourcePath,
+								  final String toResourcePath) {
+		try {
+			this.copyResource(fromResourcePath, toResourcePath);
+			return true;
+		} catch (Exception e) {
+			return false;
 		}
 	}
 
@@ -346,14 +448,17 @@ public class ResourceManager {
 	 *                     location.
 	 */
 	private void s3MoveResource(final String fromResourcePath,
-								final String toResourcePath) throws IOException {
+								final String toResourcePath,
+								final boolean deleteResource) throws IOException {
 		final String bucketName = resourceConfiguration.getCloud().getBucketName();
 		final String path = resourceConfiguration.getCloud().getPath();
 		s3Client.copyObject(copy -> copy.sourceBucket(bucketName)
-				.sourceKey((path != null ? path : "") + fromResourcePath)
+				.sourceKey((path != null ? path + "/" : "") + fromResourcePath)
 				.destinationBucket(bucketName)
-				.destinationKey((path != null ? path : "") + toResourcePath));
-		deleteResource(fromResourcePath);
+				.destinationKey((path != null ? path + "/" : "") + toResourcePath));
+		if (deleteResource) {
+			deleteResource(fromResourcePath);
+		}
 	}
 
 	/**
