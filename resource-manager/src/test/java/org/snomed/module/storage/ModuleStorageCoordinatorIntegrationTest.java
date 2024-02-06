@@ -1029,6 +1029,194 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         });
     }
 
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenNoPackages() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        // when
+        Map<String, List<ModuleMetadata>> result = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenEditionPackage() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertEquals(1, releases.size());
+        assertNotNull(releases.get("INT"));
+        assertEquals(1, releases.get("INT").size());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenEditionPackageWithMultipleVersions() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertEquals(1, releases.size());
+        assertNotNull(releases.get("INT"));
+        assertEquals(5, releases.get("INT").size());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenDevOverwritesProd() throws ModuleStorageCoordinatorException {
+        // given
+        givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2.zip", 20240101);
+        givenArchive("dev/INT_900000000000012004/20240101", "test-rf2.zip");
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertEquals(1, releases.size());
+        assertNotNull(releases.get("INT"));
+        assertEquals(1, releases.get("INT").size());
+        assertEquals("test-rf2.zip", releases.get("INT").get(0).getFilename()); // In this example, Dev doesn't have -edition suffix
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenMultipleCodeSystems() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
+        givenProdReleasePackage("XX", "3182250003", "20240105", getLocalFile("test-rf2-extension.zip"));
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertEquals(3, releases.size());
+        assertNotNull(releases.get("INT"));
+        assertNotNull(releases.get("YY"));
+        assertNotNull(releases.get("XX"));
+        assertEquals(1, releases.get("INT").size());
+        assertEquals(1, releases.get("YY").size());
+        assertEquals(1, releases.get("XX").size());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenRogueJsonFile() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenArchive("dev", "cache.json"); // Fictional later requirement adds new file in hierarchy
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertFalse(releases.isEmpty());
+        assertEquals(1, releases.size());
+        assertEquals(1, releases.get("INT").size());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenRogueTestPackage() throws ModuleStorageCoordinatorException {
+        // given
+        givenMetadata("dev/INT_900000000000012004/20240201", "test-rf2.zip", 20240201);
+        givenArchive("dev/INT_900000000000012004/20240201", "test-rf2.zip");
+
+        // Path ignored
+        givenMetadata("dev/wip/INT_900000000000012004/20240201", "test-rf2.zip", 20240201);
+        givenArchive("dev/wip/INT_900000000000012004/20240201", "test-rf2.zip");
+
+        givenMetadata("prod/INT_900000000000012004/20240101", "test-rf2.zip", 20240101);
+        givenArchive("prod/INT_900000000000012004/20240101", "test-rf2.zip");
+
+        // when
+        Map<String, List<ModuleMetadata>> releases = moduleStorageCoordinatorDev.getAllReleases();
+
+        // then
+        assertFalse(releases.isEmpty());
+        assertEquals(1, releases.size());
+        assertEquals(2, releases.get("INT").size());
+    }
+
+    @Test
+    public void getAllReleases_ShouldThrowExpected_WhenGivenInvalidCodeSystem(){
+        // then
+        assertThrows(ModuleStorageCoordinatorException.InvalidArgumentsException.class, () -> {
+            moduleStorageCoordinatorDev.getAllReleases(null);
+        });
+    }
+
+    @Test
+    public void getAllReleases_ShouldThrowExpected_WhenNoData(){
+        // then
+        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
+            moduleStorageCoordinatorDev.getAllReleases("INT");
+        });
+    }
+
+    @Test
+    public void getAllReleases_ShouldThrowExpected_WhenNoMatch() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // then
+        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
+            moduleStorageCoordinatorDev.getAllReleases("XX");
+        });
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMatch() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<ModuleMetadata> releases = moduleStorageCoordinatorDev.getAllReleases("INT");
+
+        // then
+        assertEquals(1, releases.size());
+        assertEquals("INT", releases.get(0).getCodeSystemShortName());
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMultipleMatch() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<ModuleMetadata> releases = moduleStorageCoordinatorDev.getAllReleases("INT");
+
+        // then
+        assertEquals(5, releases.size());
+        for (ModuleMetadata release : releases) {
+            assertEquals("INT", release.getCodeSystemShortName());
+        }
+    }
+
+    @Test
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemMatch() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<ModuleMetadata> releases = moduleStorageCoordinatorDev.getAllReleases("INT");
+
+        // then
+        assertEquals(1, releases.size());
+        assertEquals("INT", releases.get(0).getCodeSystemShortName());
+        assertNull(releases.get(0).getFile());
+    }
+
     private Set<String> doListfilenames(String prefix) {
         try {
             return resourceManager.listFilenames(prefix);
@@ -1062,6 +1250,18 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     private void givenMetadata(String resourcePath, String rf2PackageName) {
         ModuleMetadata moduleMetadata = new ModuleMetadata();
         moduleMetadata.setFilename(rf2PackageName);
+
+        File file = FileUtils.doCreateTempFile("metadata.json");
+        boolean success = FileUtils.writeToFile(file, moduleMetadata);
+        if (success) {
+            doWriteResource(resourcePath + "/metadata.json", asFileInputStream(file));
+        }
+    }
+
+    private void givenMetadata(String resourcePath, String rf2PackageName, Integer effectiveTime) {
+        ModuleMetadata moduleMetadata = new ModuleMetadata();
+        moduleMetadata.setFilename(rf2PackageName);
+        moduleMetadata.setEffectiveTime(effectiveTime);
 
         File file = FileUtils.doCreateTempFile("metadata.json");
         boolean success = FileUtils.writeToFile(file, moduleMetadata);

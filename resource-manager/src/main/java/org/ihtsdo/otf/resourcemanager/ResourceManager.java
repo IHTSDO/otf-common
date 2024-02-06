@@ -195,9 +195,15 @@ public class ResourceManager {
 	}
 
 	public Set<String> doListFilenames(String prefix, String suffix) {
+		Set<String> fileNames = doListFilenames(prefix);
+		fileNames.removeIf(p -> !p.endsWith(suffix));
+
+		return fileNames;
+	}
+
+	public Set<String> doListFilenames(String prefix) {
 		try {
 			Set<String> packages = this.listFilenames(prefix);
-			packages.removeIf(p -> !p.endsWith(suffix));
 
 			return packages;
 		} catch (IOException e) {
