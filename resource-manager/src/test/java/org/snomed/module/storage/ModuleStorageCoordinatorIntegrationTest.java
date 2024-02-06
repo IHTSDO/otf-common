@@ -1313,6 +1313,96 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals("B", codeSystems.get(1));
     }
 
+    @Test
+    public void getReleaseDates_ShouldThrowExpected_WhenGivenNoCodeSystem() {
+        // then
+        assertThrows(ModuleStorageCoordinatorException.InvalidArgumentsException.class, () -> {
+            moduleStorageCoordinatorDev.getReleaseDates(null);
+        });
+    }
+
+    @Test
+    public void getReleaseDates_ShouldThrowExpected_WhenCodeSystemNotFound() {
+        // then
+        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
+            moduleStorageCoordinatorDev.getReleaseDates("INT");
+        });
+    }
+
+    @Test
+    public void getReleaseDates_ShouldThrowExpected_WhenCodeSystemNotFoundWhenDataExists() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("A", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // then
+        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
+            moduleStorageCoordinatorDev.getReleaseDates("XX");
+        });
+    }
+
+    @Test
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemFound() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<Integer> releaseDates = moduleStorageCoordinatorDev.getReleaseDates("INT");
+
+        // then
+        assertEquals(1, releaseDates.size());
+        assertEquals(20240101, releaseDates.get(0));
+    }
+
+    @Test
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersions() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<Integer> releaseDates = moduleStorageCoordinatorDev.getReleaseDates("INT");
+
+        // then
+        assertEquals(5, releaseDates.size());
+        assertEquals(20240101, releaseDates.get(4));
+        assertEquals(20240201, releaseDates.get(3));
+        assertEquals(20240301, releaseDates.get(2));
+        assertEquals(20240401, releaseDates.get(1));
+        assertEquals(20240501, releaseDates.get(0));
+    }
+
+    @Test
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersionsAcrossEnvironments() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenDevReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<Integer> releaseDates = moduleStorageCoordinatorDev.getReleaseDates("INT");
+
+        // then
+        assertEquals(2, releaseDates.size());
+        assertEquals(20240101, releaseDates.get(1));
+        assertEquals(20240201, releaseDates.get(0));
+    }
+
+    @Test
+    public void getReleaseDates_ShouldReturnExpected_WhenDuplicateCodeSystem() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenDevReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<Integer> releaseDates = moduleStorageCoordinatorDev.getReleaseDates("INT");
+
+        // then
+        assertEquals(1, releaseDates.size());
+        assertEquals(20240101, releaseDates.get(0));
+    }
+
     private Set<String> doListfilenames(String prefix) {
         try {
             return resourceManager.listFilenames(prefix);
