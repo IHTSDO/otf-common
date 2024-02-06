@@ -118,7 +118,54 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException   if any other operation fails, for example, failing to confirm the RF2 package has been uploaded.
      */
     public void upload(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.DuplicateResourceException, ModuleStorageCoordinatorException.OperationFailedException {
-        doUploadRelease(codeSystem, moduleId, effectiveTime, rf2Package);
+        LOGGER.trace("Attempting to upload to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+
+        // Validate arguments
+        throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
+
+        // Check if metadata already exists
+        String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
+        boolean existingMetadata = resourceManagerStorage.doDoesObjectExist(metadataResourcePath);
+        if (existingMetadata) {
+            throw new ModuleStorageCoordinatorException.DuplicateResourceException("Metadata already exists at location: " + metadataResourcePath);
+        }
+
+        // Check if RF2 package already exists
+        String rf2PackageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, rf2Package.getName());
+        boolean existingRF2Package = resourceManagerStorage.doDoesObjectExist(rf2PackageResourcePath);
+        if (existingRF2Package) {
+            throw new ModuleStorageCoordinatorException.DuplicateResourceException("Package already exists at location: " + metadataResourcePath);
+        }
+
+        // Build metadata object
+        ModuleMetadata moduleMetadata = this.generateMetadata(codeSystem, moduleId, effectiveTime, rf2Package);
+
+        // Write metadata to local temporary file
+        File tmpMetadataFile = FileUtils.doCreateTempFile("metadata.json");
+        FileUtils.writeToFile(tmpMetadataFile, moduleMetadata);
+
+        // Upload metadata
+        resourceManagerStorage.doWriteResource(metadataResourcePath, asFileInputStream(tmpMetadataFile));
+
+        // Check if metadata uploaded
+        boolean newMetadata = resourceManagerStorage.doDoesObjectExist(metadataResourcePath);
+        if (!newMetadata) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload metadata to location: " + metadataResourcePath);
+        }
+
+        // Upload RF2 package
+        resourceManagerStorage.doWriteResource(rf2PackageResourcePath, asFileInputStream(rf2Package));
+
+        // Check if RF2 package uploaded
+        boolean newRF2Package = resourceManagerStorage.doDoesObjectExist(rf2PackageResourcePath);
+        if (!newRF2Package) {
+            boolean deleteResource = resourceManagerStorage.doDeleteResource(metadataResourcePath);
+            if (!deleteResource) {
+                LOGGER.trace("Cannot delete previously uploaded metadata; manual clean up required.");
+            }
+
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
+        }
     }
 
     /**
@@ -135,7 +182,32 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to generate MD5 for the given RF2 package.
      */
     public ModuleMetadata generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        return doGenerateMetadata(codeSystem, moduleId, effectiveTime, rf2Package);
+        LOGGER.trace("Attempting to generate metadata for to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+
+        // Validate arguments
+        throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
+
+        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package);
+        if (uniqueModuleIds.isEmpty()) {
+            String message = String.format("Failed to generate metadata for %s as no composition modules found.", rf2Package.getName());
+            throw new ModuleStorageCoordinatorException.OperationFailedException(message);
+        }
+
+        List<ModuleMetadata> dependencies = new ArrayList<>(getDependencies(rf2Package, uniqueModuleIds));
+
+        ModuleMetadata moduleMetadata = new ModuleMetadata();
+        moduleMetadata.setFilename(rf2Package.getName());
+        moduleMetadata.setCodeSystemShortName(codeSystem);
+        moduleMetadata.setIdentifyingModuleId(moduleId);
+        moduleMetadata.setCompositionModuleIds(new ArrayList<>(uniqueModuleIds));
+        moduleMetadata.setEffectiveTime(asInteger(effectiveTime));
+        moduleMetadata.setFileTimeStamp(new Date(rf2Package.lastModified()));
+        moduleMetadata.setFileMD5(FileUtils.getMD5(rf2Package).orElseThrow(() -> new ModuleStorageCoordinatorException.OperationFailedException("Failed to generate MD5 for " + rf2Package.getName())));
+        moduleMetadata.setPublished(false); // Cannot infer from File alone; subsequent manual updates to metadata required.
+        moduleMetadata.setEdition(uniqueModuleIds.contains(SCTID_CORE_MODULE));
+        moduleMetadata.setDependencies(dependencies);
+
+        return moduleMetadata;
     }
 
     /**
@@ -182,7 +254,52 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to copy a resource from original location to the archive location.
      */
     public void archive(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        doArchiveRelease(codeSystem, moduleId, effectiveTime);
+        LOGGER.trace("Attempting to archive location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+
+        if (!allowArchive) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
+        }
+
+        // Validate arguments
+        throwIfInvalid(codeSystem, moduleId, effectiveTime);
+
+        String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
+        if (!resourceManagerStorage.doDoesObjectExist(metadataResourcePath)) {
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Metadata not found with resource path " + metadataResourcePath);
+        }
+
+        ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.doReadResourceFile(metadataResourcePath), ModuleMetadata.class);
+        if (moduleMetadata == null) { // De-serialisation failed
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Malformed Metadata found with resource path " + metadataResourcePath);
+        }
+
+        String packageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, moduleMetadata.getFilename());
+        if (!resourceManagerStorage.doDoesObjectExist(packageResourcePath)) {
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Package not found with resource path " + packageResourcePath);
+        }
+
+        String epochSecond = Long.toString(Instant.now().getEpochSecond());
+        String metadataArchivePath = asArchivePath(metadataResourcePath, epochSecond);
+        String packageArchivePath = asArchivePath(packageResourcePath, epochSecond);
+        boolean metadataCopied = resourceManagerStorage.doCopyResource(metadataResourcePath, metadataArchivePath);
+        if (!metadataCopied) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy metadata from " + metadataResourcePath + " to " + metadataArchivePath);
+        }
+
+        boolean packageCopied = resourceManagerStorage.doCopyResource(packageResourcePath, packageArchivePath);
+        if (!packageCopied) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy package from " + packageResourcePath + " to " + packageArchivePath);
+        }
+
+        boolean metadataDeleted = resourceManagerStorage.doDeleteResource(metadataResourcePath);
+        if (!metadataDeleted) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to metadata package from " + metadataResourcePath);
+        }
+
+        boolean packageDeleted = resourceManagerStorage.doDeleteResource(packageResourcePath);
+        if (!packageDeleted) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to delete package from " + packageResourcePath);
+        }
     }
 
     /**
@@ -306,7 +423,14 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
      */
     public List<String> getCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
-        return doGetCodeSystems();
+        Map<String, List<ModuleMetadata>> releases = doGetAllReleases();
+        if (releases.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> sortedCodeSystems = new ArrayList<>(releases.keySet());
+        Collections.sort(sortedCodeSystems);
+        return sortedCodeSystems;
     }
 
     /**
@@ -320,30 +444,11 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
      */
     public List<Integer> getReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
-        return doGetReleaseDates(codeSystem);
-    }
-
-    private List<Integer> doGetReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
         if (codeSystem == null || codeSystem.isEmpty()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
         }
 
-        return doGetAllReleasesByCodeSystem(codeSystem)
-                .stream()
-                .map(ModuleMetadata::getEffectiveTime)
-                .sorted(Comparator.reverseOrder())
-                .collect(Collectors.toList());
-    }
-
-    private List<String> doGetCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
-        Map<String, List<ModuleMetadata>> releases = doGetAllReleases();
-        if (releases.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<String> sortedCodeSystems = new ArrayList<>(releases.keySet());
-        Collections.sort(sortedCodeSystems);
-        return sortedCodeSystems;
+        return doGetAllReleasesByCodeSystem(codeSystem).stream().map(ModuleMetadata::getEffectiveTime).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     }
 
     private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
@@ -443,57 +548,6 @@ public class ModuleStorageCoordinator {
         return pattern.matcher(resourcePath).find();
     }
 
-    private void doUploadRelease(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.DuplicateResourceException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to upload to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
-
-        // Validate arguments
-        throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
-
-        // Check if metadata already exists
-        String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        boolean existingMetadata = resourceManagerStorage.doDoesObjectExist(metadataResourcePath);
-        if (existingMetadata) {
-            throw new ModuleStorageCoordinatorException.DuplicateResourceException("Metadata already exists at location: " + metadataResourcePath);
-        }
-
-        // Check if RF2 package already exists
-        String rf2PackageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, rf2Package.getName());
-        boolean existingRF2Package = resourceManagerStorage.doDoesObjectExist(rf2PackageResourcePath);
-        if (existingRF2Package) {
-            throw new ModuleStorageCoordinatorException.DuplicateResourceException("Package already exists at location: " + metadataResourcePath);
-        }
-
-        // Build metadata object
-        ModuleMetadata moduleMetadata = this.generateMetadata(codeSystem, moduleId, effectiveTime, rf2Package);
-
-        // Write metadata to local temporary file
-        File tmpMetadataFile = FileUtils.doCreateTempFile("metadata.json");
-        FileUtils.writeToFile(tmpMetadataFile, moduleMetadata);
-
-        // Upload metadata
-        resourceManagerStorage.doWriteResource(metadataResourcePath, asFileInputStream(tmpMetadataFile));
-
-        // Check if metadata uploaded
-        boolean newMetadata = resourceManagerStorage.doDoesObjectExist(metadataResourcePath);
-        if (!newMetadata) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload metadata to location: " + metadataResourcePath);
-        }
-
-        // Upload RF2 package
-        resourceManagerStorage.doWriteResource(rf2PackageResourcePath, asFileInputStream(rf2Package));
-
-        // Check if RF2 package uploaded
-        boolean newRF2Package = resourceManagerStorage.doDoesObjectExist(rf2PackageResourcePath);
-        if (!newRF2Package) {
-            boolean deleteResource = resourceManagerStorage.doDeleteResource(metadataResourcePath);
-            if (!deleteResource) {
-                LOGGER.trace("Cannot delete previously uploaded metadata; manual clean up required.");
-            }
-
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
-        }
-    }
-
     private void throwIfInvalid(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException {
         if (codeSystem == null || codeSystem.isBlank()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
@@ -539,35 +593,6 @@ public class ModuleStorageCoordinator {
 
     private String getBaseResourcePath(String directory, String codeSystem, String moduleId, String effectiveTime) {
         return directory + "/" + codeSystem + "_" + moduleId + "/" + effectiveTime;
-    }
-
-    private ModuleMetadata doGenerateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to generate metadata for to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
-
-        // Validate arguments
-        throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
-
-        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package);
-        if (uniqueModuleIds.isEmpty()) {
-            String message = String.format("Failed to generate metadata for %s as no composition modules found.", rf2Package.getName());
-            throw new ModuleStorageCoordinatorException.OperationFailedException(message);
-        }
-
-        List<ModuleMetadata> dependencies = new ArrayList<>(getDependencies(rf2Package, uniqueModuleIds));
-
-        ModuleMetadata moduleMetadata = new ModuleMetadata();
-        moduleMetadata.setFilename(rf2Package.getName());
-        moduleMetadata.setCodeSystemShortName(codeSystem);
-        moduleMetadata.setIdentifyingModuleId(moduleId);
-        moduleMetadata.setCompositionModuleIds(new ArrayList<>(uniqueModuleIds));
-        moduleMetadata.setEffectiveTime(asInteger(effectiveTime));
-        moduleMetadata.setFileTimeStamp(new Date(rf2Package.lastModified()));
-        moduleMetadata.setFileMD5(FileUtils.getMD5(rf2Package).orElseThrow(() -> new ModuleStorageCoordinatorException.OperationFailedException("Failed to generate MD5 for " + rf2Package.getName())));
-        moduleMetadata.setPublished(false); // Cannot infer from File alone; subsequent manual updates to metadata required.
-        moduleMetadata.setEdition(uniqueModuleIds.contains(SCTID_CORE_MODULE));
-        moduleMetadata.setDependencies(dependencies);
-
-        return moduleMetadata;
     }
 
     private Set<ModuleMetadata> getDependencies(File rf2Package, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.ResourceNotFoundException {
@@ -740,55 +765,6 @@ public class ModuleStorageCoordinator {
 
     private void doGetMetadataFromRemote(String rf2ResourcePath, ModuleMetadata moduleMetadata) {
         moduleMetadata.setFile(resourceManagerStorage.doReadResourceFile(rf2ResourcePath));
-    }
-
-    private void doArchiveRelease(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to archive location {}_{}/{}", codeSystem, moduleId, effectiveTime);
-
-        if (!allowArchive) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
-        }
-
-        // Validate arguments
-        throwIfInvalid(codeSystem, moduleId, effectiveTime);
-
-        String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        if (!resourceManagerStorage.doDoesObjectExist(metadataResourcePath)) {
-            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Metadata not found with resource path " + metadataResourcePath);
-        }
-
-        ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.doReadResourceFile(metadataResourcePath), ModuleMetadata.class);
-        if (moduleMetadata == null) { // De-serialisation failed
-            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Malformed Metadata found with resource path " + metadataResourcePath);
-        }
-
-        String packageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, moduleMetadata.getFilename());
-        if (!resourceManagerStorage.doDoesObjectExist(packageResourcePath)) {
-            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Package not found with resource path " + packageResourcePath);
-        }
-
-        String epochSecond = Long.toString(Instant.now().getEpochSecond());
-        String metadataArchivePath = asArchivePath(metadataResourcePath, epochSecond);
-        String packageArchivePath = asArchivePath(packageResourcePath, epochSecond);
-        boolean metadataCopied = resourceManagerStorage.doCopyResource(metadataResourcePath, metadataArchivePath);
-        if (!metadataCopied) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy metadata from " + metadataResourcePath + " to " + metadataArchivePath);
-        }
-
-        boolean packageCopied = resourceManagerStorage.doCopyResource(packageResourcePath, packageArchivePath);
-        if (!packageCopied) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy package from " + packageResourcePath + " to " + packageArchivePath);
-        }
-
-        boolean metadataDeleted = resourceManagerStorage.doDeleteResource(metadataResourcePath);
-        if (!metadataDeleted) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to metadata package from " + metadataResourcePath);
-        }
-
-        boolean packageDeleted = resourceManagerStorage.doDeleteResource(packageResourcePath);
-        if (!packageDeleted) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to delete package from " + packageResourcePath);
-        }
     }
 
     private String asArchivePath(String resourcePath, String epochSecond) {
