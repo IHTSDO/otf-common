@@ -3,7 +3,6 @@ package org.snomed.otf.scheduler.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
