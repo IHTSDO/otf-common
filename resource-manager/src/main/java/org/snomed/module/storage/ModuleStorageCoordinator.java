@@ -309,6 +309,32 @@ public class ModuleStorageCoordinator {
         return doGetCodeSystems();
     }
 
+    /**
+     * Download all release dates for the given CodeSystem, i.e. INT or XX. To handle specific unsuccessful scenarios, catch exceptions that extends ModuleStorageCoordinatorException, i.e. InvalidArgumentsException.
+     * To handle all unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
+     *
+     * @param codeSystem CodeSystem to find release dates for.
+     * @return Collection of release dates for given CodeSystem.
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if an internal operation fails, for example, de-serialising fails.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if an internal operation fails, for example, RF2 package cannot be found.
+     * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
+     */
+    public List<Integer> getReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        return doGetReleaseDates(codeSystem);
+    }
+
+    private List<Integer> doGetReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        if (codeSystem == null || codeSystem.isEmpty()) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
+        }
+
+        return doGetAllReleasesByCodeSystem(codeSystem)
+                .stream()
+                .map(ModuleMetadata::getEffectiveTime)
+                .sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList());
+    }
+
     private List<String> doGetCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
         Map<String, List<ModuleMetadata>> releases = doGetAllReleases();
         if (releases.isEmpty()) {
