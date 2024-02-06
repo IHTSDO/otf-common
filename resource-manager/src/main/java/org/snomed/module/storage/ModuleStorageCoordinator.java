@@ -296,6 +296,30 @@ public class ModuleStorageCoordinator {
         return doGetAllReleasesByCodeSystem(codeSystem);
     }
 
+    /**
+     * Download all stored CodeSystems, i.e. INT or XX. To handle specific unsuccessful scenarios, catch exceptions that extends ModuleStorageCoordinatorException, i.e. InvalidArgumentsException.
+     * To handle all unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
+     *
+     * @return Collection of stored CodeSystems.
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if an internal operation fails, for example, de-serialising fails.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if an internal operation fails, for example, RF2 package cannot be found.
+     * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
+     */
+    public List<String> getCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        return doGetCodeSystems();
+    }
+
+    private List<String> doGetCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        Map<String, List<ModuleMetadata>> releases = doGetAllReleases();
+        if (releases.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> sortedCodeSystems = new ArrayList<>(releases.keySet());
+        Collections.sort(sortedCodeSystems);
+        return sortedCodeSystems;
+    }
+
     private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
         if (codeSystem == null || codeSystem.isEmpty()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");

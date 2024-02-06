@@ -1217,6 +1217,102 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertNull(releases.get(0).getFile());
     }
 
+    @Test
+    public void getCodeSystems_ShouldReturnExpected_WhenNoData() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertTrue(codeSystems.isEmpty());
+    }
+
+    @Test
+    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExists() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertEquals(1, codeSystems.size());
+        assertEquals("INT", codeSystems.get(0));
+    }
+
+    @Test
+    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExistsWithMultipleVersions() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertEquals(1, codeSystems.size());
+        assertEquals("INT", codeSystems.get(0));
+    }
+
+    @Test
+    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemWithMultipleVersions() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+
+        givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240203", getLocalFile("test-rf2-common.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240303", getLocalFile("test-rf2-common.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240403", getLocalFile("test-rf2-common.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240503", getLocalFile("test-rf2-common.zip"));
+
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertEquals(2, codeSystems.size());
+        for (String codeSystem : codeSystems) {
+            boolean matchInt = Objects.equals("INT", codeSystem);
+            boolean matchYY = Objects.equals("YY", codeSystem);
+            assertTrue(matchInt || matchYY);
+        }
+    }
+
+    @Test
+    public void getCodeSystems_ShouldReturnExpectedOrdered_WhenMultipleCodeSystems() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
+
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertEquals(2, codeSystems.size());
+        assertEquals("INT", codeSystems.get(0));
+        assertEquals("YY", codeSystems.get(1));
+    }
+
+    @Test
+    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemsAcrossEnvironments() throws ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("A", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenDevReleasePackage("B", "678910", "20240101", getLocalFile("test-rf2-edition.zip"));
+
+        // when
+        List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
+
+        // then
+        assertEquals(2, codeSystems.size());
+        assertEquals("A", codeSystems.get(0));
+        assertEquals("B", codeSystems.get(1));
+    }
+
     private Set<String> doListfilenames(String prefix) {
         try {
             return resourceManager.listFilenames(prefix);
