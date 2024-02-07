@@ -85,7 +85,6 @@ public class ResourceManager {
 				}
 			}
 		}
-
 		return Optional.empty();
 	}
 
@@ -143,6 +142,14 @@ public class ResourceManager {
 		}
 	}
 
+	public Set<String> listCachedFilenames(String prefix) throws IOException {
+		return listFilenames(prefix, true);
+	}
+
+	public String getCachePath() {
+		return resourceConfiguration.getLocal().getPath();
+	}
+
 	/**
 	 * Return a list of filenames for given resource
 	 * @param prefix File prefix
@@ -150,8 +157,12 @@ public class ResourceManager {
 	 * @throws IOException If an error occurs while trying to load the resource.
 	 */
 	public Set<String> listFilenames(String prefix) throws IOException {
+		return listFilenames(prefix, false);
+	}
+
+	private Set<String> listFilenames(String prefix, boolean forceLocal) throws IOException {
 		Set<String> fileNames = new HashSet<>();
-		if (resourceConfiguration.isUseCloud()) {
+		if (resourceConfiguration.isUseCloud() && !forceLocal) {
 			try {
 				Cloud cloud = resourceConfiguration.getCloud();
 				//In case we're running on a PC we need to convert backslashes to forward
@@ -176,7 +187,12 @@ public class ResourceManager {
 						.filter(Objects::nonNull)
 						.collect(Collectors.toSet()));
 			} else {
-				File[] files = ResourceUtils.getFile(localPath).listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+				File[] files;
+				if (prefix == null) {
+					files = ResourceUtils.getFile(localPath).listFiles();
+				} else {
+					files = ResourceUtils.getFile(localPath).listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+				}
 				Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
 			}
 		}
