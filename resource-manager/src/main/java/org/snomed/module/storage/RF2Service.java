@@ -1,5 +1,8 @@
 package org.snomed.module.storage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -7,11 +10,14 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class RF2Service {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RF2Service.class);
+
     public static final Integer MODULE_ID = 3;
     public static final Integer REFERENCED_COMPONENT_ID = 5;
     public static final Integer TARGET_EFFECTIVE_TIME = 7;
 
     public Set<String> getUniqueModuleIds(File file) {
+        LOGGER.debug("Getting unique module IDs from: {}", file.getName());
         if (file == null) {
             return Collections.emptySet();
         }
@@ -21,7 +27,7 @@ public class RF2Service {
         for (List<String> row : rows) {
             result.addAll(row);
         }
-
+        LOGGER.debug("Collected {} unique module IDs from: {}", file.getName());
         return result;
     }
 

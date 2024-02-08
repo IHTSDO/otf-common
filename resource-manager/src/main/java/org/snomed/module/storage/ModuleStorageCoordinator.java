@@ -118,7 +118,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException   if any other operation fails, for example, failing to confirm the RF2 package has been uploaded.
      */
     public void upload(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.DuplicateResourceException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to upload to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Attempting to upload to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         // Validate arguments
         throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
@@ -161,7 +161,7 @@ public class ModuleStorageCoordinator {
         if (!newRF2Package) {
             boolean deleteResource = resourceManagerStorage.doDeleteResource(metadataResourcePath);
             if (!deleteResource) {
-                LOGGER.trace("Cannot delete previously uploaded metadata; manual clean up required.");
+                LOGGER.debug("Cannot delete previously uploaded metadata; manual clean up required.");
             }
 
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
@@ -169,9 +169,9 @@ public class ModuleStorageCoordinator {
     }
     
     /**
-     * Overload for Generate ModuleMetadata for given RF2 package, allowing MetaData object to be used passed as it contains 
-     * All the values passed in the original method.
-     * @see generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package)
+     * Overload for Generate ModuleMetadata for given RF2 package, allowing a MetaData object to be used as it contains
+     * all the values passed in the original method.
+     * See {@link #generateMetadata(String, String, String, File)} for more details.
      */
     public ModuleMetadata generateMetadata(ModuleMetadata mm) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
     	return generateMetadata(mm.getCodeSystemShortName(),
@@ -194,7 +194,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to generate MD5 for the given RF2 package.
      */
     public ModuleMetadata generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to generate metadata for location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Attempting to generate metadata for location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         // Validate arguments
         throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
@@ -266,7 +266,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to copy a resource from original location to the archive location.
      */
     public void archive(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to archive location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Attempting to archive location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         if (!allowArchive) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
@@ -490,7 +490,7 @@ public class ModuleStorageCoordinator {
                 // Check resource path has expected format, i.e. rogue files are ignored
                 boolean isExpectedFormat = isExpectedFormat(metadataResourcePath);
                 if (!isExpectedFormat) {
-                    LOGGER.trace("Ignoring resource path {}", metadataResourcePath);
+                    LOGGER.debug("Ignoring resource path {}", metadataResourcePath);
                     continue;
                 }
 
@@ -500,7 +500,7 @@ public class ModuleStorageCoordinator {
                 String effectiveTime = parseEffectiveTime(metadataResourcePath);
 
                 if (codeSystem == null || moduleId == null || effectiveTime == null) {
-                    LOGGER.trace("Cannot parse codeSystem, moduleId and effectiveTime from resource path: {}", metadataResourcePath);
+                    LOGGER.debug("Cannot parse codeSystem, moduleId and effectiveTime from resource path: {}", metadataResourcePath);
                     continue;
                 }
 
@@ -579,11 +579,15 @@ public class ModuleStorageCoordinator {
         }
     }
 
-    private void throwIfInvalid(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException {
+    private void throwIfInvalid(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException {
         throwIfInvalid(codeSystem, moduleId, effectiveTime);
 
         if (rf2Package == null) {
-            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("EffectiveTime invalid (null)");
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("No RF2 package specified");
+        }
+
+        if (!rf2Package.exists() || !rf2Package.isFile() || !rf2Package.canRead()) {
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Unable to read RF2 package: " + rf2Package.getName());
         }
     }
 
@@ -707,7 +711,7 @@ public class ModuleStorageCoordinator {
     }
 
     private ModuleMetadata doGetMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to download from location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Attempting to download from location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         throwIfInvalid(codeSystem, moduleId, effectiveTime);
 
@@ -757,10 +761,10 @@ public class ModuleStorageCoordinator {
                 if (success) {
                     success = resourceManagerCache.doWriteResource(rf2ResourcePath, asFileInputStream(remoteRF2Package));
                     if (!success) {
-                        LOGGER.trace("Failed to write {} to cache (location: {}).", remoteRF2Package.getPath(), rf2ResourcePath);
+                        LOGGER.debug("Failed to write {} to cache (location: {}).", remoteRF2Package.getPath(), rf2ResourcePath);
                     }
                 } else {
-                    LOGGER.trace("Failed to delete {} from cache (location:  {}).", remoteRF2Package.getPath(), rf2ResourcePath);
+                    LOGGER.debug("Failed to delete {} from cache (location:  {}).", remoteRF2Package.getPath(), rf2ResourcePath);
                 }
             }
         } else {
@@ -770,7 +774,7 @@ public class ModuleStorageCoordinator {
             // Add remote copy to cache
             boolean success = resourceManagerCache.doWriteResource(rf2ResourcePath, asFileInputStream(remoteRF2Package));
             if (!success) {
-                LOGGER.trace("Failed to write {} to cache (location: {}).", remoteRF2Package.getPath(), rf2ResourcePath);
+                LOGGER.debug("Failed to write {} to cache (location: {}).", remoteRF2Package.getPath(), rf2ResourcePath);
             }
         }
     }
@@ -785,7 +789,7 @@ public class ModuleStorageCoordinator {
     }
 
     private void doUpdateModuleMetadata(String codeSystem, String moduleId, String effectiveTime, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to update metadata at location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Attempting to update metadata at location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         // Write new to local temporary file
         File tmpMetadataFile = FileUtils.doCreateTempFile("metadata.json");
