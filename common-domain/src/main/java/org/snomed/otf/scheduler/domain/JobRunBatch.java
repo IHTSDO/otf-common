@@ -1,5 +1,6 @@
 package org.snomed.otf.scheduler.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -13,6 +14,7 @@ public class JobRunBatch {
     Long id;
 
     @OneToMany(mappedBy = "runBatch")
+    @JsonIgnore
     Set<JobRun> jobRuns = new HashSet<>();
     private Date batchRequestTime;
     private Boolean international;

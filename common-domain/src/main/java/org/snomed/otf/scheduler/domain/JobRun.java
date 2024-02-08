@@ -3,6 +3,7 @@ package org.snomed.otf.scheduler.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
@@ -54,6 +55,7 @@ public class JobRun {
 	Long executionTime;
 
 	@ManyToOne
+	@JsonIgnore
 	JobRunBatch runBatch;
 	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
