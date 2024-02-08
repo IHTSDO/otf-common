@@ -678,7 +678,7 @@ public class ModuleStorageCoordinator {
         Set<String> metadataResourcePaths = new HashSet<>();
         for (RF2Row rf2Row : rf2Rows) {
             if (!rf2Row.isFound()) {
-                String message = String.format("Cannot generate metadata for %s as dependency cannot be found at location %s", rf2Package.getName(), rf2Row.getMetadataResourcePath());
+                String message = String.format("Cannot generate metadata for %s as dependency '%s' cannot be found at location %s.  Ensure dependent packages are uploaded first.", rf2Package.getName(), rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID), rf2Row.getMetadataResourcePath());
                 throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
             } else {
                 metadataResourcePaths.add(rf2Row.getMetadataResourcePath());
