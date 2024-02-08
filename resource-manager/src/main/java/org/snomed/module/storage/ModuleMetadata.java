@@ -36,6 +36,11 @@ public class ModuleMetadata {
 	public void setCodeSystemShortName(String codeSystemShortName) {
 		this.codeSystemShortName = codeSystemShortName;
 	}
+	
+	public ModuleMetadata withCodeSystemShortName(String codeSystemShortName) {
+		this.codeSystemShortName = codeSystemShortName;
+		return this;
+	}
 
 	public String getIdentifyingModuleId() {
 		return identifyingModuleId;
@@ -43,6 +48,11 @@ public class ModuleMetadata {
 
 	public void setIdentifyingModuleId(String identifyingModuleId) {
 		this.identifyingModuleId = identifyingModuleId;
+	}
+	
+	public ModuleMetadata withIdentifyingModuleId(String identifyingModuleId) {
+		this.identifyingModuleId = identifyingModuleId;
+		return this;
 	}
 
 	public List<String> getCompositionModuleIds() {
@@ -68,6 +78,11 @@ public class ModuleMetadata {
 
 	public void setEffectiveTime(Integer effectiveTime) {
 		this.effectiveTime = effectiveTime;
+	}
+	
+	public ModuleMetadata withEffectiveTime(Integer effectiveTime) {
+		this.effectiveTime = effectiveTime;
+		return this;
 	}
 
 	public Date getFileTimeStamp() {
