@@ -133,6 +133,11 @@ public class ModuleMetadata {
 		this.file = file;
 	}
 
+	public ModuleMetadata withFile(File file) {
+		this.file = file;
+		return this;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
