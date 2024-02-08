@@ -167,6 +167,18 @@ public class ModuleStorageCoordinator {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
         }
     }
+    
+    /**
+     * Overload for Generate ModuleMetadata for given RF2 package, allowing MetaData object to be used passed as it contains 
+     * All the values passed in the original method.
+     * @see generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package)
+     */
+    public ModuleMetadata generateMetadata(ModuleMetadata mm) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    	return generateMetadata(mm.getCodeSystemShortName(),
+    							mm.getIdentifyingModuleId(),
+    							mm.getEffectiveTimeString(),
+    							mm.getFile());
+    }
 
     /**
      * Generate ModuleMetadata for given RF2 package. To handle specific unsuccessful scenarios, catch exceptions that extend ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all unsuccessful
@@ -182,7 +194,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to generate MD5 for the given RF2 package.
      */
     public ModuleMetadata generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        LOGGER.trace("Attempting to generate metadata for to location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.trace("Attempting to generate metadata for location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         // Validate arguments
         throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
