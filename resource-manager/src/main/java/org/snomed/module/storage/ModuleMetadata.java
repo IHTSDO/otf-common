@@ -3,11 +3,11 @@ package org.snomed.module.storage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.File;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ModuleMetadata {
+
+	public static final String INT = "INT";
 
 	private String filename;
 	private String codeSystemShortName;
@@ -149,6 +149,39 @@ public class ModuleMetadata {
 	@Override
 	public int hashCode() {
 		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, isPublished, isEdition, dependencies);
+	}
+
+	@Override
+	public String toString() {
+		return "ModuleMetadata: " + codeSystemShortName + "_" + identifyingModuleId + "/" + effectiveTime;
+	}
+
+	public static void sortByCS(List<ModuleMetadata> metadataList, boolean etDescending) {
+		//We need to sort the metadata by code system, then effective time, but INT needs to be first
+		//so that it's found first when we're looking for dependencies
+		Collections.sort(metadataList, new Comparator<ModuleMetadata>() {
+			public int compare(ModuleMetadata mm1, ModuleMetadata mm2) {
+				if (mm1.isInt() && !mm2.isInt()) {
+					return -1;
+				} else if (!mm1.isInt() && mm2.isInt()) {
+					return 1;
+				} else {
+					if (mm1.getCodeSystemShortName().equals(mm2.getCodeSystemShortName())) {
+						if (etDescending) {
+							return mm1.getEffectiveTime().compareTo(mm2.getEffectiveTime());
+						} else {
+							return mm2.getEffectiveTime().compareTo(mm1.getEffectiveTime());
+						}
+					} else {
+						return mm1.getCodeSystemShortName().compareTo(mm2.getCodeSystemShortName());
+					}
+				}
+			}
+		});
+	}
+
+	public boolean isInt() {
+		return this.getCodeSystemShortName().equals(INT);
 	}
 }
 
