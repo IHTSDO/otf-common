@@ -2,7 +2,7 @@ package org.ihtsdo.otf.exception;
 
 import java.io.Serial;
 
-public class TermServerScriptException extends Exception {
+public class TermServerScriptException extends ScriptException {
 
 	@Serial
 	private static final long serialVersionUID = 1L;
