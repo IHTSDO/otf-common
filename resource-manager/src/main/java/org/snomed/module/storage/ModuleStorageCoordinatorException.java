@@ -11,6 +11,10 @@ public class ModuleStorageCoordinatorException extends Exception {
         public ResourceNotFoundException(String message) {
             super(message);
         }
+
+        public ResourceNotFoundException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     public static class DuplicateResourceException extends ModuleStorageCoordinatorException {
@@ -23,9 +27,17 @@ public class ModuleStorageCoordinatorException extends Exception {
         public OperationFailedException(String message) {
             super(message);
         }
+
+        public OperationFailedException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     public ModuleStorageCoordinatorException(String message) {
         super(message);
+    }
+
+    public ModuleStorageCoordinatorException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

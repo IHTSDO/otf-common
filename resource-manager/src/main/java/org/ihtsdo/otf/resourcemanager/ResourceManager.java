@@ -2,6 +2,7 @@ package org.ihtsdo.otf.resourcemanager;
 
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
 import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.core.io.FileSystemResourceLoader;
@@ -122,24 +123,19 @@ public class ResourceManager {
 		final String fullPath = getFullPath(resourcePath);
 		try {
 			return resourceLoader.getResource(fullPath).getInputStream();
-		} catch (S3Exception e) {
+		} catch (FileNotFoundException e) {
+			//We'll just allow a file not found exception to bubble up.  Anything else we'll annotate further.
+			throw e;
+		} catch (S3Exception | IOException e) {
 			throw new IOException("Failed to load resource '" + fullPath + "'.", e);
 		}
 	}
 
-	public File doReadResourceFile(String resourcePath) {
-		try {
+	public File doReadResourceFile(String resourcePath) throws IOException {
 			InputStream inputStream = this.readResourceStream(resourcePath);
-			if (inputStream == null) {
-				return null;
-			}
-
 			File tmpFile = FileUtils.doCreateTempFile(UUID.randomUUID() + ".zip");
 			FileUtils.copyInputStreamToFile(inputStream, tmpFile);
 			return tmpFile;
-		} catch (IOException e) {
-			return null;
-		}
 	}
 
 	public Set<String> listCachedFilenames(String prefix) throws IOException {
@@ -253,13 +249,9 @@ public class ResourceManager {
 		}
 	}
 
-	public boolean doesObjectExist(String resourcePath) throws IOException {
-		return readResourceStream(resourcePath) != null;
-	}
-
-	public boolean doDoesObjectExist(String resourcePath) {
+	public boolean doesObjectExist(String resourcePath) {
 		try {
-			return this.doesObjectExist(resourcePath);
+			return readResourceStream(resourcePath) != null;
 		} catch (IOException e) {
 			return false;
 		}
@@ -307,12 +299,11 @@ public class ResourceManager {
 		}
 	}
 
-	public boolean doWriteResource(String resourcePath, InputStream resourceInputStream) {
+	public void doWriteResource(String resourcePath, InputStream resourceInputStream) throws IOException {
 		try {
 			this.writeResource(resourcePath, resourceInputStream);
-			return true;
 		} catch (IOException e) {
-			return false;
+			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
 		}
 	}
 

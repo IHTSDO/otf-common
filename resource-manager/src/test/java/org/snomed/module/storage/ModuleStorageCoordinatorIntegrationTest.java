@@ -1,5 +1,6 @@
 package org.snomed.module.storage;
 
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.junit.jupiter.api.Test;
 import org.snomed.otf.script.utils.FileUtils;
@@ -47,7 +48,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldDoExpected_WhenGivenEdition() throws ModuleStorageCoordinatorException {
+    public void upload_ShouldDoExpected_WhenGivenEdition() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // when
         moduleStorageCoordinatorDev.upload("INT", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
         boolean metadata = doDoesObjectExist("dev/INT_12345/20240101/metadata.json");
@@ -59,7 +60,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldThrowExpected_WhenMetadataFails() {
+    public void upload_ShouldThrowExpected_WhenMetadataFails() throws IOException {
         // given
         File unknown = FileUtils.doCreateTempFile("unknown.zip");
 
@@ -70,7 +71,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldThrowExpected_WhenMetadataAlreadyExists() {
+    public void upload_ShouldThrowExpected_WhenMetadataAlreadyExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("dev/INT_12345/20240101", "metadata.json");
 
@@ -81,7 +82,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldThrowExpected_WhenRF2PackageAlreadyExists() {
+    public void upload_ShouldThrowExpected_WhenRF2PackageAlreadyExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("dev/INT_12345/20240101", "test-rf2-edition.zip");
 
@@ -132,7 +133,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldNotThrow_WhenWritingToDifferentDirectories() throws ModuleStorageCoordinatorException {
+    public void upload_ShouldNotThrow_WhenWritingToDifferentDirectories() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("prod/INT_12345/20240101", "test-rf2-edition.zip");
 
@@ -141,7 +142,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldThrowExpected_WhenWritingToSameDirectories() {
+    public void upload_ShouldThrowExpected_WhenWritingToSameDirectories() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("dev/INT_12345/20240101", "test-rf2-edition.zip");
 
@@ -152,7 +153,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldDoExpected_WhenUsingProfileDev() throws ModuleStorageCoordinatorException {
+    public void upload_ShouldDoExpected_WhenUsingProfileDev() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         ModuleStorageCoordinator msc = ModuleStorageCoordinator.initDev(resourceManager);
 
@@ -169,7 +170,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldDoExpected_WhenUsingProfileUat() throws ModuleStorageCoordinatorException {
+    public void upload_ShouldDoExpected_WhenUsingProfileUat() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         ModuleStorageCoordinator msc = ModuleStorageCoordinator.initUat(resourceManager);
 
@@ -186,7 +187,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void upload_ShouldDoExpected_WhenUsingProfileProd() throws ModuleStorageCoordinatorException {
+    public void upload_ShouldDoExpected_WhenUsingProfileProd() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         ModuleStorageCoordinator msc = ModuleStorageCoordinator.initProd(resourceManager);
 
@@ -235,7 +236,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedFilename() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedFilename() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -247,7 +248,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedCodeSystemShortName() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedCodeSystemShortName() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -259,7 +260,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedIdentifyingModuleId() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedIdentifyingModuleId() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -271,7 +272,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedCompositionModuleIds() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedCompositionModuleIds() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         List<String> expectedCompositionModuleIds = List.of("900000000000012004", "900000000000207008");
         File localFile = getLocalFile("test-rf2-edition.zip");
@@ -284,7 +285,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedEffectiveTime() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedEffectiveTime() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -296,7 +297,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedFileTimestamp() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedFileTimestamp() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -309,7 +310,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedMD5() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedMD5() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -322,7 +323,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedPublished() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedPublished() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -334,7 +335,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedEdition() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedEdition() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -346,7 +347,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedDependencies_WhenGivenEdition() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedDependencies_WhenGivenEdition() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         File localFile = getLocalFile("test-rf2-edition.zip");
 
@@ -358,7 +359,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldThrowExpected_WhenGivenExtensionWithMissingDependency() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldThrowExpected_WhenGivenExtensionWithMissingDependency() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -369,7 +370,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void generateMetadata_ShouldReturnExpectedDependencies_WhenGivenExtensionWithCommon() throws ModuleStorageCoordinatorException {
+    public void generateMetadata_ShouldReturnExpectedDependencies_WhenGivenExtensionWithCommon() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -437,7 +438,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldThrowExpected_WhenExistingMetadataMalformed() {
+    public void getMetadata_ShouldThrowExpected_WhenExistingMetadataMalformed() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("prod/INT_900000000000012004/20240101", "metadata.json"); // Malformed as blank file
         String codeSystem = "INT";
@@ -451,7 +452,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldThrowExpected_WhenOnlyFoundMetadata() {
+    public void getMetadata_ShouldThrowExpected_WhenOnlyFoundMetadata() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenMetadata("prod/INT_900000000000012004/20240101", "test.zip");
         String codeSystem = "INT";
@@ -465,7 +466,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldThrowExpected_WhenUnrelatedPackageExists() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldThrowExpected_WhenUnrelatedPackageExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "YY";
@@ -479,7 +480,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldReturnExpected_WhenPackageExists() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldReturnExpected_WhenPackageExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -494,7 +495,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldReturnExpected_WhenIncludingFile() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldReturnExpected_WhenIncludingFile() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -509,7 +510,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldReturnExpected_WhenNotIncludingFile() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldReturnExpected_WhenNotIncludingFile() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -524,7 +525,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldReturnExpected_WhenDevOverwrittenProd() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldReturnExpected_WhenDevOverwrittenProd() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2.zip");
@@ -542,7 +543,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getMetadata_ShouldUseCache_WhenEnabled() throws ModuleStorageCoordinatorException {
+    public void getMetadata_ShouldUseCache_WhenEnabled() throws ScriptException, IOException, ModuleStorageCoordinatorException, IOException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2.zip");
@@ -623,7 +624,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void archive_ShouldThrowExpected_WhenExistingMetadataIsMalformed() {
+    public void archive_ShouldThrowExpected_WhenExistingMetadataIsMalformed() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenArchive("dev/INT_900000000000012004/20240101", "metadata.json"); // Malformed as blank file
         String codeSystem = "INT";
@@ -637,7 +638,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void archive_ShouldThrowExpected_WhenPackageDoesntExist() {
+    public void archive_ShouldThrowExpected_WhenPackageDoesntExist() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2-edition.zip"); // Package not uploaded
         String codeSystem = "INT";
@@ -651,7 +652,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void archive_ShouldThrowNothing_WhenFilesExist() throws ModuleStorageCoordinatorException {
+    public void archive_ShouldThrowNothing_WhenFilesExist() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         moduleStorageCoordinatorDev.upload("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -663,7 +664,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void archive_ShouldDeleteOriginal_WhenArchivingSuccessful() throws ModuleStorageCoordinatorException {
+    public void archive_ShouldDeleteOriginal_WhenArchivingSuccessful() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         moduleStorageCoordinatorDev.upload("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         moduleStorageCoordinatorDev.archive("INT", "900000000000012004", "20240101");
@@ -717,7 +718,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getRelease_ShouldThrowExpected_WhenQueryingNonExistentPackage() throws ModuleStorageCoordinatorException {
+    public void getRelease_ShouldThrowExpected_WhenQueryingNonExistentPackage() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -728,7 +729,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getRelease_ShouldReturnExpected_WhenQueryingEdition() throws ModuleStorageCoordinatorException {
+    public void getRelease_ShouldReturnExpected_WhenQueryingEdition() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -744,7 +745,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getRelease_ShouldReturnExpected_WhenQueryingCommon() throws ModuleStorageCoordinatorException {
+    public void getRelease_ShouldReturnExpected_WhenQueryingCommon() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -762,7 +763,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getRelease_ShouldReturnExpected_WhenQueryingExtension() throws ModuleStorageCoordinatorException {
+    public void getRelease_ShouldReturnExpected_WhenQueryingExtension() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -834,7 +835,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setPublished_ShouldDoExpected_WhenMetadataExistent() throws ModuleStorageCoordinatorException {
+    public void setPublished_ShouldDoExpected_WhenMetadataExistent() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenDevReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -846,7 +847,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setPublished_ShouldUpdateProperty_WhenSuccessful() throws ModuleStorageCoordinatorException {
+    public void setPublished_ShouldUpdateProperty_WhenSuccessful() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         String codeSystem = "INT";
         String moduleId = "900000000000012004";
         String effectiveTime = "20240101";
@@ -868,7 +869,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setPublished_ShouldNotUpdateProperty_WhenNotSuccessful() throws ModuleStorageCoordinatorException {
+    public void setPublished_ShouldNotUpdateProperty_WhenNotSuccessful() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         String codeSystem = "INT";
         String moduleId = "900000000000012004";
         String effectiveTime = "20240101";
@@ -892,7 +893,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setPublished_ShouldThrowExpected_WhenDevTryingToUpdateProd() throws ModuleStorageCoordinatorException {
+    public void setPublished_ShouldThrowExpected_WhenDevTryingToUpdateProd() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -958,7 +959,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setEdition_ShouldThrowNothing_WhenMetadataExistent() throws ModuleStorageCoordinatorException {
+    public void setEdition_ShouldThrowNothing_WhenMetadataExistent() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenDevReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -970,7 +971,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setEdition_ShouldUpdateProperty_WhenSuccessful() throws ModuleStorageCoordinatorException {
+    public void setEdition_ShouldUpdateProperty_WhenSuccessful() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         String codeSystem = "INT";
         String moduleId = "900000000000012004";
         String effectiveTime = "20240101";
@@ -992,7 +993,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setEdition_ShouldNotUpdateProperty_WhenNotSuccessful() throws ModuleStorageCoordinatorException {
+    public void setEdition_ShouldNotUpdateProperty_WhenNotSuccessful() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         String codeSystem = "INT";
         String moduleId = "900000000000012004";
         String effectiveTime = "20240101";
@@ -1016,7 +1017,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void setEdition_ShouldThrowExpected_WhenDevTryingToUpdateProd() throws ModuleStorageCoordinatorException {
+    public void setEdition_ShouldThrowExpected_WhenDevTryingToUpdateProd() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         String codeSystem = "INT";
@@ -1039,7 +1040,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenEditionPackage() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenEditionPackage() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1053,7 +1054,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenEditionPackageWithMultipleVersions() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenEditionPackageWithMultipleVersions() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1071,9 +1072,9 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenDevOverwritesProd() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenDevOverwritesProd() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
-        givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2.zip", 20240101);
+        givenMetadata("dev/INT_900000000000012004/20240101", "test-rf2.zip");
         givenArchive("dev/INT_900000000000012004/20240101", "test-rf2.zip");
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1088,7 +1089,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenMultipleCodeSystems() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenMultipleCodeSystems() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -1108,7 +1109,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenRogueJsonFile() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenRogueJsonFile() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenArchive("dev", "cache.json"); // Fictional later requirement adds new file in hierarchy
@@ -1123,16 +1124,16 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenRogueTestPackage() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenRogueTestPackage() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
-        givenMetadata("dev/INT_900000000000012004/20240201", "test-rf2.zip", 20240201);
+        givenMetadata("dev/INT_900000000000012004/20240201", "test-rf2.zip");
         givenArchive("dev/INT_900000000000012004/20240201", "test-rf2.zip");
 
         // Path ignored
-        givenMetadata("dev/wip/INT_900000000000012004/20240201", "test-rf2.zip", 20240201);
+        givenMetadata("dev/wip/INT_900000000000012004/20240201", "test-rf2.zip");
         givenArchive("dev/wip/INT_900000000000012004/20240201", "test-rf2.zip");
 
-        givenMetadata("prod/INT_900000000000012004/20240101", "test-rf2.zip", 20240101);
+        givenMetadata("prod/INT_900000000000012004/20240101", "test-rf2.zip");
         givenArchive("prod/INT_900000000000012004/20240101", "test-rf2.zip");
 
         // when
@@ -1161,7 +1162,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldThrowExpected_WhenNoMatch() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldThrowExpected_WhenNoMatch() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1172,7 +1173,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMatch() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMatch() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1185,7 +1186,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMultipleMatch() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemHasMultipleMatch() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1204,7 +1205,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemMatch() throws ModuleStorageCoordinatorException {
+    public void getAllReleases_ShouldReturnExpected_WhenCodeSystemMatch() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1227,7 +1228,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExists() throws ModuleStorageCoordinatorException {
+    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1240,7 +1241,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExistsWithMultipleVersions() throws ModuleStorageCoordinatorException {
+    public void getCodeSystems_ShouldReturnExpected_WhenCodeSystemExistsWithMultipleVersions() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1257,7 +1258,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemWithMultipleVersions() throws ModuleStorageCoordinatorException {
+    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemWithMultipleVersions() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1284,7 +1285,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpectedOrdered_WhenMultipleCodeSystems() throws ModuleStorageCoordinatorException {
+    public void getCodeSystems_ShouldReturnExpectedOrdered_WhenMultipleCodeSystems() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("YY", "3191250003", "20240103", getLocalFile("test-rf2-common.zip"));
@@ -1299,7 +1300,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemsAcrossEnvironments() throws ModuleStorageCoordinatorException {
+    public void getCodeSystems_ShouldReturnExpected_WhenMultipleCodeSystemsAcrossEnvironments() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("A", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenDevReleasePackage("B", "678910", "20240101", getLocalFile("test-rf2-edition.zip"));
@@ -1330,7 +1331,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getReleaseDates_ShouldThrowExpected_WhenCodeSystemNotFoundWhenDataExists() throws ModuleStorageCoordinatorException {
+    public void getReleaseDates_ShouldThrowExpected_WhenCodeSystemNotFoundWhenDataExists() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("A", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1341,7 +1342,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemFound() throws ModuleStorageCoordinatorException {
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemFound() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
 
@@ -1354,7 +1355,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersions() throws ModuleStorageCoordinatorException {
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersions() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1375,7 +1376,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersionsAcrossEnvironments() throws ModuleStorageCoordinatorException {
+    public void getReleaseDates_ShouldReturnExpected_WhenCodeSystemHasMultipleVersionsAcrossEnvironments() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenDevReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
@@ -1390,7 +1391,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getReleaseDates_ShouldReturnExpected_WhenDuplicateCodeSystem() throws ModuleStorageCoordinatorException {
+    public void getReleaseDates_ShouldReturnExpected_WhenDuplicateCodeSystem() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
         givenDevReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
@@ -1411,49 +1412,47 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         }
     }
 
-    private void givenProdReleasePackage(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException {
+    private void givenProdReleasePackage(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ScriptException, IOException, ModuleStorageCoordinatorException {
         moduleStorageCoordinatorProd.upload(codeSystem, moduleId, effectiveTime, rf2Package);
     }
 
-    private void givenDevReleasePackage(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException {
+    private void givenDevReleasePackage(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ScriptException, IOException, ModuleStorageCoordinatorException {
         moduleStorageCoordinatorDev.upload(codeSystem, moduleId, effectiveTime, rf2Package);
     }
 
-    private void givenArchive(String folderName, String fileName) {
+    private void givenArchive(String folderName, String fileName) throws ScriptException, IOException, ModuleStorageCoordinatorException, IOException {
         String resourcePath = folderName + "/" + fileName;
         File tempFile = FileUtils.doCreateTempFile(fileName);
         FileInputStream fileInputStream = asFileInputStream(tempFile);
 
         // Upload to S3
-        boolean success = doWriteResource(resourcePath, fileInputStream);
-        assertTrue(success);
+        doWriteResource(resourcePath, fileInputStream);
 
         // Download from S3
         InputStream inputStream = doReadResource(resourcePath);
         assertNotNull(inputStream);
     }
 
-    private void givenMetadata(String resourcePath, String rf2PackageName) {
-        ModuleMetadata moduleMetadata = new ModuleMetadata();
+    private void givenMetadata(String resourcePath, String rf2PackageName) throws ScriptException, IOException, ModuleStorageCoordinatorException {
+        ModuleMetadata moduleMetadata = getMetadataFromPath(resourcePath);
         moduleMetadata.setFilename(rf2PackageName);
 
         File file = FileUtils.doCreateTempFile("metadata.json");
-        boolean success = FileUtils.writeToFile(file, moduleMetadata);
-        if (success) {
-            doWriteResource(resourcePath + "/metadata.json", asFileInputStream(file));
-        }
+        FileUtils.writeToFile(file, moduleMetadata);
+        doWriteResource(resourcePath + "/metadata.json", asFileInputStream(file));
     }
 
-    private void givenMetadata(String resourcePath, String rf2PackageName, Integer effectiveTime) {
-        ModuleMetadata moduleMetadata = new ModuleMetadata();
-        moduleMetadata.setFilename(rf2PackageName);
-        moduleMetadata.setEffectiveTime(effectiveTime);
+    private ModuleMetadata getMetadataFromPath(String resourcePath) {
+        String[] parts = resourcePath.split("[/_]");
 
-        File file = FileUtils.doCreateTempFile("metadata.json");
-        boolean success = FileUtils.writeToFile(file, moduleMetadata);
-        if (success) {
-            doWriteResource(resourcePath + "/metadata.json", asFileInputStream(file));
+        ModuleMetadata mm = new ModuleMetadata()
+                .withCodeSystemShortName(parts[1])
+                .withIdentifyingModuleId(parts[2]);
+        //There is a test with a rogue path, so don't add the effective time if it has not parsed corrected
+        if (parts[3].length() == 8) {
+            mm.setEffectiveTime(Integer.parseInt(parts[3]));
         }
+        return mm;
     }
 
     private FileInputStream asFileInputStream(File file) {
@@ -1464,20 +1463,19 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         }
     }
 
-    private boolean doWriteResource(String resourcePath, InputStream resourceInputStream) {
+    private void doWriteResource(String resourcePath, InputStream resourceInputStream) throws ModuleStorageCoordinatorException {
         try {
             resourceManager.writeResource(resourcePath, resourceInputStream);
-            return true;
         } catch (IOException e) {
-            return false;
+            throw new ModuleStorageCoordinatorException("Cannot write resource: " + resourcePath, e);
         }
     }
 
-    private InputStream doReadResource(String resourcePath) {
+    private InputStream doReadResource(String resourcePath) throws ModuleStorageCoordinatorException {
         try {
             return resourceManager.readResourceStream(resourcePath);
         } catch (IOException e) {
-            return null;
+            throw new ModuleStorageCoordinatorException("Cannot read resource: " + resourcePath, e);
         }
     }
 
@@ -1497,14 +1495,10 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     private boolean doDoesObjectExist(String resourcePath) {
-        try {
-            return resourceManager.doesObjectExist(resourcePath);
-        } catch (IOException e) {
-            return false;
-        }
+        return resourceManager.doesObjectExist(resourcePath);
     }
 
     private void givenDoesObjectExist(ResourceManager resourceManager, Boolean bool1, Boolean bool2, Boolean bool3, Boolean bool4) throws IOException {
-        when(resourceManager.doDoesObjectExist(anyString())).thenReturn(bool1).thenReturn(bool2).thenReturn(bool3).thenReturn(bool4);
+        when(resourceManager.doesObjectExist(anyString())).thenReturn(bool1).thenReturn(bool2).thenReturn(bool3).thenReturn(bool4);
     }
 }

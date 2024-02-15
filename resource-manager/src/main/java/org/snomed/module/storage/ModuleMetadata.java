@@ -7,6 +7,7 @@ import java.util.*;
 
 public class ModuleMetadata {
 
+	@JsonIgnore
 	public static final String INT = "INT";
 
 	private String filename;
