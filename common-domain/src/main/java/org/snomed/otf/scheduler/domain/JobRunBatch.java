@@ -1,11 +1,8 @@
 package org.snomed.otf.scheduler.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 public class JobRunBatch {
@@ -13,9 +10,6 @@ public class JobRunBatch {
     @GeneratedValue(strategy = GenerationType.AUTO)
     Long id;
 
-    @OneToMany(mappedBy = "runBatch")
-    @JsonIgnore
-    Set<JobRun> jobRuns = new HashSet<>();
     private Date batchRequestTime;
     private Boolean international;
     private Boolean managedService;
@@ -39,14 +33,6 @@ public class JobRunBatch {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Set<JobRun> getJobRuns() {
-        return jobRuns;
-    }
-
-    public void setJobRuns(Set<JobRun> jobRuns) {
-        this.jobRuns = jobRuns;
     }
 
     public Date getBatchRequestTime() {

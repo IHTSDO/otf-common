@@ -55,7 +55,6 @@ public class JobRun {
 	Long executionTime;
 
 	@ManyToOne
-	@JsonIgnore
 	JobRunBatch runBatch;
 	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
