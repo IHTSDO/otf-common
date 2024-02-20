@@ -17,9 +17,11 @@ public class ModuleMetadata {
 	private Integer effectiveTime;
 	private Date fileTimeStamp;
 	private String fileMD5;
-	private Boolean isPublished;
-	private Boolean isEdition;
+	private Boolean published;
+	private Boolean edition;
 	private List<ModuleMetadata> dependencies;
+
+	@JsonIgnore
 	private transient File file;
 
 	public String getFilename() {
@@ -103,19 +105,19 @@ public class ModuleMetadata {
 	}
 
 	public Boolean getPublished() {
-		return isPublished;
+		return published;
 	}
 
 	public void setPublished(Boolean published) {
-		isPublished = published;
+		this.published = published;
 	}
 
 	public Boolean getEdition() {
-		return isEdition;
+		return edition;
 	}
 
 	public void setEdition(Boolean edition) {
-		isEdition = edition;
+		this.edition = edition;
 	}
 
 	public List<ModuleMetadata> getDependencies() {
@@ -144,12 +146,12 @@ public class ModuleMetadata {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		ModuleMetadata that = (ModuleMetadata) o;
-		return Objects.equals(filename, that.filename) && Objects.equals(codeSystemShortName, that.codeSystemShortName) && Objects.equals(identifyingModuleId, that.identifyingModuleId) && Objects.equals(compositionModuleIds, that.compositionModuleIds) && Objects.equals(effectiveTime, that.effectiveTime) && Objects.equals(fileTimeStamp, that.fileTimeStamp) && Objects.equals(fileMD5, that.fileMD5) && Objects.equals(isPublished, that.isPublished) && Objects.equals(isEdition, that.isEdition) && Objects.equals(dependencies, that.dependencies);
+		return Objects.equals(filename, that.filename) && Objects.equals(codeSystemShortName, that.codeSystemShortName) && Objects.equals(identifyingModuleId, that.identifyingModuleId) && Objects.equals(compositionModuleIds, that.compositionModuleIds) && Objects.equals(effectiveTime, that.effectiveTime) && Objects.equals(fileTimeStamp, that.fileTimeStamp) && Objects.equals(fileMD5, that.fileMD5) && Objects.equals(published, that.published) && Objects.equals(edition, that.edition) && Objects.equals(dependencies, that.dependencies);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, isPublished, isEdition, dependencies);
+		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, published, edition, dependencies);
 	}
 
 	@Override
@@ -181,6 +183,7 @@ public class ModuleMetadata {
 		});
 	}
 
+	@JsonIgnore
 	public boolean isInt() {
 		return this.getCodeSystemShortName().equals(INT);
 	}
