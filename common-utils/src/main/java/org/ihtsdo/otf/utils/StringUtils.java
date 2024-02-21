@@ -349,5 +349,15 @@ public class StringUtils implements RF2Constants {
 		}
 		return containsAlpha && containsNumeric;
 	}
-	
+
+    public static String truncate(String str, int truncateAt) {
+		if (isEmpty(str)) {
+			return str;
+		}
+
+		if (str.length() > truncateAt) {
+			return str.substring(0, truncateAt) + "...[truncated]";
+		}
+		return str;
+    }
 }
