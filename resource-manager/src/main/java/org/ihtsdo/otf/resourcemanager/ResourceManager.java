@@ -132,10 +132,13 @@ public class ResourceManager {
 	}
 
 	public File doReadResourceFile(String resourcePath) throws IOException {
-			InputStream inputStream = this.readResourceStream(resourcePath);
-			File tmpFile = FileUtils.doCreateTempFile(UUID.randomUUID() + ".zip");
+		File tmpFile = FileUtils.doCreateTempFile(UUID.randomUUID() + ".zip");
+		try (InputStream inputStream = this.readResourceStream(resourcePath)) {
 			FileUtils.copyInputStreamToFile(inputStream, tmpFile);
 			return tmpFile;
+		} catch (IOException e) {
+			return tmpFile;
+		}
 	}
 
 	public Set<String> listCachedFilenames(String prefix) throws IOException {
@@ -250,8 +253,8 @@ public class ResourceManager {
 	}
 
 	public boolean doesObjectExist(String resourcePath) {
-		try {
-			return readResourceStream(resourcePath) != null;
+		try (InputStream inputStream = readResourceStream(resourcePath)) {
+			return inputStream != null;
 		} catch (IOException e) {
 			return false;
 		}
