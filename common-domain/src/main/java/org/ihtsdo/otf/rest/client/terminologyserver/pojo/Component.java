@@ -69,6 +69,10 @@ public abstract class Component implements RF2Constants {
 		}
 		return active;
 	}
+
+	public Boolean getActive() {
+		return active;
+	}
 	
 	public String getModuleId() {
 		return moduleId;
