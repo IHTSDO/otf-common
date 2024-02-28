@@ -7,9 +7,7 @@ import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -146,14 +144,23 @@ public class AuthoringServicesClient {
 			}
 		}
 	}
-
+	
 	public Project getProject(String projectStr) throws RestClientException {
+		return getProject(projectStr, false);
+	}
+
+	public Project getProject(String projectStr, boolean allowFirstTimeRelease) throws RestClientException {
 		try {
 			logger.debug("Recovering project " + projectStr + " from " + serverUrl);
 			String url = serverUrl + apiRoot + "projects/" + projectStr;
 			Project project = restTemplate.getForObject(url, Project.class);
-			if (project.getMetadata() == null || project.getMetadata().getPreviousPackage() == null) {
-				throw new IllegalStateException ("Metadata not populated on project " + project.getKey());
+			
+			if (project.getMetadata() == null) {
+				throw new IllegalStateException ("Metadata not populated (at all) on project: " + project.getKey());
+			}
+			
+			if (!allowFirstTimeRelease && project.getMetadata().getPreviousPackage() == null) {
+				throw new IllegalStateException ("Metadata item 'Previous Package' not specified on (not first time release) project: " + project.getKey());
 			}
 			return project;
 		} catch (Exception e) {
