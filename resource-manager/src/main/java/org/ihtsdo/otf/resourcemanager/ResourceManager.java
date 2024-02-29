@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -159,6 +160,10 @@ public class ResourceManager {
 		return listFilenames(prefix, false);
 	}
 
+	public Set<String> listFilenames() throws IOException {
+		return listFilenames(null, false);
+	}
+
 	private Set<String> listFilenames(String prefix, boolean forceLocal) throws IOException {
 		Set<String> fileNames = new HashSet<>();
 		if (resourceConfiguration.isUseCloud() && !forceLocal) {
@@ -167,7 +172,13 @@ public class ResourceManager {
 				//In case we're running on a PC we need to convert backslashes to forward
 				String configPath = cloud.getPath().replaceAll("\\\\", "/");
 				final String s3Path = configurePath(configPath);
-				ListObjectsResponse response = s3Client.listObjects(builder -> builder.bucket(cloud.getBucketName()).prefix(s3Path + prefix));
+				ListObjectsResponse response = s3Client.listObjects(builder -> {
+					if (prefix == null || prefix.isEmpty()) {
+						builder.bucket(cloud.getBucketName()).prefix(s3Path);
+					} else {
+						builder.bucket(cloud.getBucketName()).prefix(s3Path + prefix);
+					}
+				});
 				List<S3Object> s3Objects = response.contents();
 				for (S3Object object : s3Objects) {
 					fileNames.add(object.key().substring(s3Path.length()));
@@ -180,7 +191,13 @@ public class ResourceManager {
 			if (localPath.startsWith(ResourceLoader.CLASSPATH_URL_PREFIX)) {
 				ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 				PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(classLoader);
-				Resource[] resources = resolver.getResources(configurePath(localPath) + prefix + "*.*");
+				Resource[] resources;
+				if (prefix == null || prefix.isEmpty()) {
+					resources = resolver.getResources(configurePath(localPath) + "*.*");
+				} else {
+					resources = resolver.getResources(configurePath(localPath) + prefix + "*.*");
+				}
+
 				fileNames.addAll(Arrays.stream(resources)
 						.map(Resource::getFilename)
 						.filter(Objects::nonNull)
@@ -243,8 +260,8 @@ public class ResourceManager {
 	}
 
 	public boolean doesObjectExist(String resourcePath) {
-		try (InputStream inputStream = readResourceStream(resourcePath)) {
-			return inputStream != null;
+		try {
+			return listFilenames().contains(resourcePath);
 		} catch (IOException e) {
 			return false;
 		}
