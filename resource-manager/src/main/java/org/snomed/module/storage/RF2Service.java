@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -76,20 +77,18 @@ public class RF2Service {
                         }
                     }
 
-                    InputStream inputStream = zipFile.getInputStream(entry);
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        String[] columns = line.split("\t");
-                        boolean header = Objects.equals(columns[0], "id") || Objects.equals(columns[0], "alternateIdentifier");
-                        if (!header) {
-                            List<String> row = new ArrayList<>();
-                            for (Integer columnIndex : columnIndices) {
-                                row.add(columns[columnIndex]);
-                            }
+                    try (InputStream inputStream = zipFile.getInputStream(entry);
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(inputStream), StandardCharsets.UTF_8))) {
+                        List<List<String>> chunkRows = reader.lines()
+                                .parallel()
+                                .filter(line -> !line.startsWith("id") && !line.startsWith("alternateIdentifier"))
+                                .map(line -> Arrays.asList(line.split("\t")))
+                                .map(columns -> Arrays.stream(columnIndices)
+                                        .map(columns::get)
+                                        .collect(Collectors.toList()))
+                                .toList();
 
-                            rows.add(row);
-                        }
+                        rows.addAll(chunkRows);
                     }
                 }
             }
