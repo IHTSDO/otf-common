@@ -164,6 +164,12 @@ public class ResourceManager {
 		return listFilenames(null, false);
 	}
 
+	public Set<String> listFilenamesBySuffix(String suffix) throws IOException {
+		Set<String> filenames = listFilenames(null, false);
+		filenames.removeIf(f -> !f.endsWith(suffix));
+		return filenames;
+	}
+
 	private Set<String> listFilenames(String prefix, boolean forceLocal) throws IOException {
 		Set<String> fileNames = new HashSet<>();
 		if (resourceConfiguration.isUseCloud() && !forceLocal) {
