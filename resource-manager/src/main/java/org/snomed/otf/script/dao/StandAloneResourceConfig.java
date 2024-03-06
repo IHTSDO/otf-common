@@ -31,8 +31,12 @@ public class StandAloneResourceConfig extends ResourceConfiguration {
 	}
 
 	public void init(String prefix) throws TermServerScriptException {
+		init(prefix, true);
+	}
+
+	public void init(String prefix, boolean validate) throws TermServerScriptException {
 		LocalProperties properties = new LocalProperties(prefix);
-		if (!isConfigurationValid(properties)) {
+		if (validate && !isConfigurationValid(properties)) {
 			throw new TermServerScriptException("Check application.properties for correct S3 config: "
 					+ Arrays.toString(CONFIGURATION.values()));
 		}
