@@ -23,7 +23,7 @@ public class Task {
 	
 	IBatch batch;
 	List<Component> components = new ArrayList<>();
-	String assignedAuthor = null;
+	String author = null;
 	String reviewer = null;
 	String taskInfo;
 	
@@ -33,19 +33,13 @@ public class Task {
 	Map<String, String> assignee = new HashMap<>();
 
 	/* Call IBatch.addNewTask instead of creating a Task directly */
-	public Task(IBatch batch, String[] author_reviewer) {
+	public Task(IBatch batch, String author, String reviewer) {
 		this.batch = batch;
-		setAuthorReviewer(author_reviewer);
+		this.author = author;
+		this.reviewer = reviewer;
 		uniqueTaskId = ++TASK_SEQUENCE;
 	}
 	
-	void setAuthorReviewer(String[] author_reviewer) {
-		setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			setReviewer(author_reviewer[1]);
-		}
-	}
-
 	public String getSummary() {
 		if (batch != null) {
 			return batch.getTaskName(this);
@@ -135,11 +129,11 @@ public class Task {
 	}
 	
 	public String getAssignedAuthor() {
-		return assignedAuthor;
+		return author;
 	}
 
 	public void setAssignedAuthor(String assignedAuthor) {
-		this.assignedAuthor = assignedAuthor;
+		this.author = assignedAuthor;
 	}
 
 	public String getReviewer() {
@@ -187,5 +181,9 @@ public class Task {
 
 	public void setPreExistingTask(boolean preExistingTask) {
 		this.preExistingTask = preExistingTask;
+	}
+	
+	public static int getNextTaskSequence() {
+		return TASK_SEQUENCE + 1;
 	}
 }
