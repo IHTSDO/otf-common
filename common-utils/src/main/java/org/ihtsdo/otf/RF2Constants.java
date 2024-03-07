@@ -58,6 +58,7 @@ public interface RF2Constants {
 	static final String SCTID_LOINC_PROJECT_MODULE = "715515008";
 	static final String SCTID_LOINC_EXTENSION_MODULE = "11010000107";
 	static final String SCTID_LOINC_CODE_SYSTEM = "705114005";
+	public String SCTID_LOINC_SCHEMA = "30051010000102"; // |LOINC code identifier (core metadata concept)|;
 	static final String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|"
 	static final String SCTID_COMP_ANNOT_REFSET = "1292992004"; // |Component annotation with string value reference set (foundation metadata concept)|
 	static final String SCTID_MEMB_ANNOT_REFSET = "1292995002"; // |Member annotation with string value reference set (foundation metadata concept)|

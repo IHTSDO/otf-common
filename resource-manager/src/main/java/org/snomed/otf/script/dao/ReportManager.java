@@ -5,12 +5,16 @@ import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 import org.snomed.otf.script.dao.transformer.CSVToJSONDataTransformer;
 
 public class ReportManager implements RF2Constants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportManager.class);
 
 	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
 	boolean writeToFile = false;
@@ -30,6 +34,9 @@ public class ReportManager implements RF2Constants {
 	
 	private ReportManager() {};
 	
+	Set<Integer> disabledTabs = new HashSet<>();
+	Set<Integer> disableTabAdvised = new HashSet<>();
+	
 	public static ReportManager create(Script script, ReportConfiguration reportConfiguration) throws TermServerScriptException {
 		ReportManager rm = new ReportManager();
 		rm.script = script;
@@ -44,7 +51,7 @@ public class ReportManager implements RF2Constants {
 		Set<ReportConfiguration.ReportFormatType> reportFormatTypes = reportConfiguration.getReportFormatTypes();
 
 		if (script.isOffline() || reportOutputTypes.contains(ReportOutputType.LOCAL_FILE) ) {
-			Script.info("Running in offline mode. Outputting to file rather than google sheets");
+			LOGGER.info("Running in offline mode. Outputting to file rather than google sheets");
 			writeToSheet = false;
 			writeToS3 = false;
 			writeToFile = true;
@@ -67,6 +74,14 @@ public class ReportManager implements RF2Constants {
 	}
 	
 	public boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		if (disabledTabs.contains(reportIdx)) {
+			if (!disableTabAdvised.contains(reportIdx)) {
+				reportSheetManager.writeToReportFile(reportIdx, "Tab disabled programmatically.  See 'getReportManager().disableTab'", false);
+				disableTabAdvised.add(reportIdx);
+			}
+			return true;  //Skip this output
+		}
+		
 		boolean writeSuccess = false;
 		if (writeToFile) {
 			writeSuccess = reportFileManager.writeToReportFile(reportIdx, line, false);
@@ -209,6 +224,10 @@ public class ReportManager implements RF2Constants {
 		//If we're working against a published release, then the environment isn't relevant
 		String releaseBranch = script.detectReleaseBranch();
 		return releaseBranch == null ? script.getEnv() : releaseBranch;
+	}
+
+	public void disableTab(int tabIdx) {
+		disabledTabs.add(tabIdx);
 	}
 
 }

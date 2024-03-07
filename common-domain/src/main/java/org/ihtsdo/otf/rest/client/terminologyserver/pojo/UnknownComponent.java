@@ -36,4 +36,9 @@ public class UnknownComponent extends Component {
 		return null;
 	}
 
+	@Override
+	public boolean matchesMutableFields(Component other) {
+		throw new IllegalArgumentException("Can't compare mutable fields on Unknown Component");
+	}
+
 }
