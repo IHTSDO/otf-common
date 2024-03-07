@@ -194,7 +194,6 @@ public abstract class Component implements RF2Constants {
 		}
 	}
 
-
 	public void setDirty() {
 		this.isDirty = true;
 	}
@@ -277,5 +276,7 @@ public abstract class Component implements RF2Constants {
 		}
 		return componentAnnotationEntries;
 	}
+
+	public abstract boolean matchesMutableFields(Component other);
 
 }

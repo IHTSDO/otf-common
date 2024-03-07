@@ -160,7 +160,7 @@ public class AuthoringServicesClient {
 			}
 			
 			if (!allowFirstTimeRelease && project.getMetadata().getPreviousPackage() == null) {
-				throw new IllegalStateException ("Metadata item 'Previous Package' not specified on (not first time release) project: " + project.getKey());
+				throw new IllegalStateException ("Metadata item 'previousPackage' not specified on (not first time release) project: " + project.getKey());
 			}
 			return project;
 		} catch (Exception e) {
