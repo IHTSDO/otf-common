@@ -255,4 +255,6 @@ public abstract class Component implements RF2Constants {
 		return (isActive()?"1":"0") + "," + moduleId + ",";
 	}
 
+	public abstract boolean matchesMutableFields(Component other);
+
 }

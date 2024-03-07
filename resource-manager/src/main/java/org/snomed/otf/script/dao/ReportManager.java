@@ -30,6 +30,9 @@ public class ReportManager implements RF2Constants {
 	
 	private ReportManager() {};
 	
+	Set<Integer> disabledTabs = new HashSet<>();
+	Set<Integer> disableTabAdvised = new HashSet<>();
+	
 	public static ReportManager create(Script script, ReportConfiguration reportConfiguration) throws TermServerScriptException {
 		ReportManager rm = new ReportManager();
 		rm.script = script;
@@ -67,6 +70,14 @@ public class ReportManager implements RF2Constants {
 	}
 	
 	public boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		if (disabledTabs.contains(reportIdx)) {
+			if (!disableTabAdvised.contains(reportIdx)) {
+				reportSheetManager.writeToReportFile(reportIdx, "Tab disabled programmatically.  See 'getReportManager().disableTab'", false);
+				disableTabAdvised.add(reportIdx);
+			}
+			return true;  //Skip this output
+		}
+		
 		boolean writeSuccess = false;
 		if (writeToFile) {
 			writeSuccess = reportFileManager.writeToReportFile(reportIdx, line, false);
@@ -209,6 +220,10 @@ public class ReportManager implements RF2Constants {
 		//If we're working against a published release, then the environment isn't relevant
 		String releaseBranch = script.detectReleaseBranch();
 		return releaseBranch == null ? script.getEnv() : releaseBranch;
+	}
+
+	public void disableTab(int tabIdx) {
+		disabledTabs.add(tabIdx);
 	}
 
 }
