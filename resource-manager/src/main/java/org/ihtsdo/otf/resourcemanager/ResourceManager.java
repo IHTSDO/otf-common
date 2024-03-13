@@ -121,10 +121,20 @@ public class ResourceManager {
 				//In case we're running on a PC we need to convert backslashes to forward
 				String configPath = cloud.getPath().replaceAll("\\\\", "/");
 				final String s3Path = configurePath(configPath);
-				ListObjectsResponse response = s3Client.listObjects(builder -> builder.bucket(cloud.getBucketName()).prefix(s3Path + prefix));
-				List<S3Object> s3Objects = response.contents();
-				for (S3Object object : s3Objects) {
-					fileNames.add(object.key().substring(s3Path.length()));
+				final String prefixPath = prefix == null || prefix.isEmpty() ? s3Path : s3Path + prefix;
+				ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder().bucket(cloud.getBucketName()).prefix(prefixPath).maxKeys(10000).build();
+				boolean done = false;
+				while (!done) {
+					ListObjectsResponse listObjectsResponse = s3Client.listObjects(listObjectsRequest);
+					for (S3Object object : listObjectsResponse.contents()) {
+						fileNames.add(object.key().substring(s3Path.length()));
+					}
+					if (Boolean.TRUE.equals(listObjectsResponse.isTruncated())) {
+						String nextMarker = listObjectsResponse.contents().get(listObjectsResponse.contents().size() - 1).key();
+						listObjectsRequest = ListObjectsRequest.builder().bucket(cloud.getBucketName()).prefix(prefixPath).maxKeys(10000).marker(nextMarker).build();
+					} else {
+						done = true;
+					}
 				}
 			} catch (S3Exception e) {
 				throw new IOException("Failed to determine existence of '" + prefix + "'.", e);

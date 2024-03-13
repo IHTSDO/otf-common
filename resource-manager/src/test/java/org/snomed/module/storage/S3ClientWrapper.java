@@ -66,11 +66,20 @@ public class S3ClientWrapper {
     }
 
     public List<String> readObjectKeys(String bucketName) {
-        ListObjectsResponse listObjectsResponse = s3Client.listObjects(ListObjectsRequest.builder().bucket(bucketName).build());
-        List<S3Object> contents = listObjectsResponse.contents();
         List<String> keys = new ArrayList<>();
-        for (S3Object content : contents) {
-            keys.add(content.key());
+        ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder().bucket(bucketName).maxKeys(10000).build();
+        boolean done = false;
+        while (!done) {
+            ListObjectsResponse listObjectsResponse = s3Client.listObjects(listObjectsRequest);
+            for (S3Object content : listObjectsResponse.contents()) {
+                keys.add(content.key());
+            }
+            if (Boolean.TRUE.equals(listObjectsResponse.isTruncated())) {
+                String nextMarker = listObjectsResponse.contents().get(listObjectsResponse.contents().size() - 1).key();
+                listObjectsRequest = ListObjectsRequest.builder().bucket(bucketName).maxKeys(10000).marker(nextMarker).build();
+            } else {
+                done = true;
+            }
         }
 
         return keys;

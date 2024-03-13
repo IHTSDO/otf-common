@@ -86,9 +86,20 @@ public class FileHelper {
 	public List<String> listFiles(String directoryPath) {
 		List<String> files = new ArrayList<>();
 		try {
-			ListObjectsResponse objectListing = s3Client.listObjects(bucketName, directoryPath);
-			for (S3Object s3Object : objectListing.contents()) {
-				files.add(s3Object.key().substring(directoryPath.length()));
+			ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder().bucket(bucketName).prefix(directoryPath).maxKeys(10000).build();
+			boolean done = false;
+			while (!done) {
+				ListObjectsResponse listObjectsResponse = s3Client.listObjects(listObjectsRequest);
+				for (S3Object s3Object : listObjectsResponse.contents()) {
+					files.add(s3Object.key().substring(directoryPath.length()));
+				}
+
+				if (Boolean.TRUE.equals(listObjectsResponse.isTruncated())) {
+					String nextMarker = listObjectsResponse.contents().get(listObjectsResponse.contents().size() - 1).key();
+					listObjectsRequest = ListObjectsRequest.builder().bucket(bucketName).prefix(directoryPath).maxKeys(10000).marker(nextMarker).build();
+				} else {
+					done = true;
+				}
 			}
 		} catch (S3Exception e) {
 			//Trying to list files in a directory that doesn't exist isn't a problem, we'll just return an empty array
