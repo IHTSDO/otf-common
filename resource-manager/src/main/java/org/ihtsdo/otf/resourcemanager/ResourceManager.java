@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -159,6 +160,10 @@ public class ResourceManager {
 		return listFilenames(prefix, false);
 	}
 
+	public Set<String> listFilenames() throws IOException {
+		return listFilenames(null, false);
+	}
+
 	private Set<String> listFilenames(String prefix, boolean forceLocal) throws IOException {
 		Set<String> fileNames = new HashSet<>();
 		if (resourceConfiguration.isUseCloud() && !forceLocal) {
@@ -190,7 +195,13 @@ public class ResourceManager {
 			if (localPath.startsWith(ResourceLoader.CLASSPATH_URL_PREFIX)) {
 				ClassLoader classLoader = ClassUtils.getDefaultClassLoader();
 				PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(classLoader);
-				Resource[] resources = resolver.getResources(configurePath(localPath) + prefix + "*.*");
+				Resource[] resources;
+				if (prefix == null || prefix.isEmpty()) {
+					resources = resolver.getResources(configurePath(localPath) + "*.*");
+				} else {
+					resources = resolver.getResources(configurePath(localPath) + prefix + "*.*");
+				}
+
 				fileNames.addAll(Arrays.stream(resources)
 						.map(Resource::getFilename)
 						.filter(Objects::nonNull)
@@ -253,8 +264,8 @@ public class ResourceManager {
 	}
 
 	public boolean doesObjectExist(String resourcePath) {
-		try (InputStream inputStream = readResourceStream(resourcePath)) {
-			return inputStream != null;
+		try {
+			return listFilenames().contains(resourcePath);
 		} catch (IOException e) {
 			return false;
 		}
