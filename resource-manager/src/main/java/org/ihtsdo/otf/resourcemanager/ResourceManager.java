@@ -253,14 +253,7 @@ public class ResourceManager {
 	public boolean doesObjectExist(final File resource) throws IOException {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
-				//In case we're running on a PC we need to convert backslashes to forward
-				String configPath = resourceConfiguration.getCloud().getPath().replaceAll("\\\\", "/");;
-				if (configPath != null && !configPath.endsWith("/")) {
-					configPath += "/";
-				}
-				String resourcePath = resource.getPath().replaceAll("\\\\", "/");
-				resourcePath = (configPath != null ? configPath : "") + resourcePath;
-				return resourceLoader.getResource(getFullPath(resourcePath)).exists();
+				return resourceLoader.getResource(getFullPath(resource.getPath())).exists();
 			} else {
 				return Files.isReadable(resource.toPath());
 			}
@@ -533,9 +526,11 @@ public class ResourceManager {
 	 */
 	private String getCloudPath(final String relativePath) {
 		final Cloud cloud = resourceConfiguration.getCloud();
-		return String.format("s3://%s/%s",
+		String cloudPath = String.format("s3://%s/%s",
 				cloud.getBucketName(),
 				getPathAndRelative(cloud.getPath(), relativePath));
+		//In case we're running on a PC we need to convert backslashes to forward
+		return cloudPath.replaceAll("\\\\", "/");
 	}
 
 	/**
