@@ -24,6 +24,7 @@ public class JobCategory implements Serializable {
 	public static final String RELEASE_VALIDATION = "Release Validation";
 	public static final String MS_RELEASE_VALIDATION = "MS Release Validation";
 	public static final String RELEASE_STATS = "Release Statistics";
+	public static final String DEVOPS = "DevOps";
 	
 	public static final String REFSET_UPDATE = "Refset Update";
 	
