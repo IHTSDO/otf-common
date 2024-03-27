@@ -419,6 +419,37 @@ public class ModuleStorageCoordinator {
     }
 
     /**
+     * Download all ModuleMetadata stored. RF2 package is excluded. To handle specific unsuccessful
+     * scenarios, catch exceptions that extends ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all
+     * unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException. If page & size are greater than 0, the
+     * ModuleMetadata will be paged.
+     *
+     * @param page Page number of ModuleMetadata to return.
+     * @param size Page size of ModuleMetadata to return.
+     * @return Collection of all stored ModuleMetadata
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from metadata.
+     * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if any argument in resource path is invalid.
+     */
+    public Map<String, List<ModuleMetadata>> getAllReleases(int page, int size) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+        Map<String, List<ModuleMetadata>> releases = getAllReleases();
+
+        boolean paging = page >= 1 && size >= 1;
+        if (paging) {
+            for (Map.Entry<String, List<ModuleMetadata>> entrySet : releases.entrySet()) {
+                List<ModuleMetadata> moduleMetadataList = entrySet.getValue();
+                if (moduleMetadataList == null || moduleMetadataList.isEmpty()) {
+                    continue;
+                }
+
+                entrySet.setValue(subList(moduleMetadataList, page, size));
+            }
+        }
+
+        return releases;
+    }
+
+    /**
      * Download all ModuleMetadata stored for the given CodeSystem. RF2 package is excluded. To handle specific unsuccessful
      * scenarios, catch exceptions that extends ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all
      * unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
@@ -873,5 +904,19 @@ public class ModuleStorageCoordinator {
         }
 
         moduleMetadatas.add(moduleMetadata);
+    }
+
+    private List<ModuleMetadata> subList(List<ModuleMetadata> list, int page, int size) {
+        if (size <= 0 || page <= 0) {
+            return list;
+        }
+
+        int fromIndex = (page - 1) * size;
+        if (list == null || list.isEmpty() || list.size() <= fromIndex) {
+            return Collections.emptyList();
+        }
+
+        int toIndex = (fromIndex == 0 ? size : fromIndex * size);
+        return list.subList(fromIndex, Math.min(toIndex, list.size()));
     }
 }
