@@ -1054,6 +1054,48 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    public void getAllReleases_ShouldReturnExpected_WhenPaging() throws ScriptException, IOException, ModuleStorageCoordinatorException {
+        // given
+        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240501", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240601", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240701", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240801", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20240901", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20241001", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20241101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000012004", "20241201", getLocalFile("test-rf2-edition.zip"));
+
+        // then
+        Map<String, List<ModuleMetadata>> a = moduleStorageCoordinatorDev.getAllReleases();
+        assertEquals(12, a.get("INT").size());
+
+        Map<String, List<ModuleMetadata>> b = moduleStorageCoordinatorDev.getAllReleases(1, 10);
+        assertEquals(10, b.get("INT").size());
+        assertEquals("20241201", b.get("INT").get(0).getEffectiveTimeString());
+        assertEquals("20240301", b.get("INT").get(b.get("INT").size() - 1).getEffectiveTimeString());
+
+        Map<String, List<ModuleMetadata>> c = moduleStorageCoordinatorDev.getAllReleases(2, 10);
+        assertEquals(2, c.get("INT").size());
+        assertEquals("20240201", c.get("INT").get(0).getEffectiveTimeString());
+        assertEquals("20240101", c.get("INT").get(c.get("INT").size() - 1).getEffectiveTimeString());
+
+        Map<String, List<ModuleMetadata>> d = moduleStorageCoordinatorDev.getAllReleases(3, 10);
+        assertEquals(0, d.get("INT").size());
+
+        Map<String, List<ModuleMetadata>> e = moduleStorageCoordinatorDev.getAllReleases(1, 100);
+        assertEquals(12, e.get("INT").size());
+        assertEquals("20241201", e.get("INT").get(0).getEffectiveTimeString());
+        assertEquals("20240101", e.get("INT").get(e.get("INT").size() - 1).getEffectiveTimeString());
+
+        Map<String, List<ModuleMetadata>> f = moduleStorageCoordinatorDev.getAllReleases(2, 100);
+        assertEquals(0, f.get("INT").size());
+    }
+
+    @Test
     public void getAllReleases_ShouldReturnExpected_WhenEditionPackageWithMultipleVersions() throws ScriptException, IOException, ModuleStorageCoordinatorException {
         // given
         givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
