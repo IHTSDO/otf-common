@@ -526,6 +526,10 @@ public class ModuleStorageCoordinator {
             }
         }
 
+        for (Map.Entry<String, List<ModuleMetadata>> entrySet : releases.entrySet()) {
+            entrySet.getValue().sort(Comparator.comparing(ModuleMetadata::getEffectiveTime, Comparator.reverseOrder()));
+        }
+
         return releases;
     }
 
