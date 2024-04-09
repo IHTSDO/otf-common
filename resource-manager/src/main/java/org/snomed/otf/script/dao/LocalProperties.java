@@ -83,4 +83,16 @@ public class LocalProperties extends ResourceConfiguration {
 		return Integer.parseInt(prop.getProperty(prefix + propName, String.valueOf(defaultValue)));
 	}
 
+	public Double getFloatProperty(String propName, Double defaultValue) {
+		if (!isInitialised) {
+			try {
+				init();
+			} catch (TermServerScriptException e) {
+				LOGGER.warn(e.getMessage());
+			}
+		}
+
+		return Double.parseDouble(prop.getProperty(prefix + propName, String.valueOf(defaultValue)));
+	}
+
 }
