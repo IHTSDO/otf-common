@@ -105,7 +105,7 @@ public class ReportManager extends CommonFileWriter {
 			reportSheetManager.flushWithWait();
 			if (andClose) {
 				// format the columns in the spreadsheet
-				reportSheetManager.formatSpreadSheetColumns();
+				reportSheetManager.formatSpreadSheet();
 				LOGGER.info("See Google Sheet: {}", reportSheetManager.getUrl());
 			}
 		}
