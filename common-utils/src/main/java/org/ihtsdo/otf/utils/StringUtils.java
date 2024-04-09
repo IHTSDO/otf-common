@@ -360,4 +360,23 @@ public class StringUtils implements RF2Constants {
 		}
 		return str;
     }
+
+	public static String getLineWithMostCharacters(String multilineString) {
+		if (isEmpty(multilineString)) {
+			return "";
+		}
+
+		String[] lines = multilineString.split("\n");
+		String longestLine = "";
+		int maxLength = 0;
+
+		for (String line : lines) {
+			if (line.length() > maxLength) {
+				maxLength = line.length();
+				longestLine = line;
+			}
+		}
+
+		return longestLine;
+	}
 }
