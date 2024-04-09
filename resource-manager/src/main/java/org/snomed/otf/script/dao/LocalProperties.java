@@ -94,5 +94,5 @@ public class LocalProperties extends ResourceConfiguration {
 
 		return Double.parseDouble(prop.getProperty(prefix + propName, String.valueOf(defaultValue)));
 	}
-	
+
 }
