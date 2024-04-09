@@ -42,6 +42,16 @@
 			<artifactId>junit-jupiter-api</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Spock testing -->
+		<dependency>
+			<groupId>org.spockframework</groupId>
+			<artifactId>spock-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.groovy</groupId>
+			<artifactId>groovy-all</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -74,6 +84,19 @@
 					<phase>install</phase>
 					<goals><goal>jar-no-fork</goal></goals>
 				</execution>
+				</executions>
+			</plugin>
+			<!-- Spock testing -->
+			<plugin>
+				<groupId>org.codehaus.gmavenplus</groupId>
+				<artifactId>gmavenplus-plugin</artifactId>
+				<version>2.1.0</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>compileTests</goal>
+						</goals>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
