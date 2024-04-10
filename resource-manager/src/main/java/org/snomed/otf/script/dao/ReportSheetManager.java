@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.utils.CVSUtils;
 import org.ihtsdo.otf.utils.StringUtils;
+import org.springframework.context.ApplicationContext;
 
 public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportSheetManager.class);
@@ -57,7 +58,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
 	int numberOfSheets = 0;
 
-	LocalProperties props = new LocalProperties("column.width");
+	ReportSheetConfiguration props = null;
 	private List<List<Double>> totalColumnWidthsInCharactersPerTab;
 	private List<List<Integer>> totalColumnRowsPerTab;
 
@@ -163,9 +164,20 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		LOGGER.warn("Spreadsheet opened up to the universe.");
 	}
 
-	@Override
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		tabLineCount = new HashMap<>();
+
+		//Are we running in a Spring context?
+		ApplicationContext appContext = owner.getScript().getApplicationContext();
+		if (appContext == null) {
+			//No, we're running standalone, create a new instance
+			LOGGER.info("No Spring context available, creating new ReportSheetConfiguration");
+			props = new ReportSheetConfiguration();
+		} else {
+			LOGGER.info("Running as Spring, creating new ReportSheetConfiguration");
+			props = appContext.getBean(ReportSheetConfiguration.class);
+		}
+
 		init();
 		try {
 			List<Request> requests = new ArrayList<>();
@@ -505,7 +517,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private void formatSingleColumn(int tabIdx, int columnIdx, List<Request> requests) {
 		int columnWidth = calculateColumnWidth(tabIdx, columnIdx);
 
-        LOGGER.info("Setting with of column: {} to: {}", columnIdx, columnWidth);
+        LOGGER.info("Setting width of column: {} to: {}", columnIdx, columnWidth);
 
 		DimensionProperties dimensionProperties = new DimensionProperties().setPixelSize(columnWidth);
 
@@ -526,11 +538,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private int calculateColumnWidth(int tabIdx, int colIdx) {
 		Double columnWidthInCharacters = totalColumnWidthsInCharactersPerTab.get(tabIdx).get(colIdx);
 		Integer columnTotal = totalColumnRowsPerTab.get(tabIdx).get(colIdx);
-		Double averageColumnWidth = columnWidthInCharacters / columnTotal;
+		double averageColumnWidth = columnWidthInCharacters / columnTotal;
 
-		averageColumnWidth *= props.getFloatProperty(PROPERTY_NAME_COLUMN_WIDTH_FONT_RATIO, DEFAULT_COLUMN_WIDTH_FONT_RATIO);
-		averageColumnWidth = Math.max(averageColumnWidth, props.getIntegerProperty(PROPERTY_NAME_COLUMN_WIDTH_MIN, DEFAULT_COLUMN_WIDTH_MINIMUM));
-		averageColumnWidth = Math.min(averageColumnWidth, props.getIntegerProperty(PROPERTY_NAME_COLUMN_WIDTH_MAX, DEFAULT_COLUMN_WIDTH_MAXIMUM));
+		averageColumnWidth *= props.getColumnWidthFontRatio();
+		averageColumnWidth = Math.max(averageColumnWidth, props.getColumnWidthMinimum());
+		averageColumnWidth = Math.min(averageColumnWidth, props.getColumnWidthMaximum());
 
 		return (int) Math.round(averageColumnWidth);
 	}
