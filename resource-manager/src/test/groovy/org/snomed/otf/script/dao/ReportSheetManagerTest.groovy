@@ -6,6 +6,7 @@ class ReportSheetManagerTest extends Specification {
     def 'calculateColumnWidth should work'() {
         when:
             def rsm = new ReportSheetManager(null)
+            rsm.props = new ReportSheetConfiguration()
             rsm.totalColumnWidthsInCharactersPerTab = [
                     [(double) 120.0, (double) 220.0],
                     [(double) 120.0, (double) 220.0]
