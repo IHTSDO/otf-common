@@ -1,7 +1,10 @@
 package org.ihtsdo.otf.utils;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
 import java.util.Date;
+import java.util.Locale;
 
 public class DateUtils {
 	
@@ -26,5 +29,9 @@ public class DateUtils {
 
 	public static String now(String formatStr) {
 		return new SimpleDateFormat(formatStr).format(new Date());
+	}
+
+	public static String getCurrentMonthName() {
+		return LocalDate.now().getMonth().getDisplayName(TextStyle.FULL, Locale.getDefault());
 	}
 }
