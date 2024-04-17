@@ -342,7 +342,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private void addDataToBWritten(int tabIdx, String line) throws TermServerScriptException {
 		List<Object> data = CVSUtils.csvSplitAsObject(line);
 		List<List<Object>> cells = List.of(data);
-		incrementColumnCounts(tabIdx, data);
+		if (tabIdx >= 0 && tabIdx < totalColumnWidthsInCharactersPerTab.size()) {
+			incrementColumnCounts(tabIdx, data);
+		} else {
+			LOGGER.error("Line: {}", line);
+		}
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
 		if (!maxTabColumns.containsKey(tabIdx)) {
@@ -360,7 +364,6 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		dataToBeWritten.add(new ValueRange()
 					.setRange(range)
 					.setValues(cells));
-		
 	}
 
 	private void incrementColumnCounts(int tabIdx, List<Object> row) {
@@ -488,7 +491,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		LOGGER.info("Formatting Google SpreadSheet Sheet/s");
 
 		for (int tabIdx = 0; tabIdx < numberOfSheets; tabIdx++) {
-			formatSingleTab(tabIdx, requests);
+			try {
+				formatSingleTab(tabIdx, requests);
+			} catch (Exception e) {
+				LOGGER.error("Unable to format Google SpreadSheet Sheet/s", e);
+			}
 		}
 
 		batch.setRequests(requests);
