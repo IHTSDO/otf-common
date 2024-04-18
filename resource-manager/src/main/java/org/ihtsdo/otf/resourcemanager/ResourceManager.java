@@ -570,6 +570,10 @@ public class ResourceManager {
 	 * @return path which contains a forward-slash at the end.
 	 */
 	private String configurePath(final String path) {
+		if (path == null || path.isBlank()) {
+			return "";
+		}
+
 		return !path.isEmpty() && !path.endsWith("/") ? path + "/" : path;
 	}
 
