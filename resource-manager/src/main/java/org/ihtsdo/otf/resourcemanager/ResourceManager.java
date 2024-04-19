@@ -2,8 +2,9 @@ package org.ihtsdo.otf.resourcemanager;
 
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
-import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
@@ -19,7 +20,6 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  * ResourceLoader into your configuration.
  */
 public class ResourceManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceManager.class);
 
 	private final ResourceConfiguration resourceConfiguration;
 	private final ResourceLoader resourceLoader;
@@ -107,6 +108,9 @@ public class ResourceManager {
 			if (e.statusCode() != 403) {
 				throw e;
 			}
+		} catch (Exception e) {
+			LOGGER.error("Failed to check S3 connection.");
+			e.printStackTrace();
 		}
 		return cloudResourceLoader;
 	}
@@ -179,6 +183,7 @@ public class ResourceManager {
 				String configPath = cloud.getPath().replaceAll("\\\\", "/");
 				final String s3Path = configurePath(configPath);
 				final String prefixPath = prefix == null || prefix.isEmpty() ? s3Path : s3Path + prefix;
+				LOGGER.info("Listing file names in bucket {} with prefix {}", cloud.getBucketName(), prefixPath);
 				ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder().bucket(cloud.getBucketName()).prefix(prefixPath).maxKeys(10000).build();
 				boolean done = false;
 				while (!done) {
