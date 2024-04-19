@@ -1,10 +1,6 @@
 package org.snomed.otf.script;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
@@ -22,13 +18,14 @@ import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.context.ApplicationContext;
 
 public abstract class Script implements RF2Constants {
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(Script.class);
+
 	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
-	
-	static Logger sLogger = LoggerFactory.getLogger(Script.class);
+
+	@Deprecated(forRemoval = true)
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
+
 	public static List<String> HISTORICAL_REFSETS = new ArrayList<>();
 	static {
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
@@ -52,36 +49,39 @@ public abstract class Script implements RF2Constants {
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
 	protected ApplicationContext appContext;
+
+	@Deprecated(forRemoval = true)
 	public static void info (String msg) {
-		sLogger.info(msg);
+		LOGGER.info(msg);
 	}
-	
+
+	@Deprecated(forRemoval = true)
 	public static void debug (Object obj) {
-		sLogger.debug(obj==null?"NULL":obj.toString());
+		LOGGER.debug(obj==null?"NULL":obj.toString());
 	}
-	
+
+	@Deprecated(forRemoval = true)
 	public static void warn (Object obj) {
-		sLogger.warn("*** " + (obj==null?"NULL":obj.toString()));
+		LOGGER.warn("*** " + (obj==null?"NULL":obj.toString()));
 	}
-	
+
+	@Deprecated(forRemoval = true)
 	public static void error (Object obj, Exception e) {
-		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
-		if (e != null) 
-			sLogger.error(ExceptionUtils.getStackTrace(e));
+		LOGGER.error("*** " + (obj==null?"NULL":obj.toString()));
+
+		if (e != null) {
+			LOGGER.error(ExceptionUtils.getStackTrace(e));
+		}
 	}
 
-	/**
-	 * These methods are used when we want something to appear in STDOUT but not as 
-	 * a log entry.  For example, menu options for user interaction, or - particularly
-	 * in the case of full stops to indicate progress, where we don't want a new line 
-	 * per update.
-	 */
+	@Deprecated(forRemoval = true)
 	public static void print(Object msg) {
-		System.out.print(msg.toString());
+		LOGGER.info(msg.toString());
 	}
 
+	@Deprecated(forRemoval = true)
 	public static void println (Object msg) {
-		System.out.println(msg.toString());
+		LOGGER.info(msg.toString());
 	}
 
 	public static String getMessage (Exception e) {
@@ -150,7 +150,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public void addSummaryInformation(String item, Object detail) {
-		info(item + ": " + detail);
+		LOGGER.info("{}: {}", item, detail);
 		summaryDetails.put(item, detail);
 	}
 	
@@ -213,7 +213,7 @@ public abstract class Script implements RF2Constants {
 		try {
 			flushFiles(andClose);
 		} catch (Exception e) {
-			error("Failed to flush files.", e);
+			LOGGER.error("Failed to flush files.", e);
 		}
 	}
 	
@@ -221,7 +221,7 @@ public abstract class Script implements RF2Constants {
 		try {
 			flushFiles(andClose);
 		} catch (Exception e) {
-			error("Failed to flush files.", e);
+			LOGGER.error("Failed to flush files.", e);
 		}
 	}
 	
@@ -239,7 +239,7 @@ public abstract class Script implements RF2Constants {
 		}
 		
 		if (reportIdx == NOT_SET) {
-			debug("Tab NOT_SET to report: " + line);
+			LOGGER.debug("Tab NOT_SET to report: {}", line);
 			return false;
 		}
 		return getReportManager().writeToReportFile(reportIdx, line);
@@ -326,7 +326,7 @@ public abstract class Script implements RF2Constants {
 
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (!suppressOutput) {
-			debug ("Initialising Report Manager");
+			LOGGER.debug("Initialising Report Manager");
 			reportManager = ReportManager.create(this, getReportConfiguration());
 			if (tabNames != null) {
 				reportManager.setTabNames(tabNames);
@@ -338,7 +338,7 @@ public abstract class Script implements RF2Constants {
 			}
 			
 			getReportManager().initialiseReportFiles(columnHeadings);
-			debug ("Report Manager initialisation complete");
+			LOGGER.debug("Report Manager initialisation complete");
 		}
 		
 	}
@@ -360,7 +360,7 @@ public abstract class Script implements RF2Constants {
 
 		// if it's not valid default to the the current mode of operation
 		if (reportConfiguration == null || !reportConfiguration.isValid()) {
-			info("Using default ReportConfiguration (Google/Sheet)...");
+			LOGGER.info("Using default ReportConfiguration (Google/Sheet)...");
 			reportConfiguration = new ReportConfiguration(
 					ReportConfiguration.ReportOutputType.GOOGLE,
 					ReportConfiguration.ReportFormatType.CSV);
