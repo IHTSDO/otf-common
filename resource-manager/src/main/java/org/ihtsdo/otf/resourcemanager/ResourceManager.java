@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
  */
 public class ResourceManager {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceManager.class);
-
 	private final ResourceConfiguration resourceConfiguration;
 	private final ResourceLoader resourceLoader;
 
