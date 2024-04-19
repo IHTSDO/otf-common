@@ -3,7 +3,8 @@ package org.snomed.otf.script.dao;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.ExceptionUtils;
-import org.snomed.otf.script.Script;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.transformer.DataTransformer;
 
 import java.io.File;
@@ -12,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class ReportS3FileManager extends ReportFileManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReportS3FileManager.class);
 
     // This is static for all environments
     public static final String S3_BUCKET_PROTOCOL = "https://";
@@ -51,11 +53,11 @@ public class ReportS3FileManager extends ReportFileManager {
             mapReportsFilesToS3();
 
             // transform the report/s
-            Script.info("Transforming reports...");
+            LOGGER.info("Transforming reports...");
             transformReports();
 
             // upload the file/s to s3
-            Script.info("Uploading reports to S3...");
+            LOGGER.info("Uploading reports to S3...");
             uploadReports();
 
             // delete the local reports
@@ -113,7 +115,7 @@ public class ReportS3FileManager extends ReportFileManager {
                 s3ReportFile = entry.getValue();
                 String filePath = File.separator + s3ReportFile.getPath();
                 String targetS3Path = reportDataUploader.getUploadLocation(S3_BUCKET_PROTOCOL, S3_BUCKET_DOMAIN) + filePath;
-                Script.info("Outputting Report to " + cleanFileName(targetS3Path));
+                LOGGER.info("Outputting Report to {}", cleanFileName(targetS3Path));
                 reportDataUploader.upload(s3ReportFile, locals3ReportFile);
             } catch (Exception e) {
                 String msg = "Failed to upload " +
@@ -126,11 +128,11 @@ public class ReportS3FileManager extends ReportFileManager {
 
     private void deleteReports() {
         if (deleteTempFiles) {
-            Script.info("Deleting local report file...");
+            LOGGER.info("Deleting local report file...");
             deleteFiles(localReportsToTransformedReports.keySet().toArray(File[]::new));
         }
         if (deleteLocalReports) {
-            Script.info("Deleting local transformed report file...");
+            LOGGER.info("Deleting local transformed report file...");
             deleteFiles(localReportsToTransformedReports.values().toArray(File[]::new));
         }
     }
