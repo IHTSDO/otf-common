@@ -1,10 +1,6 @@
 package org.snomed.otf.script;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
@@ -49,20 +45,25 @@ public abstract class Script implements RF2Constants {
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
 	protected ApplicationContext appContext;
+
+	@Deprecated(forRemoval = true)
 	public static void info (String msg) {
 		LOGGER.info(msg);
 	}
-	
+
+	@Deprecated(forRemoval = true)
 	public static void debug (Object obj) {
 		LOGGER.debug(obj==null?"NULL":obj.toString());
 	}
-	
+
+	@Deprecated(forRemoval = true)
 	public static void warn (Object obj) {
 		LOGGER.warn("*** {}", (obj==null?"NULL":obj.toString()));
 	}
-	
-	public static void error (Object obj, Exception e) {
-		LOGGER.error("*** {}", (obj==null?"NULL":obj.toString()));
+
+	@Deprecated(forRemoval = true)
+	public static void error(Object obj, Exception e) {
+		LOGGER.error("*** " + (obj == null ? "NULL" : obj.toString()));
 
 		if (e != null) {
 			LOGGER.error(ExceptionUtils.getStackTrace(e));
@@ -151,7 +152,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public void addSummaryInformation(String item, Object detail) {
-		info(item + ": " + detail);
+		LOGGER.info("{}: {}", item, detail);
 		summaryDetails.put(item, detail);
 	}
 	
@@ -214,7 +215,7 @@ public abstract class Script implements RF2Constants {
 		try {
 			flushFiles(andClose);
 		} catch (Exception e) {
-			error("Failed to flush files.", e);
+			LOGGER.error("Failed to flush files.", e);
 		}
 	}
 	
@@ -222,7 +223,7 @@ public abstract class Script implements RF2Constants {
 		try {
 			flushFiles(andClose);
 		} catch (Exception e) {
-			error("Failed to flush files.", e);
+			LOGGER.error("Failed to flush files.", e);
 		}
 	}
 	
@@ -240,7 +241,7 @@ public abstract class Script implements RF2Constants {
 		}
 		
 		if (reportIdx == NOT_SET) {
-			debug("Tab NOT_SET to report: " + line);
+			LOGGER.debug("Tab NOT_SET to report: {}", line);
 			return false;
 		}
 		return getReportManager().writeToReportFile(reportIdx, line);
@@ -327,7 +328,7 @@ public abstract class Script implements RF2Constants {
 
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (!suppressOutput) {
-			debug ("Initialising Report Manager");
+			LOGGER.debug("Initialising Report Manager");
 			reportManager = ReportManager.create(this, getReportConfiguration());
 			if (tabNames != null) {
 				reportManager.setTabNames(tabNames);
@@ -339,7 +340,7 @@ public abstract class Script implements RF2Constants {
 			}
 			
 			getReportManager().initialiseReportFiles(columnHeadings);
-			debug ("Report Manager initialisation complete");
+			LOGGER.debug("Report Manager initialisation complete");
 		}
 		
 	}
@@ -361,7 +362,7 @@ public abstract class Script implements RF2Constants {
 
 		// if it's not valid default to the the current mode of operation
 		if (reportConfiguration == null || !reportConfiguration.isValid()) {
-			info("Using default ReportConfiguration (Google/Sheet)...");
+			LOGGER.info("Using default ReportConfiguration (Google/Sheet)...");
 			reportConfiguration = new ReportConfiguration(
 					ReportConfiguration.ReportOutputType.GOOGLE,
 					ReportConfiguration.ReportFormatType.CSV);
