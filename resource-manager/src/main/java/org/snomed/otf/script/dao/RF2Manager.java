@@ -6,11 +6,12 @@ import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.snomed.otf.script.Script;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RF2Manager implements RF2Constants {
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(RF2Manager.class);
 	protected File[] reportFiles;
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
 	protected String currentTimeStamp;
@@ -39,7 +40,7 @@ public class RF2Manager implements RF2Constants {
 					pw.close();
 				}
 			} catch (Exception e) {
-				Script.error("Exception while closing RF2 files", e);
+				LOGGER.error("Exception while closing RF2 files", e);
 			}
 		}
 		if (andClose) {
@@ -63,7 +64,7 @@ public class RF2Manager implements RF2Constants {
 		try {
 			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
-			Script.info ("Unable to output report rf2 line due to " + e.getMessage());
+			LOGGER.info("Unable to output report rf2 line due to {}", e.getMessage());
 		}
 	}
 	
