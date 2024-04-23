@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({"domainTemplateForPostcoordination", "domainTemplateForPrecoordination", 
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 	"grouped", "attributeInGroupCardinality", "attributeCardinality", "contentTypeId", "domainId", "ruleStrengthId",
 	"attributeRule", "rangeConstraint", "targetComponentId", "mapTarget", "valueId"})
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AdditionalFieldsPojo {
 	
 	//Association Refsets
