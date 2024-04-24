@@ -68,15 +68,21 @@ public abstract class Script implements RF2Constants {
 		if (e != null) 
 			sLogger.error(ExceptionUtils.getStackTrace(e));
 	}
-	
-	public static void print (Object msg) {
-		System.out.print (msg.toString());
+
+	/**
+	 * These methods are used when we want something to appear in STDOUT but not as 
+	 * a log entry.  For example, menu options for user interaction, or - particularly
+	 * in the case of full stops to indicate progress, where we don't want a new line 
+	 * per update.
+	 */
+	public static void print(Object msg) {
+		System.out.print(msg.toString());
 	}
-	
+
 	public static void println (Object msg) {
-		System.out.println (msg.toString());
+		System.out.println(msg.toString());
 	}
-	
+
 	public static String getMessage (Exception e) {
 		String msg = e.getMessage();
 		Throwable cause = e.getCause();
