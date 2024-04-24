@@ -74,14 +74,18 @@ public abstract class Script implements RF2Constants {
 		}
 	}
 
-	@Deprecated(forRemoval = true)
+	/**
+	 * These methods are used when we want something to appear in STDOUT but not as 
+	 * a log entry.  For example, menu options for user interaction, or - particularly
+	 * in the case of full stops to indicate progress, where we don't want a new line 
+	 * per update.
+	 */
 	public static void print(Object msg) {
-		LOGGER.info(msg.toString());
+		System.out.print(msg.toString());
 	}
 
-	@Deprecated(forRemoval = true)
 	public static void println (Object msg) {
-		LOGGER.info(msg.toString());
+		System.out.println(msg.toString());
 	}
 
 	public static String getMessage (Exception e) {
