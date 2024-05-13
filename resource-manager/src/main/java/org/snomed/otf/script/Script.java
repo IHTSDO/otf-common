@@ -365,5 +365,8 @@ public abstract class Script implements RF2Constants {
 					ReportConfiguration.ReportFormatType.CSV);
 		}
 	}
-	
+
+	public ApplicationContext getApplicationContext() {
+		return appContext;
+	}
 }

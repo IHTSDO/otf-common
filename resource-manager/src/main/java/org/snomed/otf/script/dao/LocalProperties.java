@@ -5,13 +5,15 @@ import java.util.Properties;
 
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is needed when we're not running as a Spring Boot application and don't 
  * have access to Autowired and all that goodness
  */
 public class LocalProperties extends ResourceConfiguration {
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(LocalProperties.class);
 	InputStream is;
 	String prefix;
 	String propertiesFilename = "application-local.properties";
@@ -66,6 +68,19 @@ public class LocalProperties extends ResourceConfiguration {
 		if (bool == null) {
 			throw new IllegalArgumentException(prefix + propName + " was not found in local properties file");
 		}
-		return bool.toLowerCase().equals("true") ? Boolean.TRUE : Boolean.FALSE;
+		return bool.equalsIgnoreCase("true");
 	}
+	
+	public Integer getIntegerProperty(String propName, Integer defaultValue) {
+		if (!isInitialised) {
+			try {
+				init();
+			} catch (TermServerScriptException e) {
+				LOGGER.warn(e.getMessage());
+			}
+		}
+
+		return Integer.parseInt(prop.getProperty(prefix + propName, String.valueOf(defaultValue)));
+	}
+
 }
