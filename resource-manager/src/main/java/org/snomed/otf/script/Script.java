@@ -19,6 +19,7 @@ import org.snomed.otf.script.dao.DataBroker;
 import org.snomed.otf.script.dao.RF2Manager;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportManager;
+import org.springframework.context.ApplicationContext;
 
 public abstract class Script implements RF2Constants {
 	
@@ -50,7 +51,7 @@ public abstract class Script implements RF2Constants {
 	protected boolean quiet = false;
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
-	
+	protected ApplicationContext appContext;
 	public static void info (String msg) {
 		sLogger.info(msg);
 	}
