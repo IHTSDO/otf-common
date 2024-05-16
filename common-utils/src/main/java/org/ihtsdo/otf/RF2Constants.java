@@ -38,56 +38,58 @@ public interface RF2Constants {
 
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL };
 
-	static String SCTID_CORE_MODULE = "900000000000207008";
-	static String SCTID_MODEL_MODULE = "900000000000012004"; // |SNOMED CT model component module (core metadata concept)|
-	static String[] INTERNATIONAL_MODULES = new String[] { SCTID_CORE_MODULE, SCTID_MODEL_MODULE };
-	static String SCTID_US_MODULE = "731000124108";
-	static String SCTID_LOINC_PROJECT_MODULE = "715515008";
-	public String SCTID_LOINC_EXTENSION_MODULE = "11010000107";
-	public String SCTID_LOINC_CODE_SYSTEM = "705114005";
-	static String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|"
+	static final String SCTID_CORE_MODULE = "900000000000207008";
+	static final String SCTID_MODEL_MODULE = "900000000000012004"; // |SNOMED CT model component module (core metadata concept)|
+	static final String[] INTERNATIONAL_MODULES = new String[] { SCTID_CORE_MODULE, SCTID_MODEL_MODULE };
+	static final String SCTID_US_MODULE = "731000124108";
+	static final String SCTID_LOINC_PROJECT_MODULE = "715515008";
+	static final String SCTID_LOINC_EXTENSION_MODULE = "11010000107";
+	static final String SCTID_LOINC_CODE_SYSTEM = "705114005";
+	static final String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|"
+	static final String SCTID_COMP_ANNOT_REFSET = "1292992004"; // |Component annotation with string value reference set (foundation metadata concept)|
+	static final String SCTID_MEMB_ANNOT_REFSET = "1292995002"; // |Member annotation with string value reference set (foundation metadata concept)|
 
 	//ECL Constants
-	static String DESCENDANT = "<";
-	static String DESCENDANT_OR_SELF = "<<";
-	static String PIPE = "|";
-	static String ESCAPED_PIPE = "\\|";
-	static char PIPE_CHAR = '|';
-	static char SPACE_CHAR = ' ';
-	static String UNION = "AND";
-	static String ATTRIBUTE_SEPARATOR = ",";
-	static String DASH = "-";
+	static final String DESCENDANT = "<";
+	static final String DESCENDANT_OR_SELF = "<<";
+	static final String PIPE = "|";
+	static final String ESCAPED_PIPE = "\\|";
+	static final char PIPE_CHAR = '|';
+	static final char SPACE_CHAR = ' ';
+	static final String UNION = "AND";
+	static final String ATTRIBUTE_SEPARATOR = ",";
+	static final String DASH = "-";
 	//This laxity is causing problems with these odd characters appearing inside a term
 	//Let's stop being generous and be firm:  terms start and end with pipes and if you miss one out,
 	//then we won't parse it correctly.
 	//static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
-	static String BREAK = "===========================================";
+	static final String BREAK = "===========================================";
 
 	//Description Type SCTIDs
-	static String SYN = "900000000000013009";
-	static String FSN = "900000000000003001";
-	static String DEF = "900000000000550004";
+	static final String SYN = "900000000000013009";
+	static final String FSN = "900000000000003001";
+	static final String DEF = "900000000000550004";
 
-	static String LANG_EN = "en";
+	static final String LANG_EN = "en";
 
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
-	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
-	final String SPACE = " ";
-	final String COMMA = ",";
-	final String COMMA_QUOTE = ",\"";
-	final String QUOTE_COMMA = "\",";
-	final String QUOTE_COMMA_QUOTE = "\",\"";
-	final String TAB = "\t";
-	final String CSV_FIELD_DELIMITER = COMMA;
-	final String TSV_FIELD_DELIMITER = TAB;
-	final String QUOTE = "\"";
-	final String INGREDIENT_SEPARATOR = "+";
-	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
+	static final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
+	static final String SPACE = " ";
+	static final String COMMA = ",";
+	static final String COMMA_QUOTE = ",\"";
+	static final String QUOTE_COMMA = "\",";
+	static final String QUOTE_COMMA_QUOTE = "\",\"";
+	static final String TAB = "\t";
+	static final String CSV_FIELD_DELIMITER = COMMA;
+	static final String TSV_FIELD_DELIMITER = TAB;
+	static final String QUOTE = "\"";
+	static final String INGREDIENT_SEPARATOR = "+";
+	static final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
 
-	final String CONCEPT_INT_PARTITION = "00";
-	final String DESC_INT_PARTITION = "01";
-	final String REL_INT_PARTITION = "02";
+	static final String CONCEPT_INT_PARTITION = "00";
+	static final String DESC_INT_PARTITION = "01";
+	static final String REL_INT_PARTITION = "02";
 
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
@@ -258,6 +260,18 @@ public interface RF2Constants {
 	public static final int LANG_IDX_REFSETID = 4;
 	public static final int LANG_IDX_REFCOMPID = 5;
 	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
+
+	// Component Annotation Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	languageDialectCode	typeId	value
+	public static final int COMP_ANNOT_IDX_ID = 0;
+	public static final int COMP_ANNOT_IDX_EFFECTIVETIME = 1;
+	public static final int COMP_ANNOT_IDX_ACTIVE = 2;
+	public static final int COMP_ANNOT_IDX_MODULID = 3;
+	public static final int COMP_ANNOT_IDX_REFSETID = 4;
+	public static final int COMP_ANNOT_IDX_REFCOMPID = 5;
+	public static final int COMP_ANNOT_IDX_LANG_DIALECT_CODE = 6;
+	public static final int COMP_ANNOT_IDX_TYPEID = 7;
+	public static final int COMP_ANNOT_IDX_VALUE = 8;
 
 	// Inactivation Refset columns
 	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	reasonId
