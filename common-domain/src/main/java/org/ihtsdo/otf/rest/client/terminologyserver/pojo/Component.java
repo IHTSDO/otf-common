@@ -13,7 +13,7 @@ public abstract class Component implements RF2Constants {
 	
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
-		TEXT_DEFINITION, AXIOM, ALTERNATE_IDENTIFIER, UNKNOWN}
+		TEXT_DEFINITION, AXIOM, ALTERNATE_IDENTIFIER, COMPONENT_ANNOTATION, REFSET_MEMBER_ANNOTATION, UNKNOWN}
 	
 	//The id takes a different name in most components, don't expose
 	protected String id;
@@ -39,6 +39,8 @@ public abstract class Component implements RF2Constants {
 	@Expose
 	protected  Integer releasedEffectiveTime;
 	@SerializedName("memberId")
+
+	List<ComponentAnnotationEntry> componentAnnotationEntries;
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
 	private transient String issues = "";
@@ -253,6 +255,27 @@ public abstract class Component implements RF2Constants {
 
 	public String toWhitelistString() {
 		return (isActive()?"1":"0") + "," + moduleId + ",";
+	}
+
+	public ComponentAnnotationEntry getComponentAnnotationEntry(String refsetId) {
+		for (ComponentAnnotationEntry cae : getComponentAnnotationEntries()) {
+			if (cae.getRefsetId().equals(refsetId)) {
+				return cae;
+			}
+		}
+		return null;
+	}
+
+	public void addComponentAnnotationEntry(ComponentAnnotationEntry cae) {
+		getComponentAnnotationEntries().remove(cae);
+		getComponentAnnotationEntries().add(cae);
+	}
+
+	public List<ComponentAnnotationEntry> getComponentAnnotationEntries() {
+		if (componentAnnotationEntries == null) {
+			componentAnnotationEntries = new java.util.ArrayList<>();
+		}
+		return componentAnnotationEntries;
 	}
 
 }

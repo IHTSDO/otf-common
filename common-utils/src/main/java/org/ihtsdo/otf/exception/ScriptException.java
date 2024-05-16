@@ -18,4 +18,5 @@ public class ScriptException extends Exception {
 	public ScriptException(Throwable t) {
 		super(t);
 	}
+
 }
