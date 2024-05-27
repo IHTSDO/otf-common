@@ -161,6 +161,10 @@ public class SnowstormRestUrlHelper {
 		return getUri(getBulkConceptsUrl(branchPath));
 	}
 
+	public URI getCodeSystemUrl(String codeSystemShortname) {
+		return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname);
+	}
+
 	public String getCodeSystemsUrl() {
 		return snowstormUrl + "/codesystems";
 	}

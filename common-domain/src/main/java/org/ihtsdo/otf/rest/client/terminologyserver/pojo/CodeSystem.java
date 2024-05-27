@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.Collection;
 import java.util.Set;
 
 public class CodeSystem {
@@ -10,6 +11,7 @@ public class CodeSystem {
 	private String maintainerType;
 	private String branchPath;
 	private Set <String> userRoles;
+	private Collection<ConceptMiniPojo> modules;
 	private Integer dependantVersionEffectiveTime;
 	private CodeSystemVersion latestVersion;
 
@@ -39,6 +41,14 @@ public class CodeSystem {
 
 	public void setUserRoles(Set<String> userRoles) {
 		this.userRoles = userRoles;
+	}
+
+	public void setModules(Collection<ConceptMiniPojo> modules) {
+		this.modules = modules;
+	}
+
+	public Collection<ConceptMiniPojo> getModules() {
+		return modules;
 	}
 
 	public Integer getDependantVersionEffectiveTime() {

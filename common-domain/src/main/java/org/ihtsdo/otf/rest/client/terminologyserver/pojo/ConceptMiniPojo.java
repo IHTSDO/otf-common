@@ -9,6 +9,10 @@ public class ConceptMiniPojo implements IConcept {
 	
 	private String conceptId;
 
+	private String effectiveTime;
+
+	private Boolean active;
+
 	private DescriptionMiniPojo fsn;
 	
 	private DescriptionMiniPojo pt;
@@ -30,6 +34,22 @@ public class ConceptMiniPojo implements IConcept {
 
 	public void setConceptId(String conceptId) {
 		this.conceptId = conceptId;
+	}
+
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
+
+	public void setEffectiveTime(String effectiveTime) {
+		this.effectiveTime = effectiveTime;
+	}
+
+	public Boolean getActive() {
+		return active;
+	}
+
+	public void setActive(Boolean active) {
+		this.active = active;
 	}
 
 	public DescriptionMiniPojo getFsn() {

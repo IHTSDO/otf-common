@@ -169,6 +169,10 @@ public class SnowstormRestClient {
 		this(snowstormUrl, apiUsername, apiPassword);
 	}
 
+	public CodeSystem getCodeSystem(String codeSystemShortname) throws RestClientException {
+		return getEntity(urlHelper.getCodeSystemUrl(codeSystemShortname), CodeSystem.class);
+	}
+
 	public List<CodeSystem> getCodeSystems() {
 		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
