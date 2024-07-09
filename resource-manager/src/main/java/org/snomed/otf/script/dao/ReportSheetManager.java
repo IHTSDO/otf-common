@@ -56,6 +56,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		this.owner = owner;
 	}
 
+	public static void setTargetFolderId(String targetFolderId) {
+		ReportSheetManager.targetFolderId = targetFolderId;
+	}
+
 	/**
 	 * Creates an authorized Credential object.
 	 * @param HTTP_TRANSPORT The network HTTP Transport.
@@ -335,7 +339,9 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
 			if (secondsSinceLastWrite < MAX_REQUEST_RATE) {
 				if (withWait) {
-					try { Thread.sleep(MAX_REQUEST_RATE - secondsSinceLastWrite); } catch (InterruptedException e) {}
+					try { Thread.sleep(MAX_REQUEST_RATE - secondsSinceLastWrite); } catch (InterruptedException e) {
+						throw new TermServerScriptException("Interrupted while waiting to retry write to Google Sheets", e);
+					}
 				} else if (optional) {
 					return;
 				}
@@ -397,7 +403,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			previousParents.append(',');
 		}
 		// Move the file to the new folder
-		file = driveService.files().update(fileId, null)
+		driveService.files().update(fileId, null)
 			.setAddParents(targetFolderId)
 			.setRemoveParents(previousParents.toString())
 			.setSupportsTeamDrives(true)

@@ -318,5 +318,8 @@ public interface RF2Constants {
 	public static final int REF_IDX_AXIOM_STR = 6;
 	
 	//MRCM Attribute Range columns
-	public static final int MRCM_ATTRIB_CONTENT_TYPE = 9;
+	public static final int MRCM_ATTRIB_RANGE_CONTENT_TYPE = 9;
+
+	//MRCM Attribute Domain columns
+	public static final int MRCM_ATTRIB_DOMAIN_CONTENT_TYPE = 11;
 }

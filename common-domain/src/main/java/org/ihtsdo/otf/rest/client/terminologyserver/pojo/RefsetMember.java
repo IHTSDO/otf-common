@@ -286,4 +286,17 @@ RefsetMember extends Component implements RF2Constants {
 		RefsetMember otherRM = (RefsetMember)other;
 		return this.getAdditionalFields().equals(otherRM.getAdditionalFields());
 	}
+
+	protected RefsetMember populateClone(RefsetMember clone, String newComponentSctId) {
+		clone.id = UUID.randomUUID().toString();
+		clone.effectiveTime = null;
+		clone.moduleId = this.moduleId;
+		clone.active = this.active;
+		clone.refsetId = this.refsetId;
+		clone.referencedComponentId = newComponentSctId;
+		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
+		clone.isDirty = true; //New components need to be written to any delta
+		clone.released = this.released;
+		return clone;
+	}
 }
