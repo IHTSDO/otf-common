@@ -43,7 +43,7 @@ public abstract class Component implements RF2Constants {
 	List<ComponentAnnotationEntry> componentAnnotationEntries;
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
-	private transient String issues = "";
+	private String issues = "";
 
 	public String getId() {
 		return id;
@@ -70,6 +70,10 @@ public abstract class Component implements RF2Constants {
 			throw new IllegalStateException("Attempt to check active status on non-populated " + this.getClass().getSimpleName() + " component: " + getId());
 		}
 		return active;
+	}
+
+	public boolean isActiveSafely() {
+		return active != null && active;
 	}
 
 	public Boolean getActive() {
