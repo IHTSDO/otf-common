@@ -62,26 +62,32 @@ public abstract class Script implements RF2Constants {
 
 	@Deprecated(forRemoval = true)
 	public static void warn (Object obj) {
-		LOGGER.warn("*** " + (obj==null?"NULL":obj.toString()));
+		LOGGER.warn("*** {}", (obj==null?"NULL":obj.toString()));
 	}
 
 	@Deprecated(forRemoval = true)
 	public static void error (Object obj, Exception e) {
-		LOGGER.error("*** " + (obj==null?"NULL":obj.toString()));
+		LOGGER.error("*** {}", (obj==null?"NULL":obj.toString()));
 
 		if (e != null) {
 			LOGGER.error(ExceptionUtils.getStackTrace(e));
 		}
 	}
 
-	@Deprecated(forRemoval = true)
+	/**
+	 * Direct access to STDOUT without LOGGER, for cmd line menus
+	 * @param msg
+	 */
 	public static void print(Object msg) {
-		LOGGER.info(msg.toString());
+		System.out.print(msg);
 	}
 
-	@Deprecated(forRemoval = true)
+	/**
+	 * Direct access to STDOUT (with linefeed) without LOGGER, for cmd line menus
+	 * @param msg
+	 */
 	public static void println (Object msg) {
-		LOGGER.info(msg.toString());
+		System.out.println(msg);
 	}
 
 	public static String getMessage (Exception e) {
