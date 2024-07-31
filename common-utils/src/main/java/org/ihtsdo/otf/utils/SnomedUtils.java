@@ -5,8 +5,16 @@ import java.io.IOException;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.RF2Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SnomedUtils implements RF2Constants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
+
+	protected SnomedUtils() {
+		throw new IllegalStateException("Utility class");
+	}
 
 	public static File ensureFileExists(String fileName) throws TermServerScriptException {
 		if (StringUtils.isEmpty(fileName)) {
@@ -19,7 +27,10 @@ public class SnomedUtils implements RF2Constants {
 				if (file.getParentFile() != null) {
 					file.getParentFile().mkdirs();
 				}
-				file.createNewFile();
+				boolean fileCreated = file.createNewFile();
+				if (!fileCreated) {
+					throw new TermServerScriptException("Failed to create file " + fileName + " - unknown reason");
+				}
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to create file " + fileName,e);
@@ -39,7 +50,7 @@ public class SnomedUtils implements RF2Constants {
 		int cutPoint = fsn.lastIndexOf(SEMANTIC_TAG_START);
 		if (cutPoint == -1) {
 			if (!quiet) {
-				System.out.println("'" + fsn + "' does not contain a semantic tag!");
+				LOGGER.warn("'{}' does not contain a semantic tag!", fsn);
 			}
 			elements[0] = fsn;
 		} else {

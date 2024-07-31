@@ -110,7 +110,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 						System.out.println("Retrying..." + attempt);
 						try {
 							Thread.sleep(5 * 1000);
-						} catch (Exception i) {}
+						} catch (InterruptedException i) {}
 					} else {
 						throw e;
 					}
