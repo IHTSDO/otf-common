@@ -22,7 +22,8 @@ import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.context.ApplicationContext;
 
 public abstract class Script implements RF2Constants {
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(Script.class);
+
 	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
 	
@@ -61,7 +62,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public static void warn (Object obj) {
-		sLogger.warn("*** " + (obj==null?"NULL":obj.toString()));
+		LOGGER.warn("*** {}", (obj==null?"NULL":obj.toString()));
 	}
 	
 	public static void error (Object obj, Exception e) {
@@ -71,17 +72,19 @@ public abstract class Script implements RF2Constants {
 	}
 
 	/**
-	 * These methods are used when we want something to appear in STDOUT but not as 
-	 * a log entry.  For example, menu options for user interaction, or - particularly
-	 * in the case of full stops to indicate progress, where we don't want a new line 
-	 * per update.
+	 * Direct access to STDOUT without LOGGER, for cmd line menus
+	 * @param msg
 	 */
 	public static void print(Object msg) {
-		System.out.print(msg.toString());
+		System.out.print(msg);
 	}
 
+	/**
+	 * Direct access to STDOUT (with linefeed) without LOGGER, for cmd line menus
+	 * @param msg
+	 */
 	public static void println (Object msg) {
-		System.out.println(msg.toString());
+		System.out.println(msg);
 	}
 
 	public static String getMessage (Exception e) {
