@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
@@ -25,12 +26,12 @@ import java.util.stream.Collectors;
 
 public class TraceabilityServiceClient {
 	
-	Logger logger = LoggerFactory.getLogger(this.getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(TraceabilityServiceClient.class);
 	
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
 	private final String serverUrl;
-	ObjectMapper mapper = new ObjectMapper();
+	private ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
 	private final int DATA_SIZE = 500;
 	public static int BATCH_SIZE = 50;
@@ -55,11 +56,12 @@ public class TraceabilityServiceClient {
          });
 
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true);
 	}
 	
 	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) throws InterruptedException {
 		if (conceptIds == null || conceptIds.size() == 0) {
-			logger.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
+			LOGGER.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
 			return new ArrayList<>();
 		}
 		
@@ -87,8 +89,8 @@ public class TraceabilityServiceClient {
 				if (e.getRawStatusCode()==500) {
 					//Are we asking for too much here? Try splitting
 					if (conceptIds.size() > BATCH_SIZE / 2) {
-						logger.warn("Issue with call to " + url);
-						logger.warn("Received 500 error " + e + " retrying smaller batches");
+						LOGGER.warn("Issue with call to " + url);
+						LOGGER.warn("Received 500 error " + e + " retrying smaller batches");
 						return retryAsSplit(conceptIds, activityType, user);
 					}
 					//No need to retry if the server is failing this badly
@@ -98,7 +100,7 @@ public class TraceabilityServiceClient {
 				if (failureCount > 3) {
 					throw e;
 				}
-				logger.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+				LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
 				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
 				continue;
 			}
@@ -115,24 +117,24 @@ public class TraceabilityServiceClient {
 				isLast = true;
 			}
 		}
-		logger.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
+		LOGGER.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
 		return activities;
 	}
 	
-	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix) throws InterruptedException {
+	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix) throws InterruptedException, TermServerScriptException {
 		return getComponentActivity(conceptId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPrefix, true, false);
 	}
 	
-	public List<Activity> getComponentActivity(String componentId, String onBranch) throws InterruptedException {
+	public List<Activity> getComponentActivity(String componentId, String onBranch) throws InterruptedException, TermServerScriptException {
 		//This method should only be used to recover traceability at the component level
 		//boolean isConcept = SnomedUtils.isConceptSctid(componentId);
 		boolean isConcept = false;
 		return getComponentActivity(componentId, null, null, null, false, false, onBranch, isConcept, true);
 	}
 
-	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) throws InterruptedException {
+	public List<Activity> getComponentActivity(String componentId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) throws InterruptedException, TermServerScriptException {
 		if (componentId == null) {
-			logger.warn("TraceabilityServiceClient was asked to recover activities for null id component.");
+			LOGGER.warn("TraceabilityServiceClient was asked to recover activities for null id component.");
 			return new ArrayList<>();
 		}
 		
@@ -189,7 +191,7 @@ public class TraceabilityServiceClient {
 				if (failureCount > 3) {
 					throw e;
 				}
-				logger.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+				LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
 				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
 				continue;
 			}
@@ -197,8 +199,12 @@ public class TraceabilityServiceClient {
 			if (responseBody != null) {
 				Object content = responseBody.get("content");
 				if (content != null) {
-					activities.addAll(mapper.convertValue(content, responseContentType));
-					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+					try {
+						activities.addAll(mapper.convertValue(content, responseContentType));
+						isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+					} catch (NoSuchFieldError e) {
+						throw new TermServerScriptException("Failed to parse " + content, e);
+					}
 				} else {
 					isLast = true;
 				}
@@ -206,7 +212,7 @@ public class TraceabilityServiceClient {
 				isLast = true;
 			}
 		}
-		logger.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
+		LOGGER.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
 		return activities;
 	}
 	private List<Activity> retryAsSplit(List<String> conceptIds, ActivityType activityType, String user) throws InterruptedException {
@@ -217,7 +223,7 @@ public class TraceabilityServiceClient {
 			try {
 				activity.addAll(getConceptActivity(subBatch, activityType, user));
 			} catch (Exception e) {
-				logger.error("Exception against " + activityType + " conceptIds " + StringUtils.join(subBatch, ", "));
+				LOGGER.error("Exception against " + activityType + " conceptIds " + StringUtils.join(subBatch, ", "));
 			}
 		}
 		return activity;
