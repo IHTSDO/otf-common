@@ -89,8 +89,8 @@ public class TraceabilityServiceClient {
 				if (e.getRawStatusCode()==500) {
 					//Are we asking for too much here? Try splitting
 					if (conceptIds.size() > BATCH_SIZE / 2) {
-						LOGGER.warn("Issue with call to " + url);
-						LOGGER.warn("Received 500 error " + e + " retrying smaller batches");
+						LOGGER.warn("Issue with call to {}", url);
+						LOGGER.warn("Received 500 error {} retrying smaller batches",e.toString());
 						return retryAsSplit(conceptIds, activityType, user);
 					}
 					//No need to retry if the server is failing this badly
@@ -117,7 +117,8 @@ public class TraceabilityServiceClient {
 				isLast = true;
 			}
 		}
-		LOGGER.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, conceptIds.get(0));
+		String exampleConceptId = conceptIds.get(0);
+		LOGGER.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, exampleConceptId);
 		return activities;
 	}
 	
@@ -138,39 +139,8 @@ public class TraceabilityServiceClient {
 			return new ArrayList<>();
 		}
 		
-		String url = this.serverUrl + "traceability-service/activities?";
-		
-		if (isConceptId) {
-			url += "conceptId=" + componentId;
-		} else {
-			url += "componentId=" + componentId;
-		}
-		
-		if (activityType != null) {
-			url += "&activityType=" + activityType;
-		}
-		
-		if (toDate != null) {
-			url += "&commitToDate=" + (toDate.length()==8 ? DateUtils.formatAsISO(toDate) : toDate);
-		}
-		if (fromDate != null) {
-			url += "&commitFromDate=" + (fromDate .length()==8 ? DateUtils.formatAsISO(fromDate) : fromDate);
-		}
-		if (summaryOnly) {
-			url += "&summaryOnly=true";
-		}
-		if (intOnly) {
-			url += "&intOnly=true";
-		}
-		if (branchPath != null) {
-			if (useOnBranch) {
-				url += "&branchPrefix=" + branchPath;
-			} else {
-				//Allow for inclusion of changes made on other projects that have been promoted up and rebased back down 
-				//to the project we're interested in.
-				url += "&includeHigherPromotions=true&onBranch=" + branchPath;
-			}
-		}
+		String url = getActivitiesUrl(componentId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPath, isConceptId, useOnBranch);
+
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
 		int offset = 0;
@@ -215,6 +185,47 @@ public class TraceabilityServiceClient {
 		LOGGER.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
 		return activities;
 	}
+	
+	private String getActivitiesUrl(String componentId, ActivityType activityType, String fromDate, String toDate,
+			boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) {
+		String url = this.serverUrl + "traceability-service/activities?";
+		
+		if (isConceptId) {
+			url += "conceptId=" + componentId;
+		} else {
+			url += "componentId=" + componentId;
+		}
+		
+		if (activityType != null) {
+			url += "&activityType=" + activityType;
+		}
+		
+		if (toDate != null) {
+			url += "&commitToDate=" + (toDate.length()==8 ? DateUtils.formatAsISO(toDate) : toDate);
+		}
+		if (fromDate != null) {
+			url += "&commitFromDate=" + (fromDate .length()==8 ? DateUtils.formatAsISO(fromDate) : fromDate);
+		}
+		if (summaryOnly) {
+			url += "&summaryOnly=true";
+		}
+		if (intOnly) {
+			url += "&intOnly=true";
+		}
+		
+		if (branchPath != null) {
+			if (useOnBranch) {
+				url += "&branchPrefix=" + branchPath;
+			} else {
+				//Allow for inclusion of changes made on other projects that have been promoted up and rebased back down 
+				//to the project we're interested in.
+				url += "&includeHigherPromotions=true&onBranch=" + branchPath;
+			}
+		}
+		
+		return url;
+	}
+
 	private List<Activity> retryAsSplit(List<String> conceptIds, ActivityType activityType, String user) throws InterruptedException {
 		//Try the conceptIds again, split into batches of 15
 		List<List<String>> subBatches = Lists.partition(conceptIds, 10);
@@ -223,7 +234,8 @@ public class TraceabilityServiceClient {
 			try {
 				activity.addAll(getConceptActivity(subBatch, activityType, user));
 			} catch (Exception e) {
-				LOGGER.error("Exception against " + activityType + " conceptIds " + StringUtils.join(subBatch, ", "));
+				String subBatchSctIds = StringUtils.join(subBatch, ", ");
+				LOGGER.error("Exception against {} conceptIds {}", activityType, subBatchSctIds);
 			}
 		}
 		return activity;
