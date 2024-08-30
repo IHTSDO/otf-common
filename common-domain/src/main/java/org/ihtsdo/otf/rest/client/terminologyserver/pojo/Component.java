@@ -1,8 +1,11 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 
@@ -10,8 +13,8 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 public abstract class Component implements RF2Constants {
-	
-	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, 
+
+	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP,
 		INFERRED_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
 		TEXT_DEFINITION, AXIOM, ALTERNATE_IDENTIFIER, COMPONENT_ANNOTATION, REFSET_MEMBER_ANNOTATION, UNKNOWN}
 	
@@ -43,7 +46,7 @@ public abstract class Component implements RF2Constants {
 	List<ComponentAnnotationEntry> componentAnnotationEntries;
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
-	private String issues = "";
+	private List<String> issues;
 
 	public String getId() {
 		return id;
@@ -100,45 +103,58 @@ public abstract class Component implements RF2Constants {
 		return componentType;
 	}
 	
-	public abstract String[] toRF2() throws Exception;
+	public abstract String[] toRF2() throws ScriptException;
 	
 	protected boolean isDirty = false;
 	
-	public void addIssue(String issue) {
-		addIssue(issue, ", ");
-	}
-	
-	public void addIssues(List<String> issues, String separator) {
+	public void addIssues(List<String> issues) {
 		for (String issue : issues) {
-			addIssue(issue, separator);
+			addIssue(issue);
 		}
 	}
 	
-	public void addIssue(String issue, String separator) {
+	public void addIssue(String issue) {
 		if (this.issues == null) {
-			this.issues = issue;
-		} else {
-			if (!this.issues.isEmpty()) {
-				this.issues += separator;
+			this.issues = new ArrayList<>();
+		}
+		this.issues.add(issue);
+	}
+
+	public void setIssues(List<String> issues) {
+		clearIssues();
+		if (issues != null) {
+			for (String issue : issues) {
+				addIssue(issue);
 			}
-			this.issues += issue;
 		}
 	}
-	
+
 	public boolean hasIssues() {
-		return !StringUtils.isEmpty(issues);
+		return issues != null && !issues.isEmpty();
 	}
 	
 	public boolean hasIssue(String issue) {
 		return !StringUtils.isEmpty(issues) && issues.contains(issue);
 	}
-	
+
 	public String getIssues() {
-		return issues;
+		return getIssues(", ");
 	}
 
-	public void setIssue(String issue) {
-		issues = issue;
+	public String getIssues(String delimiter) {
+		return issues == null ? "" : issues.stream().collect(Collectors.joining(delimiter));
+	}
+
+	public List<String> getIssueList() {
+		return issues == null ? new ArrayList<>() : issues;
+	}
+
+	public String[] getIssuesArray() {
+		return issues.toArray(new String[] {});
+	}
+
+	public void clearIssues() {
+		issues = null;
 	}
 
 	@Override
