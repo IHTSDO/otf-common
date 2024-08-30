@@ -2,6 +2,7 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.List;
 
+import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 public class UnknownComponent extends Component {
@@ -22,7 +23,7 @@ public class UnknownComponent extends Component {
 	}
 
 	@Override
-	public String[] toRF2() throws Exception {
+	public String[] toRF2() throws ScriptException {
 		return null;
 	}
 
