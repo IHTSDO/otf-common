@@ -121,7 +121,8 @@ public class TraceabilityServiceClient {
 		LOGGER.info("Recovered {} activities for {} concepts from {}/{} eg {}", activities.size(), conceptIds.size(), serverUrl, url, exampleConceptId);
 		return activities;
 	}
-	
+
+	//TODO As per SonarQube, create a filter object to populate and pass, rather than all these parameters
 	public List<Activity> getConceptActivity(String conceptId, ActivityType activityType, String fromDate, String toDate, boolean summaryOnly, boolean intOnly, String branchPrefix) throws InterruptedException, TermServerScriptException {
 		return getComponentActivity(conceptId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPrefix, true, false);
 	}
@@ -149,43 +150,53 @@ public class TraceabilityServiceClient {
 		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
 		int failureCount = 0;
 		while (!isLast) {
-			ResponseEntity<Object> responseEntity = null;
-			try {
-				responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, Object.class);
-			} catch (RestClientResponseException e) {
-				if (e.getRawStatusCode()==500) {
-					//No need to retry if the server is failing this badly
-					throw (e);
-				}
-				failureCount++;
-				if (failureCount > 3) {
-					throw e;
-				}
-				LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
-				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
-				continue;
-			}
-			LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
-			if (responseBody != null) {
-				Object content = responseBody.get("content");
-				if (content != null) {
-					try {
-						activities.addAll(mapper.convertValue(content, responseContentType));
-						isLast = Boolean.parseBoolean(responseBody.get("last").toString());
-					} catch (NoSuchFieldError e) {
-						throw new TermServerScriptException("Failed to parse " + content, e);
-					}
-				} else {
-					isLast = true;
-				}
-			} else {
-				isLast = true;
+			isLast = recoverPageOfActivities(url, activities, responseContentType, failureCount);
+			if (!isLast) {
+				LOGGER.warn("*** PWI Refactoring as per SonarQube revealed that I don't see where the update to the offset is supposed to come from.");
 			}
 		}
 		LOGGER.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
 		return activities;
 	}
-	
+
+	private boolean recoverPageOfActivities(String url, List<Activity> activities, TypeReference<List<Activity>> responseContentType, int failureCount) throws InterruptedException, TermServerScriptException {
+		boolean isLast = false;
+		ResponseEntity<Object> responseEntity = null;
+		try {
+			responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, Object.class);
+		} catch (RestClientResponseException e) {
+			if (e.getRawStatusCode()==500) {
+				//No need to retry if the server is failing this badly
+				throw (e);
+			}
+			failureCount++;
+			if (failureCount > 3) {
+				throw e;
+			}
+			LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+			Thread.sleep(30*1000);  //Wait 30 seconds before trying again
+			return false;
+		}
+		LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
+		if (responseBody != null) {
+			Object content = responseBody.get("content");
+			if (content != null) {
+				try {
+					activities.addAll(mapper.convertValue(content, responseContentType));
+					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+				} catch (NoSuchFieldError e) {
+					throw new TermServerScriptException("Failed to parse " + content, e);
+				}
+			} else {
+				isLast = true;
+			}
+		} else {
+			isLast = true;
+		}
+		return isLast;
+	}
+
+	//TODO As per SonarQube, create a filter object to populate and pass, rather than all these parameters
 	private String getActivitiesUrl(String componentId, ActivityType activityType, String fromDate, String toDate,
 			boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) {
 		String url = this.serverUrl + "traceability-service/activities?";
