@@ -368,7 +368,7 @@ public class ResourceManager {
 		try {
 			if (resourceConfiguration.isUseCloud()) {
 				final String path = resourceConfiguration.getCloud().getPath();
-				s3Client.deleteObject(delete -> delete.bucket(resourceConfiguration.getCloud().getBucketName()).key((path != null ? path + "/" : "") + resourcePath));
+				s3Client.deleteObject(delete -> delete.bucket(resourceConfiguration.getCloud().getBucketName()).key(configurePath(path) + resourcePath));
 			} else {
 				Files.deleteIfExists(new File(getFullPath(resourcePath)).toPath());
 			}
@@ -484,9 +484,9 @@ public class ResourceManager {
 		final String bucketName = resourceConfiguration.getCloud().getBucketName();
 		final String path = resourceConfiguration.getCloud().getPath();
 		s3Client.copyObject(copy -> copy.sourceBucket(bucketName)
-				.sourceKey((path != null ? path + "/" : "") + fromResourcePath)
+				.sourceKey(configurePath(path) + fromResourcePath)
 				.destinationBucket(bucketName)
-				.destinationKey((path != null ? path + "/" : "") + toResourcePath));
+				.destinationKey(configurePath(path) + toResourcePath));
 		if (deleteResource) {
 			deleteResource(fromResourcePath);
 		}
