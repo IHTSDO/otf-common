@@ -374,8 +374,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 									sleepTime = 1000;
 								}
 								Thread.sleep(sleepTime);
-							} catch (InterruptedException e1) {}
-							Script.info(e.getMessage() + " trying again...");
+							} catch (InterruptedException e1) {
+								throw new RuntimeException("Interrupted while waiting to retry write to Google Sheets", e);
+							}
+							LOGGER.info("{} trying again...", e.getMessage());
 						} else {
 							throw (e);
 						}
