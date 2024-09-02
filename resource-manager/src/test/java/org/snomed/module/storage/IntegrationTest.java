@@ -13,6 +13,9 @@ import org.springframework.core.io.ResourceLoader;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -90,6 +93,8 @@ public class IntegrationTest {
             return S3Client
                     .builder()
                     .endpointOverride(localStackContainer.getEndpointOverride(LocalStackContainer.Service.S3))
+                    .region(Region.of(localStackContainer.getRegion()))
+                    .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")))
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to instantiate S3Client.", e);
