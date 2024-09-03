@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtils;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class RF2Manager implements RF2Constants {
 		try {
 			PrintWriter pw = printWriterMap.get(fileName);
 			if (pw == null) {
-				File file = SnomedUtils.ensureFileExists(fileName);
+				File file = SnomedUtilsBase.ensureFileExists(fileName);
 				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				pw = new PrintWriter(bw);
