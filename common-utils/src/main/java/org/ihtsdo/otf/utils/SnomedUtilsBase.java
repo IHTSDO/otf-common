@@ -8,11 +8,11 @@ import org.ihtsdo.otf.RF2Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SnomedUtils implements RF2Constants {
+public class SnomedUtilsBase implements RF2Constants {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedUtilsBase.class);
 
-	protected SnomedUtils() {
+	protected SnomedUtilsBase() {
 		throw new IllegalStateException("Utility class");
 	}
 
