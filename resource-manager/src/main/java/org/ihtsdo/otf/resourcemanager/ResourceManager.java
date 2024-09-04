@@ -107,6 +107,8 @@ public class ResourceManager {
 			if (e.statusCode() != 403) {
 				throw e;
 			}
+		} catch (Exception e) {
+			LOGGER.error("Failed to check S3 connection.", e);
 		}
 		return cloudResourceLoader;
 	}
