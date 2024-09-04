@@ -109,8 +109,7 @@ public class ResourceManager {
 				throw e;
 			}
 		} catch (Exception e) {
-			LOGGER.error("Failed to check S3 connection.");
-			e.printStackTrace();
+			LOGGER.error("Failed to check S3 connection.", e);
 		}
 		return cloudResourceLoader;
 	}
