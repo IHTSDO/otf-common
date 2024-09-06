@@ -21,6 +21,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -380,6 +381,32 @@ public class ResourceManager {
 			return true;
 		} catch (IOException e) {
 			return false;
+		}
+	}
+
+	/**
+	 * Gets the resource last modified date from the given <code>resourcePath</code> in millisecond.
+	 *
+	 * @param resourcePath Path to the resource.
+	 * @return the last modified date in millisecond
+	 * stream.
+	 * @throws IOException If an error occurs while trying to load the resource.
+	 */
+	public long getResourceLastModifiedDate(final String resourcePath) throws IOException {
+		final String fullPath = getFullPath(resourcePath);
+		if (resourceConfiguration.isUseCloud()) {
+			try {
+				final String path = resourceConfiguration.getCloud().getPath();
+				return s3Client.getObjectAttributes(objectAttribute -> objectAttribute.bucket(resourceConfiguration.getCloud().getBucketName()).key(configurePath(path) + resourcePath)).lastModified().getLong(ChronoField.MILLI_OF_SECOND);
+			} catch (S3Exception e) {
+				throw new IOException("Failed to load resource from cloud path'" + fullPath + "'.", e);
+			}
+		} else {
+			File file = new File(getFullPath(resourcePath));
+			if (!file.exists()) {
+				throw new IOException("Failed to load resource from local path'" + fullPath + "'.");
+			}
+			return file.lastModified();
 		}
 	}
 
