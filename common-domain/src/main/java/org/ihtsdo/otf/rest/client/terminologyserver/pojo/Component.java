@@ -166,7 +166,7 @@ public abstract class Component implements RF2Constants {
 		if (getId() != null) {
 			return getId();  //This might be coming from memberId if loaded directly from API
 		} else {
-			throw new RuntimeException("Attmpt to hash/equal component with no id.  Use concrete class check of values instead");
+			throw new RuntimeException("Attempt to hash/equal component with no id.  Use concrete class check of values instead");
 		}
 	}
 
@@ -270,6 +270,10 @@ public abstract class Component implements RF2Constants {
 			return !(effectiveTime == null || effectiveTime.isEmpty());
 		}*/
 		return released;
+	}
+
+	public boolean isReleasedSafely() {
+		return released != null && released;
 	}
 
 	public String toWhitelistString() {
