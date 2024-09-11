@@ -21,7 +21,6 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -399,7 +398,7 @@ public class ResourceManager {
 		if (resourceConfiguration.isUseCloud()) {
 			try {
 				final String path = resourceConfiguration.getCloud().getPath();
-				return s3Client.getObjectAttributes(objectAttribute -> objectAttribute.bucket(resourceConfiguration.getCloud().getBucketName()).key(configurePath(path) + resourcePath)).lastModified().getLong(ChronoField.MILLI_OF_SECOND);
+				return s3Client.getObjectAttributes(objectAttribute -> objectAttribute.bucket(resourceConfiguration.getCloud().getBucketName()).key(configurePath(path) + resourcePath).objectAttributes(ObjectAttributes.knownValues())).lastModified().toEpochMilli();
 			} catch (S3Exception e) {
 				throw new IOException("Failed to load resource from cloud path'" + fullPath + "'.", e);
 			}
