@@ -385,6 +385,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 					writeAttempts++;
 				}
 			} catch (IOException e) {
+				//Output some sample of the data so get an idea of where it's coming from.
+				LOGGER.info("Last data attempted: {}", dataToBeWritten.toString().substring(0, 250));
 				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
 			} finally {
 				lastWriteTime = new Date();
