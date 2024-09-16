@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.StringUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
