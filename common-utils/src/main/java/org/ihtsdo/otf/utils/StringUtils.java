@@ -364,13 +364,6 @@ public class StringUtils implements RF2Constants {
 		return str;
     }
 
-	public static String convertEncodedAsciiToEditoriallyAcceptableForm(String str) {
-		for (Map.Entry<String, String> entry : ASCII_ENCODED_MAP.entrySet()) {
-			str = str.replace(entry.getKey(), entry.getValue());
-		}
-		return str;
-	}
-
 	public static String getLineWithMostCharacters(String multilineString) {
 		if (isEmpty(multilineString)) {
 			return "";
@@ -388,5 +381,12 @@ public class StringUtils implements RF2Constants {
 		}
 
 		return longestLine;
+	}
+
+	public static String convertEncodedAsciiToEditoriallyAcceptableForm(String str) {
+		for (Map.Entry<String, String> entry : ASCII_ENCODED_MAP.entrySet()) {
+			str = str.replace(entry.getKey(), entry.getValue());
+		}
+		return str;
 	}
 }
