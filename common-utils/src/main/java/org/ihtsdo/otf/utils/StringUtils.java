@@ -3,12 +3,38 @@ package org.ihtsdo.otf.utils;
 import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StringUtils implements RF2Constants {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(StringUtils.class);
 	
-	public static int INDEX_NOT_FOUND = -1;
+	public static final int INDEX_NOT_FOUND = -1;
 	
-	public static String EMPTY = "";
+	public static final String EMPTY = "";
+
+	private static final Map<String, String> ASCII_ENCODED_MAP = new HashMap<>();
+
+	static {
+		ASCII_ENCODED_MAP.put("&#8208;", "-");  // is a hyphen
+		ASCII_ENCODED_MAP.put("&#8805;", ">=");//is Greater or Equal to aka ≥  >= I assume, ie turn 1 character into 2 characters?
+		ASCII_ENCODED_MAP.put("&#8804;", "<=");  // is less than or equal to ... I'll make that <=
+		ASCII_ENCODED_MAP.put("&#945;", "alpha"); //is the Greek lower case alpha character ⍺
+		ASCII_ENCODED_MAP.put("&#946;", "beta");  //is the Greek lower case beta character β
+		ASCII_ENCODED_MAP.put("&#947;", "gamma");  //is the Greek lower case gamma character γ
+		ASCII_ENCODED_MAP.put("&#181;", "micro");  //is the Greek lower case mu character µ
+		ASCII_ENCODED_MAP.put("&#64258;", "fl");   // whatever this is:  https://www.compart.com/en/unicode/U+FB02 I think I can just replace that with the letters fl
+		ASCII_ENCODED_MAP.put("&#64257;", "fi");   //similar https://www.compart.com/en/unicode/U+FB01 I can make that fi
+		ASCII_ENCODED_MAP.put("&#160;", " ");  // is our old favourite the non-breaking space
+		ASCII_ENCODED_MAP.put("`", "'");
+		ASCII_ENCODED_MAP.put("’", "'");
+		ASCII_ENCODED_MAP.put("–", "-");
+	}
+
+	private StringUtils() {
+		//Prevent instantiation
+	}
 
 	public static List<String> removeBlankLines(List<String> lines) {
 		List<String> unixLines = new ArrayList<>();
@@ -42,10 +68,7 @@ public class StringUtils implements RF2Constants {
 	}
 	
 	public static boolean isEmpty(String[] arr) {
-		if (arr == null || arr.length == 0) {
-			return true;
-		}
-		return false;
+		return (arr == null || arr.length == 0);
 	}
 	
 	public static boolean initialLetterLowerCase(String term) {
@@ -142,26 +165,6 @@ public class StringUtils implements RF2Constants {
 		return str;
 	}
 
-	static void remove (StringBuffer haystack, char needle) {
-		for (int idx = 0; idx < haystack.length(); idx++) {
-			if (haystack.charAt(idx) == needle) {
-				haystack.deleteCharAt(idx);
-				idx --;
-			}
-		}
-	}
-
-	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
-		for (int idx = startFrom; idx < haystack.length(); idx++) {
-			for (char thisNeedle : needles) {
-				if (haystack.charAt(idx) == thisNeedle) {
-					return idx;
-				}
-			}
-		}
-		return -1;
-	}
-
 	/*
 	 * @return the search term matched
 	 */
@@ -181,7 +184,7 @@ public class StringUtils implements RF2Constants {
 		}
 		int sz = str.length();
 		for (int i = 0; i < sz; i++) {
-			if (Character.isDigit(str.charAt(i)) == false) {
+			if (!Character.isDigit(str.charAt(i))) {
 				return false;
 			}
 		}
@@ -235,7 +238,7 @@ public class StringUtils implements RF2Constants {
 		if (rhs == null) {
 			return lhs;
 		}
-		int at = INDEX_NOT_FOUND;
+		int at;
 		if (caseInsensitive) {
 			at = indexOfDifference(lhs.toLowerCase(), rhs.toLowerCase());
 		} else {
@@ -252,7 +255,7 @@ public class StringUtils implements RF2Constants {
 		if (rhs.length() < lhs.length()) {
 			larger = caseInsensitive?lhs.toLowerCase():lhs;
 			largerOrig = lhs;
-			smaller = caseInsensitive?rhs.toLowerCase():rhs;;
+			smaller = caseInsensitive?rhs.toLowerCase():rhs;
 		}
 		
 		//From the index point where they differ, see if we can find the point in the larger
@@ -264,7 +267,7 @@ public class StringUtils implements RF2Constants {
 					return largerOrig.substring(at, i);
 				}
 			} catch (Exception e) {
-				System.out.println("Check exception here:" + e);
+				LOGGER.error("Check exception here", e);
 				break;
 			}
 		}
@@ -314,7 +317,7 @@ public class StringUtils implements RF2Constants {
 
 	public static boolean isLetter(char c) {
 		//Not using Character.isLetter as it has odd behaviour eg ASCII 255 is considered a letter!?
-		//return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+		// (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 		//On the other hand, É wasn't recognised as a letter so let's give the Character class a chance
 		return Character.isLetter(c);
 	}
@@ -378,5 +381,12 @@ public class StringUtils implements RF2Constants {
 		}
 
 		return longestLine;
+	}
+
+	public static String convertEncodedAsciiToEditoriallyAcceptableForm(String str) {
+		for (Map.Entry<String, String> entry : ASCII_ENCODED_MAP.entrySet()) {
+			str = str.replace(entry.getKey(), entry.getValue());
+		}
+		return str;
 	}
 }
