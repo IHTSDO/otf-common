@@ -389,4 +389,11 @@ public class StringUtils implements RF2Constants {
 
 		return longestLine;
 	}
+
+	public static String convertEncodedAsciiToEditoriallyAcceptableForm(String str) {
+		for (Map.Entry<String, String> entry : ASCII_ENCODED_MAP.entrySet()) {
+			str = str.replace(entry.getKey(), entry.getValue());
+		}
+		return str;
+	}
 }
