@@ -8,7 +8,7 @@ import com.google.gson.annotations.Expose;
 
 public class Task {
 	
-	public static int TASK_SEQUENCE = 0;
+	private static int taskSequence = 0;
 	
 	int uniqueTaskId;
 	
@@ -37,7 +37,7 @@ public class Task {
 		this.batch = batch;
 		this.author = author;
 		this.reviewer = reviewer;
-		uniqueTaskId = ++TASK_SEQUENCE;
+		uniqueTaskId = ++taskSequence;
 	}
 	
 	public String getSummary() {
@@ -62,9 +62,16 @@ public class Task {
 		}
 		return html.toString();
 	}
+
 	public List<Component> getComponents() {
 		return components;
 	}
+
+	public boolean contains(Component c) {
+		//This task might not know it's components are actually concepts, so check ids
+		return components.stream().anyMatch(comp -> comp.getId().equals(c.getId()));
+	}
+
 	public void setComponents(List<Component> components) {
 		this.components = components;
 	}
@@ -159,12 +166,18 @@ public class Task {
 	public void remove(Component removeMe) {
 		components.remove(removeMe);
 	}
-	
+
+	@Override
 	public boolean equals(Object other) {
 		if (other instanceof Task t2) {
 			return uniqueTaskId == t2.uniqueTaskId;
 		}
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return uniqueTaskId;
 	}
 
 	public Map<String, String> getAssignee() {
@@ -184,6 +197,6 @@ public class Task {
 	}
 	
 	public static int getNextTaskSequence() {
-		return TASK_SEQUENCE + 1;
+		return taskSequence + 1;
 	}
 }
