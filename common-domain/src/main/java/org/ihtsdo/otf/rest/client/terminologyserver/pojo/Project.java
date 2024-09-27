@@ -41,6 +41,9 @@ public class Project {
 	@Expose
 	@JsonAdapter(MetadataDeserializer.class)
 	private Metadata metadata;
+	@SerializedName("codeSystem")
+	@Expose
+	private CodeSystem codeSystem;
 	
 	private transient String previousBranchPath;
 
@@ -175,6 +178,14 @@ public class Project {
 
 	public void setMetadata(Metadata metadata) {
 		this.metadata = metadata;
+	}
+
+	public CodeSystem getCodeSystem() {
+		return codeSystem;
+	}
+
+	public void setCodeSystem(CodeSystem codeSystem) {
+		this.codeSystem = codeSystem;
 	}
 	
 	public String toString() {
