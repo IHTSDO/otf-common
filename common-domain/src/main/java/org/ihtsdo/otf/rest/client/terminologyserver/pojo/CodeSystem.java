@@ -1,18 +1,47 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 import java.util.Collection;
 import java.util.Set;
 
 public class CodeSystem {
 
+	@SerializedName("shortName")
+	@Expose
 	private String shortName;
+
+	@SerializedName("name")
+	@Expose
 	private String name;
+
+	@SerializedName("countryCode")
+	@Expose
 	private String countryCode;
+
+	@SerializedName("maintainerType")
+	@Expose
 	private String maintainerType;
+
+	@SerializedName("branchPath")
+	@Expose
 	private String branchPath;
+
+	@SerializedName("userRoles")
+	@Expose
 	private Set <String> userRoles;
+
+	@SerializedName("modules")
+	@Expose
 	private Collection<ConceptMiniPojo> modules;
+
+	@SerializedName("dependantVersionEffectiveTime")
+	@Expose
 	private Integer dependantVersionEffectiveTime;
+
+	@SerializedName("latestVersion")
+	@Expose
 	private CodeSystemVersion latestVersion;
 
 	public String getShortName() {
