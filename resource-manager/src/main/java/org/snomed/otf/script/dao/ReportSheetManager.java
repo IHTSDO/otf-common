@@ -1,20 +1,17 @@
 package org.snomed.otf.script.dao;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 
 import java.io.*;
 import java.net.SocketTimeoutException;
-import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -27,7 +24,6 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
-	private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static final int MAX_REQUEST_RATE = 9;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
@@ -38,11 +34,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static int MAX_ROW_INCREMENT = 10000;
 	int currentCellCount = 0;
 
-	Credential credential;
 	ReportManager owner;
 	Sheets sheetsService;
 	Drive driveService;
 	Spreadsheet sheet;
+	HttpCredentialsAdapter requestInitializer;
 	static public String targetFolderId = "1bIRADym0omCgbD7064U-D24XGqAEg3gt";  //Fallback location
 	
 	Date lastWriteTime;
@@ -66,19 +62,24 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	 * @return An authorized Credential object.
 	 * @throws IOException If there is no client_secret.
 	 */
-	private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-		if (credential == null) {
+	private HttpCredentialsAdapter getRequestInitializer() throws IOException {
+		if (requestInitializer == null) {
+			List<String> scopes = List.of(SheetsScopes.DRIVE_FILE,
+											SheetsScopes.SPREADSHEETS);
 			String dir = System.getProperty("user.dir");
 			File secret = new File (dir + File.separator + CLIENT_SECRET_DIR);
-			System.out.print("Looking for client secret file " + secret + "...");
+			LOGGER.debug("Looking for client secret file {}...",  secret);
 			if (!secret.canRead()) {
 				throw new IllegalStateException("Unable to read " + secret);
 			}
-			//return GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SCOPES);
-			credential = GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SheetsScopes.all());
-			System.out.println ("found.");
+			GoogleCredentials credential = GoogleCredentials.fromStream(new FileInputStream(secret))
+					.createScoped(scopes);
+			credential.refreshIfExpired();
+			LOGGER.debug("Google secret file found OK.");
+			requestInitializer = new HttpCredentialsAdapter(credential);
 		}
-		return credential;
+		
+		return requestInitializer;
 	}
 
 	private void init() throws TermServerScriptException {
@@ -87,52 +88,66 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			if (sheet != null) {
 				flush();
 			}
-			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-			if (sheetsService == null) {
-				sheetsService = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-						.setApplicationName(APPLICATION_NAME)
-						.build();
-			}
-			if (driveService == null) {
-				driveService = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-						.setApplicationName(APPLICATION_NAME)
-						.build();
-			}
-			Spreadsheet requestBody = new Spreadsheet();
-			Sheets.Spreadsheets.Create request = sheetsService.spreadsheets().create(requestBody);
-			int attempt = 0;
-			while (sheet == null) {
-				try {
-					sheet = request.execute();
-				} catch (Exception e) {
-					System.out.println("Failed to initialise sheet due to " + e.getMessage());
-					if (++attempt < 3 ) {
-						System.out.println("Retrying..." + attempt);
-						try {
-							Thread.sleep(5 * 1000);
-						} catch (InterruptedException i) {}
-					} else {
-						throw e;
-					}
-				}
-			}
-			System.out.println("Created: " + sheet.getSpreadsheetUrl());
-			
-			//And share it with everyone everywhere
-			//See https://developers.google.com/drive/api/v2/reference/permissions/insert
-			Permission perm = new Permission()
-				.setKind("drive#permission")
-				.setRole("writer")
-				.setType("anyone");
-			driveService.permissions()
-				.create(sheet.getSpreadsheetId(), perm)
-				.setSupportsTeamDrives(true)
-				.execute();
-			System.out.println("Spreadsheet opened up to the universe.");
-		} catch (IOException | GeneralSecurityException e) {
+			setupServices();
+			createSheet();
+			setSheetPermissions();
+		} catch (IOException e) {
 			throw new IllegalStateException("Unable to initialise Google Sheets connection",e);
 		}
+	}
+
+	private void setupServices() throws IOException {
+		if (sheetsService == null) {
+			sheetsService = new Sheets.Builder(new NetHttpTransport(),
+				GsonFactory.getDefaultInstance(),
+				getRequestInitializer())
+				.setApplicationName(APPLICATION_NAME)
+				.build();
+		}
 		
+		if (driveService == null) {
+			driveService = new Drive.Builder(new NetHttpTransport(),
+					GsonFactory.getDefaultInstance(),
+					getRequestInitializer())
+					.setApplicationName(APPLICATION_NAME)
+					.build();
+		}
+	}
+
+	private void createSheet() throws IOException {
+		Spreadsheet requestBody = new Spreadsheet();
+		Sheets.Spreadsheets.Create request = sheetsService.spreadsheets().create(requestBody);
+		int attempt = 0;
+		while (sheet == null) {
+			try {
+				sheet = request.execute();
+			} catch (Exception e) {
+				LOGGER.error("Failed to initialise sheet", e);
+				if (++attempt < 3 ) {
+					LOGGER.warn("Retrying...{}", attempt);
+					try {
+						Thread.sleep(5 * 1000);
+					} catch (InterruptedException i) {}
+				} else {
+					throw e;
+				}
+			}
+		}
+		LOGGER.info("Created: {}", sheet.getSpreadsheetUrl());
+	}
+
+	private void setSheetPermissions() throws IOException {
+		//And share it with everyone everywhere
+		//See https://developers.google.com/drive/api/v2/reference/permissions/insert
+		Permission perm = new Permission()
+			.setKind("drive#permission")
+			.setRole("writer")
+			.setType("anyone");
+		driveService.permissions()
+			.create(sheet.getSpreadsheetId(), perm)
+			.setSupportsTeamDrives(true)
+			.execute();
+		LOGGER.warn("Spreadsheet opened up to the universe.");
 	}
 
 	@Override
