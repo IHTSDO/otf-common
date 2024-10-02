@@ -12,7 +12,9 @@ public interface RF2Constants {
 	int NO_CHANGES_MADE = 0;
 	int CHANGE_MADE = 1;
 	Long SCTID_ROOT_CONCEPT = 138875005L;
-	final Long SCTID_IS_A_CONCEPT = 116680003L;
+	Long SCTID_IS_A_CONCEPT = 116680003L;
+
+	String GFOLDER_FALLBACK = "1bIRADym0omCgbD7064U-D24XGqAEg3gt"; //Reporting Engine Fallback
 
 	Set<Long> NEVER_GROUPED_ATTRIBUTES = Set.of(
 			1142139005L, 1142140007L, 1142141006L, 1142143009L,
@@ -198,9 +200,9 @@ public interface RF2Constants {
 	enum Acceptability { ACCEPTABLE, PREFERRED, BOTH, NONE }
 
 	enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE, INITIAL_CHARACTER_CASE_INSENSITIVE }
-	static String CS = "CS";
-	static String ci= "ci";
-	static String cI = "cI";
+	String CS = "CS";
+	String ci= "ci";
+	String cI = "cI";
 
 	String DELTA = "Delta";
 	String SNAPSHOT = "Snapshot";
