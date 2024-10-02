@@ -43,7 +43,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	Drive driveService;
 	Spreadsheet sheet;
 	HttpCredentialsAdapter requestInitializer;
-	static public String targetFolderId = "1bIRADym0omCgbD7064U-D24XGqAEg3gt";  //Fallback location
+	static public String targetFolderId = GFOLDER_FALLBACK;
 
 	Date lastWriteTime;
 	List<ValueRange> dataToBeWritten = new ArrayList<>();
