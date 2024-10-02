@@ -181,6 +181,7 @@ public class ResourceManager {
 				String configPath = cloud.getPath().replaceAll("\\\\", "/");
 				final String s3Path = configurePath(configPath);
 				final String prefixPath = prefix == null || prefix.isEmpty() ? s3Path : s3Path + prefix;
+				LOGGER.debug("Listing file names in bucket {} with prefix {}", cloud.getBucketName(), prefixPath);
 				ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder().bucket(cloud.getBucketName()).prefix(prefixPath).maxKeys(10000).build();
 				boolean done = false;
 				while (!done) {
@@ -237,9 +238,7 @@ public class ResourceManager {
 
 	public Set<String> doListFilenames(String prefix) {
 		try {
-			Set<String> packages = this.listFilenames(prefix);
-
-			return packages;
+			return this.listFilenames(prefix);
 		} catch (IOException e) {
 			return Collections.emptySet();
 		}
