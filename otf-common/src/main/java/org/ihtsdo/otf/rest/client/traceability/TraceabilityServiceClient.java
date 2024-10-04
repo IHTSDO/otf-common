@@ -22,20 +22,23 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TraceabilityServiceClient {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(TraceabilityServiceClient.class);
-	
+	private static final String CONTENT_TYPE = "application/json";
+	private static final int DATA_SIZE = 500;
+	private static final String PAGE_PARAM = "&page=";
+	private static final String SIZE_PARAM = "&size=";
+	private static final TypeReference<List<Activity>> ACTIVITY_RESPONSE_CONTENT_TYPE = new TypeReference<>() {};
+
+	private static int batchSize = 50;
+
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
 	private final String serverUrl;
 	private ObjectMapper mapper = new ObjectMapper();
-	private static final String CONTENT_TYPE = "application/json";
-	private final int DATA_SIZE = 500;
-	public static int BATCH_SIZE = 50;
-	
+
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
 		this.serverUrl = serverUrl;
@@ -58,9 +61,13 @@ public class TraceabilityServiceClient {
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true);
 	}
-	
+
+	public static int getBatchSize() {
+		return batchSize;
+	}
+
 	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) throws InterruptedException {
-		if (conceptIds == null || conceptIds.size() == 0) {
+		if (conceptIds == null || conceptIds.isEmpty()) {
 			LOGGER.warn("TraceabilityServiceClient was asked to recover activities for ZERO (0) concepts");
 			return new ArrayList<>();
 		}
@@ -72,14 +79,12 @@ public class TraceabilityServiceClient {
 		}
 		List<Long> conceptIdsL = conceptIds.stream()
 				.map(Long::parseLong)
-				.collect(Collectors.toList());
+				.toList();
 		HttpEntity<List<Long>> requestEntity = new HttpEntity<>(conceptIdsL, headers);
 		List<Activity> activities = new ArrayList<>();
 		boolean isLast = false;
 		int offset = 0;
-		TypeReference<List<Activity>> responseContentType = new TypeReference<>() {
-		};
-		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
+		url = url + PAGE_PARAM + offset + SIZE_PARAM + DATA_SIZE;
 		int failureCount = 0;
 		while (!isLast) {
 			ResponseEntity<Object> responseEntity;
@@ -88,7 +93,7 @@ public class TraceabilityServiceClient {
 			} catch (RestClientResponseException e) {
 				if (e.getRawStatusCode()==500) {
 					//Are we asking for too much here? Try splitting
-					if (conceptIds.size() > BATCH_SIZE / 2) {
+					if (conceptIds.size() > batchSize / 2) {
 						LOGGER.warn("Issue with call to {}", url);
 						LOGGER.warn("Received 500 error {} retrying smaller batches",e.toString());
 						return retryAsSplit(conceptIds, activityType, user);
@@ -101,14 +106,14 @@ public class TraceabilityServiceClient {
 					throw e;
 				}
 				LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
-				Thread.sleep(30*1000);  //Wait 30 seconds before trying again
+				Thread.sleep(30*1000L);  //Wait 30 seconds before trying again
 				continue;
 			}
 			LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
 			if (responseBody != null) {
 				Object content = responseBody.get("content");
 				if (content != null) {
-					activities.addAll(mapper.convertValue(content, responseContentType));
+					activities.addAll(mapper.convertValue(content, ACTIVITY_RESPONSE_CONTENT_TYPE));
 					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
 				} else {
 					isLast = true;
@@ -129,7 +134,6 @@ public class TraceabilityServiceClient {
 	
 	public List<Activity> getComponentActivity(String componentId, String onBranch) throws InterruptedException, TermServerScriptException {
 		//This method should only be used to recover traceability at the component level
-		//boolean isConcept = SnomedUtils.isConceptSctid(componentId);
 		boolean isConcept = false;
 		return getComponentActivity(componentId, null, null, null, false, false, onBranch, isConcept, true);
 	}
@@ -140,60 +144,50 @@ public class TraceabilityServiceClient {
 			return new ArrayList<>();
 		}
 		
-		String url = getActivitiesUrl(componentId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPath, isConceptId, useOnBranch);
-
-		List<Activity> activities = new ArrayList<>();
-		boolean isLast = false;
-		int offset = 0;
-		TypeReference<List<Activity>> responseContentType = new TypeReference<>() {
-		};
-		url = url + "&offset=" + offset + "&size=" + DATA_SIZE;
-		int failureCount = 0;
-		while (!isLast) {
-			isLast = recoverPageOfActivities(url, activities, responseContentType, failureCount);
-			if (!isLast) {
-				LOGGER.warn("*** PWI Refactoring as per SonarQube revealed that I don't see where the update to the offset is supposed to come from.");
-			}
-		}
-		LOGGER.info("Recovered {} activities for component {} using {}", activities.size(), componentId, url);
-		return activities;
+		String baseUrl = getActivitiesUrl(componentId, activityType, fromDate, toDate, summaryOnly, intOnly, branchPath, isConceptId, useOnBranch);
+		return recoverPagesOfActivities(baseUrl);
 	}
 
-	private boolean recoverPageOfActivities(String url, List<Activity> activities, TypeReference<List<Activity>> responseContentType, int failureCount) throws InterruptedException, TermServerScriptException {
-		boolean isLast = false;
+	private List<Activity> recoverPagesOfActivities(String baseUrl) throws InterruptedException, TermServerScriptException {
+		ActivityPages activityPages = new ActivityPages(baseUrl);
+		while (!activityPages.isLast()) {
+			recoverPageOfActivities(activityPages);
+		}
+		LOGGER.info("Recovered total {} activities via baseUrl {}", activityPages.size(), baseUrl);
+		return activityPages.getActivities();
+	}
+
+	private void recoverPageOfActivities(ActivityPages activityPages) throws InterruptedException, TermServerScriptException {
 		ResponseEntity<Object> responseEntity = null;
 		try {
-			responseEntity = restTemplate.exchange(url, HttpMethod.GET, null, Object.class);
+			responseEntity = restTemplate.exchange(activityPages.getThisPageUrl(), HttpMethod.GET, null, Object.class);
 		} catch (RestClientResponseException e) {
 			if (e.getRawStatusCode()==500) {
 				//No need to retry if the server is failing this badly
 				throw (e);
 			}
-			failureCount++;
-			if (failureCount > 3) {
-				throw e;
-			}
+			activityPages.recordFailure(e);
 			LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
-			Thread.sleep(30*1000);  //Wait 30 seconds before trying again
-			return false;
+			Thread.sleep(30*1000L);  //Wait 30 seconds before trying again
 		}
 		LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
 		if (responseBody != null) {
 			Object content = responseBody.get("content");
 			if (content != null) {
 				try {
-					activities.addAll(mapper.convertValue(content, responseContentType));
-					isLast = Boolean.parseBoolean(responseBody.get("last").toString());
+					List<Activity> thisPageActivities = mapper.convertValue(content, ACTIVITY_RESPONSE_CONTENT_TYPE);
+					LOGGER.debug("Recovered {} activities via {}", thisPageActivities.size(), activityPages.getThisPageUrl());
+					activityPages.addAll(thisPageActivities);
+					activityPages.setIsLast(Boolean.parseBoolean(responseBody.get("last").toString()));
 				} catch (NoSuchFieldError e) {
 					throw new TermServerScriptException("Failed to parse " + content, e);
 				}
 			} else {
-				isLast = true;
+				activityPages.setIsLast(true);  //Don't try and recover any more if we received an empty set
 			}
 		} else {
-			isLast = true;
+			activityPages.setIsLast(true);  //Don't try and recover any more if we received null!
 		}
-		return isLast;
 	}
 
 	//TODO As per SonarQube, create a filter object to populate and pass, rather than all these parameters
@@ -253,4 +247,53 @@ public class TraceabilityServiceClient {
 	}
 
 
+	public List<Activity> getActivitiesForUsersOnBranches(String componentSubType, String users, String branches, String fromEffectiveTime) throws InterruptedException, TermServerScriptException {
+		String baseUrl = this.serverUrl + "traceability-service/activitiesForUsersOnBranches?componentSubType="+componentSubType+"&users=" + users + "&branches=" + branches + "&fromEffectiveTime=" + fromEffectiveTime;
+		return recoverPagesOfActivities(baseUrl);
+	}
+
+	class ActivityPages {
+		String baseUrl;
+		List<Activity> activities = new ArrayList<>();
+		boolean isLast = false;
+		int pageCount = 0;
+		int failureCount = 0;
+
+		ActivityPages(String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
+		String getThisPageUrl() {
+			return baseUrl + PAGE_PARAM + pageCount + SIZE_PARAM + DATA_SIZE;
+		}
+
+		public boolean isLast() {
+			return isLast;
+		}
+
+		public List<Activity> getActivities() {
+			return activities;
+		}
+
+		public int size() {
+			return activities.size();
+		}
+
+		public void recordFailure(RestClientResponseException e) {
+			failureCount++;
+			if (failureCount > 3) {
+				isLast = true;
+				throw e;
+			}
+		}
+
+		public void addAll(List<Activity> thisPageActivities) {
+			activities.addAll(thisPageActivities);
+			pageCount ++;
+		}
+
+		public void setIsLast(boolean isLast) {
+			this.isLast = isLast;
+		}
+	}
 }
