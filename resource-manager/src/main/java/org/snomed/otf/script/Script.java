@@ -26,10 +26,6 @@ public abstract class Script implements RF2Constants {
 
 	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
-	
-	static Logger sLogger = LoggerFactory.getLogger(Script.class);
-	protected Logger logger = LoggerFactory.getLogger(this.getClass());
-	
 	public static List<String> HISTORICAL_REFSETS = new ArrayList<>();
 	static {
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
