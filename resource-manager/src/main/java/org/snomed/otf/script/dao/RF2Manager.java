@@ -21,10 +21,12 @@ public class RF2Manager implements RF2Constants {
 			PrintWriter pw = printWriterMap.get(fileName);
 			if (pw == null) {
 				File file = SnomedUtilsBase.ensureFileExists(fileName);
-				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				pw = new PrintWriter(bw);
-				printWriterMap.put(fileName, pw);
+				try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
+					 BufferedWriter bw = new BufferedWriter(osw);
+					 PrintWriter newPw = new PrintWriter(bw)) {
+					pw = newPw;
+					printWriterMap.put(fileName, pw);
+				}
 			}
 			return pw;
 		} catch (Exception e) {

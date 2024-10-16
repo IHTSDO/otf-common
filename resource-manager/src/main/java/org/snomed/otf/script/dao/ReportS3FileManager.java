@@ -23,9 +23,8 @@ public class ReportS3FileManager extends ReportFileManager {
     public static final String BRANCH_PATH_KEY = "@BRANCH_PATH@";
     public static final String REPORT_NAME_KEY = "@REPORT_NAME@";
 
-
-    private DataBroker reportDataUploader;
-    private DataTransformer dataTransformer;
+    private final DataBroker reportDataUploader;
+    private final DataTransformer dataTransformer;
 
     // Do not delete as the worker is reset every time is starts.
     // So might as well keep the files
@@ -86,7 +85,7 @@ public class ReportS3FileManager extends ReportFileManager {
         }
     }
 
-    protected void transformReports() throws Exception {
+    protected void transformReports() throws TermServerScriptException {
         // Process the report
         File localReportFile = null;
         File locals3ReportFile = null;
@@ -98,14 +97,15 @@ public class ReportS3FileManager extends ReportFileManager {
                 dataTransformer.transform(localReportFile, locals3ReportFile);
             } catch (Exception e) {
                 String msg = "Failed to complete transform " +
-                        localReportFile != null ? localReportFile.getPath() : "" + " to " +
-                        locals3ReportFile != null ? locals3ReportFile.getPath() : "";
-                throw new Exception(msg, e);
+                        (localReportFile != null ? localReportFile.getPath() : "")
+                        + " to " +
+                        (locals3ReportFile != null ? locals3ReportFile.getPath() : "");
+                throw new TermServerScriptException(msg, e);
             }
         }
     }
 
-    protected void uploadReports() throws Exception {
+    protected void uploadReports() throws TermServerScriptException {
         File locals3ReportFile = null;
         File s3ReportFile = null;
         for (Map.Entry<File, File> entry : transformedReportsToS3Reports.entrySet()) {
@@ -119,9 +119,9 @@ public class ReportS3FileManager extends ReportFileManager {
                 reportDataUploader.upload(s3ReportFile, locals3ReportFile);
             } catch (Exception e) {
                 String msg = "Failed to upload " +
-                        locals3ReportFile != null ? locals3ReportFile.getPath() : "" +
-                        " to " + s3ReportFile != null ? s3ReportFile.getPath() : "";
-                throw new Exception(msg, e);
+                        (locals3ReportFile != null ? locals3ReportFile.getPath() : "") +
+                        " to " + (s3ReportFile != null ? s3ReportFile.getPath() : "");
+                throw new TermServerScriptException(msg, e);
             }
         }
     }

@@ -32,12 +32,14 @@ public class TraceabilityServiceClient {
 	private static final String SIZE_PARAM = "&size=";
 	private static final TypeReference<List<Activity>> ACTIVITY_RESPONSE_CONTENT_TYPE = new TypeReference<>() {};
 
-	private static int batchSize = 50;
+	private static final String TIMEOUT_MESSAGE = "Timeout while waiting for traceability.  Sleeping 30s then trying again...";
+
+	private static final int BATCH_SIZE = 50;
 
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
 	private final String serverUrl;
-	private ObjectMapper mapper = new ObjectMapper();
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
@@ -63,7 +65,7 @@ public class TraceabilityServiceClient {
 	}
 
 	public static int getBatchSize() {
-		return batchSize;
+		return BATCH_SIZE;
 	}
 
 	public List<Activity> getConceptActivity(List<String> conceptIds,  ActivityType activityType, String user) throws InterruptedException {
@@ -93,7 +95,7 @@ public class TraceabilityServiceClient {
 			} catch (RestClientResponseException e) {
 				if (e.getRawStatusCode()==500) {
 					//Are we asking for too much here? Try splitting
-					if (conceptIds.size() > batchSize / 2) {
+					if (conceptIds.size() > BATCH_SIZE / 2) {
 						LOGGER.warn("Issue with call to {}", url);
 						LOGGER.warn("Received 500 error {} retrying smaller batches",e.toString());
 						return retryAsSplit(conceptIds, activityType, user);
@@ -105,7 +107,7 @@ public class TraceabilityServiceClient {
 				if (failureCount > 3) {
 					throw e;
 				}
-				LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+				LOGGER.warn(TIMEOUT_MESSAGE);
 				Thread.sleep(30*1000L);  //Wait 30 seconds before trying again
 				continue;
 			}
@@ -162,14 +164,19 @@ public class TraceabilityServiceClient {
 		try {
 			responseEntity = restTemplate.exchange(activityPages.getThisPageUrl(), HttpMethod.GET, null, Object.class);
 		} catch (RestClientResponseException e) {
-			if (e.getRawStatusCode()==500) {
+			if (e.getRawStatusCode() == 500) {
 				//No need to retry if the server is failing this badly
 				throw (e);
 			}
 			activityPages.recordFailure(e);
-			LOGGER.warn("Timeout while waiting for traceability.  Sleeping 30s then trying again...");
+			LOGGER.warn(TIMEOUT_MESSAGE);
 			Thread.sleep(30*1000L);  //Wait 30 seconds before trying again
 		}
+
+		if (responseEntity == null) {
+			throw new TermServerScriptException("Failed to recover activities from " + activityPages.getThisPageUrl() + ", null response received from " + activityPages.getThisPageUrl());
+		}
+
 		LinkedTreeMap<String, Object> responseBody = (LinkedTreeMap<String, Object>) responseEntity.getBody();
 		if (responseBody != null) {
 			Object content = responseBody.get("content");
