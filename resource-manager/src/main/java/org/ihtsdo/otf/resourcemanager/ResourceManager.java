@@ -4,6 +4,8 @@ import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.core.io.FileSystemResourceLoader;
 import org.springframework.core.io.Resource;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
  * ResourceLoader into your configuration.
  */
 public class ResourceManager {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceManager.class);
 
 	private final ResourceConfiguration resourceConfiguration;
 	private final ResourceLoader resourceLoader;
