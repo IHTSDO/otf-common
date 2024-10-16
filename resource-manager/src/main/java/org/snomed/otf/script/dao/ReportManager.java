@@ -32,7 +32,7 @@ public class ReportManager implements RF2Constants {
 	protected DataBroker dataUploader;
 	List<String> tabNames;
 	
-	private ReportManager() {};
+	private ReportManager() {}
 	
 	Set<Integer> disabledTabs = new HashSet<>();
 	Set<Integer> disableTabAdvised = new HashSet<>();
@@ -70,7 +70,7 @@ public class ReportManager implements RF2Constants {
 				writeToS3 = true;
 			}
 		}
-		tabNames = Arrays.asList(new String[] {"Sheet1"});
+		tabNames = Arrays.asList("Sheet1");
 	}
 	
 	public boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
@@ -112,7 +112,7 @@ public class ReportManager implements RF2Constants {
 			if (andClose) {
 				// format the columns in the spreadsheet
 				reportSheetManager.formatSpreadSheetColumns();
-				System.out.println("See Google Sheet: " + reportSheetManager.getUrl());
+				LOGGER.info("See Google Sheet: {}", reportSheetManager.getUrl());
 			}
 		}
 
@@ -143,17 +143,22 @@ public class ReportManager implements RF2Constants {
 	}
 	
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
-			if (writeToFile) {
-				reportFileManager.initialiseReportFiles(columnHeaders);
-			}
-			
-			if (writeToSheet) {
-				reportSheetManager.initialiseReportFiles(columnHeaders);
-			}
+		//Trim all the column headers to remove leading/trailing spaces
+		for (int i=0; i<columnHeaders.length; i++) {
+			columnHeaders[i] = columnHeaders[i].trim();
+		}
 
-			if (writeToS3) {
-				reportS3FileManager.initialiseReportFiles(columnHeaders);
-			}
+		if (writeToFile) {
+			reportFileManager.initialiseReportFiles(columnHeaders);
+		}
+
+		if (writeToSheet) {
+			reportSheetManager.initialiseReportFiles(columnHeaders);
+		}
+
+		if (writeToS3) {
+			reportS3FileManager.initialiseReportFiles(columnHeaders);
+		}
 	}
 	
 	public Map<String, PrintWriter> getPrintWriterMap() {
