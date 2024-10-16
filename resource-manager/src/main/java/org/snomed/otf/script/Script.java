@@ -50,11 +50,11 @@ public abstract class Script implements RF2Constants {
 	protected ReportConfiguration reportConfiguration;
 	protected ApplicationContext appContext;
 	public static void info (String msg) {
-		sLogger.info(msg);
+		LOGGER.info(msg);
 	}
 	
 	public static void debug (Object obj) {
-		sLogger.debug(obj==null?"NULL":obj.toString());
+		LOGGER.debug(obj==null?"NULL":obj.toString());
 	}
 	
 	public static void warn (Object obj) {
@@ -62,9 +62,11 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public static void error (Object obj, Exception e) {
-		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
-		if (e != null) 
-			sLogger.error(ExceptionUtils.getStackTrace(e));
+		LOGGER.error("*** {}", (obj==null?"NULL":obj.toString()));
+
+		if (e != null) {
+			LOGGER.error(ExceptionUtils.getStackTrace(e));
+		}
 	}
 
 	/**
