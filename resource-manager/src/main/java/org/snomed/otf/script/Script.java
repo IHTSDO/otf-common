@@ -37,7 +37,7 @@ public abstract class Script implements RF2Constants {
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_MOVED_TO_REFSETID);
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_ALTERNATIVE_REFSETID);
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
-	};
+	}
 	
 	protected ReportManager reportManager;
 	protected RF2Manager rf2Manager;

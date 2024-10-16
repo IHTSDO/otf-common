@@ -30,11 +30,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static final int MAX_REQUEST_RATE = 9;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
-	
+	private static final int MAX_CELLS = 5000000 - 5000;
+	private static final int MAX_ROW_INCREMENT = 10000;
+
 	Map<Integer, Integer> tabRowsCount;
 	Map<Integer, Integer> maxTabColumns;
-	private static int MAX_CELLS = 5000000 - 5000;
-	private static int MAX_ROW_INCREMENT = 10000;
 	int currentCellCount = 0;
 
 	ReportManager owner;

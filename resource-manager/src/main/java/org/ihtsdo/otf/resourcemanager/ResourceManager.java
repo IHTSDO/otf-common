@@ -2,7 +2,6 @@ package org.ihtsdo.otf.resourcemanager;
 
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
-import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +20,6 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
