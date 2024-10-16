@@ -90,9 +90,9 @@ public interface RF2Constants {
 	String BREAK = "===========================================";
 
 	//Description Type SCTIDs
-	String SYN = "900000000000013009";
-	String FSN = "900000000000003001";
-	String DEF = "900000000000550004";
+	String SCTID_SYN = "900000000000013009";
+	String SCTID_FSN = "900000000000003001";
+	String SCTID_DEF = "900000000000550004";
 
 	String LANG_EN = "en";
 

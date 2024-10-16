@@ -6,7 +6,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ public abstract class Script implements RF2Constants {
 
 	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
-	public static List<String> HISTORICAL_REFSETS = new ArrayList<>();
+	protected static final List<String> HISTORICAL_REFSETS = new ArrayList<>();
 	static {
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_WAS_A_REFSETID);
 		HISTORICAL_REFSETS.add(SCTID_ASSOC_REPLACED_BY_REFSETID);
@@ -47,44 +46,7 @@ public abstract class Script implements RF2Constants {
 	protected ApplicationContext appContext;
 
 	/**
-	 * @deprecated Use {@link #LOGGER} instead
-	 */
-	@Deprecated(forRemoval = true)
-	public static void info (String msg) {
-		LOGGER.info(msg);
-	}
-
-	/**
-	 * @deprecated Use {@link #LOGGER} instead
-	 */
-	@Deprecated(forRemoval = true)
-	public static void debug (Object obj) {
-		LOGGER.debug(obj==null?"NULL":obj.toString());
-	}
-
-	/**
-	 * @deprecated Use {@link #LOGGER} instead
-	 */
-	@Deprecated(forRemoval = true)
-	public static void warn (Object obj) {
-		LOGGER.warn("*** {}", (obj==null?"NULL":obj.toString()));
-	}
-
-	/**
-	 * @deprecated Use {@link #LOGGER} instead
-	 */
-	@Deprecated(forRemoval = true)
-	public static void error (Object obj, Exception e) {
-		LOGGER.error("*** {}", (obj==null?"NULL":obj.toString()));
-
-		if (e != null) {
-			LOGGER.error(ExceptionUtils.getStackTrace(e));
-		}
-	}
-
-	/**
 	 * Direct access to STDOUT without LOGGER, for cmd line menus
-	 * @param msg
 	 */
 	public static void print(Object msg) {
 		System.out.print(msg);
@@ -92,7 +54,6 @@ public abstract class Script implements RF2Constants {
 
 	/**
 	 * Direct access to STDOUT (with linefeed) without LOGGER, for cmd line menus
-	 * @param msg
 	 */
 	public static void println (Object msg) {
 		System.out.println(msg);
@@ -162,6 +123,10 @@ public abstract class Script implements RF2Constants {
 	public void startTimer() {
 		startTime = new Date();
 	}
+
+	public static boolean isHistoricalRefset(String refsetId) {
+		return HISTORICAL_REFSETS.contains(refsetId);
+	}
 	
 	public void addSummaryInformation(String item, Object detail) {
 		LOGGER.info("{}: {}", item, detail);
@@ -176,7 +141,7 @@ public abstract class Script implements RF2Constants {
 	
 	public int getSummaryInformationInt(String key) {
 		Object info = summaryDetails.get(key);
-		if (info == null || !(info instanceof Integer)) {
+		if (!(info instanceof Integer)) {
 			return 0;
 		}
 		return (Integer)info;
@@ -184,10 +149,6 @@ public abstract class Script implements RF2Constants {
 	
 	public String getTaskKey() {
 		return taskKey;
-	}
-
-	public void setTaskKey(String taskKey) {
-		this.taskKey = taskKey;
 	}
 
 	public void incrementSummaryInformationQuiet(String key) {
@@ -203,9 +164,7 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public void incrementSummaryInformation(String key, int incrementAmount) {
-		if (!summaryDetails.containsKey(key)) {
-			summaryDetails.put(key, 0);
-		}
+		summaryDetails.computeIfAbsent(key, k -> 0);
 		int newValue = (Integer) summaryDetails.get(key) + incrementAmount;
 		summaryDetails.put(key, newValue);
 	}
@@ -220,14 +179,6 @@ public abstract class Script implements RF2Constants {
 		}
 		if (getReportManager() != null) {
 			getReportManager().flushFiles(andClose);
-		}
-	}
-	
-	public void flushFilesSafely(boolean andClose) {
-		try {
-			flushFiles(andClose);
-		} catch (Exception e) {
-			LOGGER.error("Failed to flush files.", e);
 		}
 	}
 	
@@ -270,17 +221,16 @@ public abstract class Script implements RF2Constants {
 			if (detail == null) {
 				detail = "";
 			}
-			if (detail instanceof Boolean) {
-				detail = ((Boolean)detail)?"Y":"N";
+			if (detail instanceof Boolean booleanDetail) {
+				detail = Boolean.TRUE.equals(booleanDetail)?"Y":"N";
 			}
 			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			if (isNumeric) {
 				prefix = isFirst ? "" : COMMA;
 			}
-			if (detail instanceof String[]) {
-				String[] arr = (String[]) detail;
-				for (String str : arr) {
+			if (detail instanceof String[] stringArrayDetail) {
+				for (String str : stringArrayDetail) {
 					boolean isNestedNumeric = false;
 					boolean isAlreadyQuoted = (str != null) && str.startsWith("\"") && str.endsWith("\"");
 					if (isAlreadyQuoted) {
@@ -322,13 +272,13 @@ public abstract class Script implements RF2Constants {
 		for (Object obj : arr) {
 			if (obj instanceof Object[]) {
 				addObjectArray(sb,obj, prefix, isNumeric);
-			} else if (obj instanceof int[]) {
-				for (int data : ((int[])obj)) {
+			} else if (obj instanceof int[] intArr) {
+				for (int data : intArr) {
 					sb.append(COMMA).append(data);
 				}
 			} else {
-				if (obj instanceof Boolean) {
-					obj = ((Boolean)obj)?"Y":"N";
+				if (obj instanceof Boolean bool) {
+					obj = Boolean.TRUE.equals(bool)?"Y":"N";
 				}
 				String data = (obj==null?"":obj.toString());
 				data = isNumeric ? data : data.replaceAll("\"", "\"\"");
@@ -371,7 +321,7 @@ public abstract class Script implements RF2Constants {
 			// In case of any error we don't care as this is not default for the reports.
 		}
 
-		// if it's not valid default to the the current mode of operation
+		// if it's not valid, default to the current mode of operation
 		if (reportConfiguration == null || !reportConfiguration.isValid()) {
 			LOGGER.info("Using default ReportConfiguration (Google/Sheet)...");
 			reportConfiguration = new ReportConfiguration(

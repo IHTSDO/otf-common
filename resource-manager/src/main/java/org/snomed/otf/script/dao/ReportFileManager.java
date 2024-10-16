@@ -8,9 +8,12 @@ import java.util.*;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.SnomedUtilsBase;
-import org.snomed.otf.script.Script;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReportFileManager implements RF2Constants, ReportProcessor {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportFileManager.class);
 
 	public static final String REPORTS_DIRECTORY = "reports";
 
@@ -19,9 +22,6 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 	protected String currentTimeStamp;
 	ReportManager owner;
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-
-	public ReportFileManager() {
-	}
 
 	public ReportFileManager(ReportManager owner) {
 		this.owner = owner;
@@ -54,6 +54,7 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 						}
 					}
 				} catch (Exception e) {
+					//Well, we tried
 				}
 			}
 		}
@@ -72,7 +73,7 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
 			String reportFilename = directory + "results_" + reportName + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
-			Script.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
+			LOGGER.info("Outputting Report to {}", reportFiles[reportIdx].getAbsolutePath());
 			writeToReportFile (reportIdx, columnHeaders[reportIdx], false);
 		}
 		flushFiles(false);
@@ -89,10 +90,6 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 		return true;
 	}
 
-	public Map<String, PrintWriter> getPrintWriterMap() {
-		return printWriterMap;
-	}
-
 	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
 		this.printWriterMap = printWriterMap;
 	}
@@ -102,6 +99,6 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 	}
 
 	public String getReportName() {
-		return owner.getScript().getClass().getSimpleName().replaceAll(" ", "_");
+		return owner.getScript().getClass().getSimpleName().replace(" ", "_");
 	}
 }
