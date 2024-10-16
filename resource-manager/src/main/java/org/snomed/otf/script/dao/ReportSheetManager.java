@@ -17,10 +17,13 @@ import java.util.*;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.Script;
 import org.snomed.otf.script.utils.CVSUtils;
 
 public class ReportSheetManager implements RF2Constants, ReportProcessor {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportSheetManager.class);
 
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
