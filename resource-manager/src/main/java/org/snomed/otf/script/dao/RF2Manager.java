@@ -1,54 +1,14 @@
 package org.snomed.otf.script.dao;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 
-import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RF2Manager implements RF2Constants {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RF2Manager.class);
-	protected File[] reportFiles;
-	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
-	protected String currentTimeStamp;
-	
-	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {
-		try {
-			PrintWriter pw = printWriterMap.get(fileName);
-			if (pw == null) {
-				File file = SnomedUtilsBase.ensureFileExists(fileName);
-				try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-					 BufferedWriter bw = new BufferedWriter(osw);
-					 PrintWriter newPw = new PrintWriter(bw)) {
-					pw = newPw;
-					printWriterMap.put(fileName, pw);
-				}
-			}
-			return pw;
-		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to initialise " + fileName + " due to " + e.getMessage(), e);
-		}
-	}
+public class RF2Manager extends CommonFileWriter {
 
-	public void flushFiles(boolean andClose) {
-		for (PrintWriter pw : printWriterMap.values()) {
-			try {
-				pw.flush();
-				if (andClose) {
-					pw.close();
-				}
-			} catch (Exception e) {
-				LOGGER.error("Exception while closing RF2 files", e);
-			}
-		}
-		if (andClose) {
-			printWriterMap = new HashMap<>();
-		}
-	}
+	private final Logger logger = LoggerFactory.getLogger(RF2Manager.class);
 
 	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
 		StringBuilder line = new StringBuilder();
@@ -66,15 +26,8 @@ public class RF2Manager implements RF2Constants {
 		try {
 			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
-			LOGGER.info("Unable to output report rf2 line due to {}", e.getMessage());
+			logger.info("Unable to output report rf2 line due to {}", e.getMessage());
 		}
 	}
-	
-	public Map<String, PrintWriter> getPrintWriterMap() {
-		return printWriterMap;
-	}
 
-	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
-		this.printWriterMap = printWriterMap;
-	}
 }

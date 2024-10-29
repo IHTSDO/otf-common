@@ -1,9 +1,7 @@
 package org.snomed.otf.script.dao;
 
-import java.io.*;
 import java.util.*;
 
-import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +10,10 @@ import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
 import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 import org.snomed.otf.script.dao.transformer.CSVToJSONDataTransformer;
 
-public class ReportManager implements RF2Constants {
+public class ReportManager extends CommonFileWriter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportManager.class);
 
-	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
 	boolean writeToFile = false;
 	ReportFileManager reportFileManager;
 	
@@ -96,11 +93,8 @@ public class ReportManager implements RF2Constants {
 		}
 		return writeSuccess;
 	}
-	
-	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {
-		return reportFileManager.getPrintWriter(fileName);
-	}
 
+	@Override
 	public void flushFiles(boolean andClose) throws TermServerScriptException {
 		//Watch that we might have written to RF2 files, even if writeToFile is set to false
 		if (writeToFile) {
@@ -161,14 +155,6 @@ public class ReportManager implements RF2Constants {
 		}
 	}
 	
-	public Map<String, PrintWriter> getPrintWriterMap() {
-		return reportFileManager.printWriterMap;
-	}
-
-	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
-		reportFileManager.setPrintWriterMap(printWriterMap);
-	}
-
 	public void setNumberOfDistinctReports(int x) {
 		numberOfDistinctReports = x;
 	}
