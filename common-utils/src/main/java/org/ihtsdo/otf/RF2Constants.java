@@ -105,6 +105,7 @@ public interface RF2Constants {
 	String QUOTE_COMMA = "\",";
 	String QUOTE_COMMA_QUOTE = "\",\"";
 	String TAB = "\t";
+	char TAB_CHAR = '\t';
 	String CSV_FIELD_DELIMITER = COMMA;
 	String TSV_FIELD_DELIMITER = TAB;
 	String QUOTE = "\"";

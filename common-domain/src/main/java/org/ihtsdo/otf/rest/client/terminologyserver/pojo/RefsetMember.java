@@ -48,7 +48,8 @@ RefsetMember extends Component implements RF2Constants {
 	public String getMemberId() {
 		return memberId;
 	}
-	
+
+	@Override
 	public String getId() {
 		if (id == null) {
 			return memberId;
@@ -268,15 +269,19 @@ RefsetMember extends Component implements RF2Constants {
 
 	@Override
 	public String getMutableFields() {
-		String mutableFields = super.getMutableFields() + this.refsetId + "," 
-				+ this.referencedComponentId;
+		StringBuilder mutableFields = new StringBuilder();
+		mutableFields.append(super.getMutableFields())
+				.append(this.refsetId)
+				.append(",")
+				.append(this.referencedComponentId);
 		
 		for (String additionalField : additionalFields.values()) {
-			mutableFields += "," + additionalField;
+			mutableFields.append(",")
+					.append(additionalField);
 		}
-		return mutableFields;
+		return mutableFields.toString();
 	}
-	
+	@Override
 	public String toStringWithId() {
 		return getId() + ": " + toString();
 	}
