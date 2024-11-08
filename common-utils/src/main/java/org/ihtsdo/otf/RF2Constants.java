@@ -14,6 +14,8 @@ public interface RF2Constants {
 	Long SCTID_ROOT_CONCEPT = 138875005L;
 	Long SCTID_IS_A_CONCEPT = 116680003L;
 
+	int SCTID_MAX_LENGTH = 18;
+
 	String GFOLDER_FALLBACK = "1bIRADym0omCgbD7064U-D24XGqAEg3gt"; //Reporting Engine Fallback
 
 	Set<Long> NEVER_GROUPED_ATTRIBUTES = Set.of(
