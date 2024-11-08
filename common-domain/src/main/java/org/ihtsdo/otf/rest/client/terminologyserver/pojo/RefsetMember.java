@@ -161,7 +161,7 @@ RefsetMember extends Component implements RF2Constants {
 				additionalFieldNames = additionalFields.keySet().toArray(String[]::new);
 				if (!firstFieldNamesWarningGiven) {
 					LOGGER.warn("toRF2() called without fieldName order being known, but only 1 field so doesn't matter");
-					firstFieldNamesWarningGiven = true;
+					RefsetMember.firstFieldNamesWarningGiven = true;
 				}
 			} else {
 				throw new IllegalArgumentException("Additional field names supplied do not match data.");

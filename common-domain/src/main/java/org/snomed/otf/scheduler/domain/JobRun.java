@@ -59,6 +59,9 @@ public class JobRun {
 	
 	@Transient //No need to persist whitelist for every run, once for the Job is fine
 	Set<WhiteListedConcept> whiteList;
+
+	@Transient
+	String dependencyPackage;
 	
 	public JobRun () {
 		parameters = new JobRunParameters();
@@ -300,5 +303,13 @@ public class JobRun {
 
 	public void setBatch(JobRunBatch runBatch) {
 		this.runBatch = runBatch;
+	}
+
+	public String getDependencyPackage() {
+		return dependencyPackage;
+	}
+
+	public void setDependencyPackage(String dependencyPackage) {
+		this.dependencyPackage = dependencyPackage;
 	}
 }
