@@ -771,7 +771,7 @@ public class ModuleStorageCoordinator {
             String metadataResourcePath = getMetadataResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
             if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
                 try {
-                    ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.doReadResourceFile(metadataResourcePath), ModuleMetadata.class);
+                    ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
                     String rf2ResourcePath = baseResourcePath + "/" + moduleMetadata.getFilename();
                     if (resourceManagerStorage.doesObjectExist(rf2ResourcePath)) {
                         if (includeFile) {

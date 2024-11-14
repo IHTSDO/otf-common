@@ -46,6 +46,14 @@ public class FileUtils {
         }
     }
 
+    public static <T> T convertToObject(InputStream inputStream, Class<T> t) throws ScriptException {
+        try {
+            return OBJECT_MAPPER.readValue(inputStream, t);
+        } catch (IOException e) {
+            throw new ScriptException("Failed to deserialize InputStream into a " + t.getSimpleName() , e);
+        }
+    }
+
     public static <T> void writeToFile(File file, Object t) throws ScriptException {
         try {
             OBJECT_MAPPER.writeValue(file, t);
