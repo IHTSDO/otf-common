@@ -67,7 +67,7 @@ public class JobRun {
 		parameters = new JobRunParameters();
 	}
 
-	static public JobRun create(String jobName, String user) {
+	public static JobRun create(String jobName, String user) {
 		JobRun j = new JobRun();
 		j.id = UUID.randomUUID();
 		j.jobName = jobName;
@@ -76,7 +76,7 @@ public class JobRun {
 		return j;
 	}
 	
-	static public JobRun create(JobSchedule jobSchedule) {
+	public static JobRun create(JobSchedule jobSchedule) {
 		JobRun j = new JobRun();
 		j.id = UUID.randomUUID();
 		j.jobName = jobSchedule.getJobName();

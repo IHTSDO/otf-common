@@ -10,9 +10,9 @@ import java.util.UUID;
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
 public class ComponentAnnotationEntry extends RefsetMember implements RF2Constants {
 
-	public static String LANGUAGE_DIALECT_CODE = "languageDialectCode";
-	public static String TYPE_ID = "typeId";
-	public static String VALUE = "value";
+	public static final String LANGUAGE_DIALECT_CODE = "languageDialectCode";
+	public static final String TYPE_ID = "typeId";
+	public static final String VALUE = "value";
 
 	public String getLanguageDialectCode() {
 		return getField(LANGUAGE_DIALECT_CODE);
@@ -53,11 +53,12 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		clone.released = this.released;
 		return clone;
 	}
-	
+
+	@Override
 	public String[] toRF2() {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
-				(active?"1":"0"),
+				(isActiveSafely()?"1":"0"),
 				moduleId, refsetId,
 				referencedComponentId,
 				getLanguageDialectCode(),
@@ -65,12 +66,13 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 				getValue()
 		};
 	}
-	
+
+	@Override
 	public String[] toRF2Deletion() {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
 				deletionEffectiveTime,
-				(active?"1":"0"),
+				(isActiveSafely()?"1":"0"),
 				"1",
 				moduleId, refsetId,
 				referencedComponentId,
@@ -100,7 +102,7 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		if (other == this) {
 			return true;
 		}
-		if ((other instanceof ComponentAnnotationEntry) == false) {
+		if (!(other instanceof ComponentAnnotationEntry)) {
 			return false;
 		}
 		ComponentAnnotationEntry rhs = ((ComponentAnnotationEntry) other);
@@ -116,17 +118,20 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 	public String toString() {
 		return toString(false);
 	}
-	
+
+	@Override
 	public String toString(boolean detail) {
 		try {
-			String activeIndicator = isActive()?"":"*";
+			String activeIndicator = isActiveSafely()?"":"*";
+			String etStr = effectiveTime == null ? "N/A":effectiveTime;
 			
 		return "[" + activeIndicator + "AN]:" + id + " - " +
 				"[ SCTID=" + getReferencedComponentId() + ", type=" +
 				getTypeId() +
 				", value '" + getValue() + "'" +
-				(detail? " - ET: " + (effectiveTime == null ? "N/A":effectiveTime) : "" ) +
-				(detail? " - Module: " + moduleId : "" ) +
+				(detail? ", Lang: " + getLanguageDialectCode() : "" ) +
+				(detail? ", ET: '" + etStr : "'" ) +
+				(detail? ", Module: " + moduleId : "" ) +
 				" ]";
 		} catch (Exception e) {
 			return e.getMessage();
@@ -153,7 +158,6 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 			throw new IllegalArgumentException("Unable to compare Component Annotation to " + other);
 		}
 		List<String> differences = new ArrayList<>();
-		String name = this.getClass().getSimpleName(); 
 		commonFieldComparison(otherL, differences);
 		
 		if (!this.getTypeId().equals(otherL.getTypeId())) {

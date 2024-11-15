@@ -111,8 +111,8 @@ public class JobParameters {
 	
 	public boolean getBoolean(String key) {
 		String value = getValue(key);
-		if (value != null && (value.toUpperCase().equals("Y") || 
-				value.toUpperCase().equals("TRUE"))) {
+		if (value != null && (value.equalsIgnoreCase("Y") ||
+				value.equalsIgnoreCase("TRUE"))) {
 			return true;
 		}
 		return false;
@@ -172,8 +172,7 @@ public class JobParameters {
 	}
 	
 	public JobParameters clone() {
-		JobParameters clone = new JobParameters(new HashMap<>(this.getParameterMap()));
-		return clone;
+		return new JobParameters(new HashMap<>(this.getParameterMap()));
 	}
 	
 	public String toString() {
@@ -195,7 +194,7 @@ public class JobParameters {
 		
 		@Override
 		public void serialize(JobParameters value, JsonGenerator gen, SerializerProvider serializers)
-				throws IOException, JsonProcessingException {
+				throws IOException {
 			gen.writeObject(value.getParameterMap());
 		}
 	}
@@ -207,7 +206,7 @@ public class JobParameters {
 
 		@Override
 		public JobParameters deserialize(JsonParser p, DeserializationContext ctxt)
-				throws IOException, JsonProcessingException {
+				throws IOException {
 			JobParameters jobParameters = new JobParameters();
 			ObjectMapper mapper = (ObjectMapper) p.getCodec();
 			JsonNode node = mapper.readTree(p);
