@@ -36,7 +36,6 @@ public class Job {
 	@Column(name="tag")
 	Set<String> tags = new HashSet<>();
 	
-	@ElementCollection//(fetch = FetchType.EAGER)
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
 	@MapKey(name = "codeSystemShortname")
 	@JsonIgnore
@@ -55,7 +54,7 @@ public class Job {
 
 	public Job() {
 		this.parameters = new JobParameters();
-	};
+	}
 	
 	public Job withCategory(JobCategory category) {
 		this.category = category;
@@ -82,7 +81,7 @@ public class Job {
 	}
 	
 	public Job withTag (String tag) {
-		tags.add(tag);
+		addTag(tag);
 		return this;
 	}
 	
@@ -130,14 +129,15 @@ public class Job {
 	@Override
 	public boolean equals (Object other) {
 		//Job may be missing a category as we hide that in the json
-		if (other instanceof Job otherJob) {
-			if (category == null || otherJob.getCategory() == null || category.equals(otherJob.getCategory())) {
-				//If neither object has a job name, compare object ids
-				if (getName() == null && otherJob.getName() == null) {
-					return this == other;
-				}
-				return name.equals(otherJob.getName());
+		if (other instanceof Job otherJob &&
+			(category == null
+					|| otherJob.getCategory() == null
+					|| category.equals(otherJob.getCategory()))) {
+			//If neither object has a job name, compare object ids
+			if (getName() == null && otherJob.getName() == null) {
+				return this == other;
 			}
+			return name.equals(otherJob.getName());
 		}
 		return false;
 	}
@@ -167,12 +167,12 @@ public class Job {
 	public JobParameters getParameters() {
 		return parameters;
 	}
-	public void setParamters(JobParameters paramaters) {
+	public void setParameters(JobParameters parameters) {
 		//Don't allow JobParameters to be set to null, wipe if required
-		if (parameters == null) {
+		if (this.parameters == null) {
 			this.parameters = new JobParameters();
 		} else {
-			this.parameters = paramaters;
+			this.parameters = parameters;
 		}
 	}
 

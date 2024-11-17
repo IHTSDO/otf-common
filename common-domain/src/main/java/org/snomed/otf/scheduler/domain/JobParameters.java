@@ -1,6 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
 import jakarta.persistence.*;
@@ -15,7 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @JsonSerialize(using = JobParameters.Serialize.class)
 @JsonDeserialize(using = JobParameters.Deserialize.class)
-public class JobParameters {
+public class JobParameters implements Serializable {
 
 	@Id
 	@JsonIgnore
@@ -24,14 +25,18 @@ public class JobParameters {
 
 	//See https://stackoverflow.com/questions/2327971/how-do-you-map-a-map-in-hibernate-using-annotations
 	//Also https://thoughts-on-java.org/hibernate-tips-how-to-delete-child-entities/
-	@ElementCollection(fetch = FetchType.EAGER)
 	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@OrderBy("displayOrder ASC")
 	@JsonIgnore
-	Map<String, JobParameter> parameterMap;
+	private Map<String, JobParameter> parameterMap;
+
+	public JobParameters (JobParameters clone) {
+		this(clone.getParameterMap());
+	}
 	
 	public JobParameters (Map<String, JobParameter> parameterMap) {
 		this();
+		setParameterMap(parameterMap);
 	}
 	
 	public JobParameters(String[] keys) {
@@ -111,11 +116,8 @@ public class JobParameters {
 	
 	public boolean getBoolean(String key) {
 		String value = getValue(key);
-		if (value != null && (value.equalsIgnoreCase("Y") ||
-				value.equalsIgnoreCase("TRUE"))) {
-			return true;
-		}
-		return false;
+		return (value != null && (value.equalsIgnoreCase("Y") ||
+				value.equalsIgnoreCase("TRUE")));
 	}
 
 	// Private so not to expose the internal collection
@@ -170,11 +172,7 @@ public class JobParameters {
 	public JobParameter get(String key) {
 		return getParameterMap().get(key);
 	}
-	
-	public JobParameters clone() {
-		return new JobParameters(new HashMap<>(this.getParameterMap()));
-	}
-	
+
 	public String toString() {
 		return getParameterMap().toString();
 	}

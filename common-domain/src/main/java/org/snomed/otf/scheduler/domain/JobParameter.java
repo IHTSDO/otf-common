@@ -1,5 +1,6 @@
 package org.snomed.otf.scheduler.domain;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,7 +9,7 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-public class JobParameter {
+public class JobParameter implements Serializable {
 
 	public enum Type {	BOOLEAN, STRING, CONCEPT, 
 						CONCEPT_LIST, TEMPLATE_NAME, TEMPLATE,
@@ -33,10 +34,10 @@ public class JobParameter {
 	
 	@ElementCollection(targetClass=String.class)
 	@Column(name="parameter_values")
-	List<String> values;
+	private List<String> values;
 	
 	@ElementCollection(targetClass=String.class)
-	List<String> options;
+	private List<String> options;
 	
 	@Column(columnDefinition="TEXT")
 	String description;
@@ -139,7 +140,7 @@ public class JobParameter {
 		this.paramKey = key;
 	}
 
-	public Boolean getMandatory() {
+	public boolean getMandatory() {
 		return mandatory == null ? Boolean.FALSE : mandatory ;
 	}
 
@@ -225,8 +226,8 @@ public class JobParameter {
 	}
 	
 	public boolean equals(Object other) {
-		if (other instanceof JobParameter) {
-			return paramKey.equals(((JobParameter)other).getParamKey());
+		if (other instanceof JobParameter otherJobParameter) {
+			return paramKey.equals(otherJobParameter.getParamKey());
 		}
 		return false;
 	}
