@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.ihtsdo.otf.utils.StringUtils;
 
 public class Metadata {
 
@@ -55,36 +56,6 @@ public class Metadata {
     @SerializedName("expectedExtensionModules")
     @Expose
     private List<String> expectedExtensionModules;
-
-	/**
-     * No args constructor for use in serialization
-     * 
-     */
-    public Metadata() {
-    }
-
-    /**
-     * 
-     * @param languageSearch
-     * @param assertionGroupNames
-     * @param previousRelease
-     * @param codeSystemShortName
-     * @param defaultModuleId
-     * @param defaultNamespace
-     * @param shortname
-     * @param dependencyRelease
-     */
-    public Metadata(String assertionGroupNames, String defaultNamespace, String previousRelease, String dependencyRelease, String codeSystemShortName, String languageSearch, String defaultModuleId, String shortname) {
-        super();
-        this.assertionGroupNames = assertionGroupNames;
-        this.defaultNamespace = defaultNamespace;
-        this.previousRelease = previousRelease;
-        this.dependencyRelease = dependencyRelease;
-        this.codeSystemShortName = codeSystemShortName;
-        this.languageSearch = languageSearch;
-        this.defaultModuleId = defaultModuleId;
-        this.shortname = shortname;
-    }
 
     public String getAssertionGroupNames() {
         return assertionGroupNames;
@@ -230,16 +201,23 @@ public class Metadata {
 			}
 		}
 		
-		//The optioanlLangRefsets however, have been done right
+		//The optional LangRefsets however, are also unreliable
 		if (getOptionalLanguageRefsets() != null) {
 			for (Map<String, String> langEntry : getOptionalLanguageRefsets()) {
-				langRefsetLangMapping.put(langEntry.get("refsetId"), langEntry.get("language"));
+				langRefsetLangMapping.put(langEntry.get("refsetId"), normalizeDialectToLanguage(langEntry.get("language")));
 			}
 		}
 		
 		return langRefsetLangMapping;
 	}
-	
+
+	private String normalizeDialectToLanguage(String dialect) {
+		if (StringUtils.isEmpty(dialect)) {
+			return null;
+		}
+		return dialect.substring(0, 2);
+	}
+
 	public String getDefaultLangRefset() {
 		if (getRequiredLanguageRefsets() != null) {
 			for (Map<String, String> langEntry : getRequiredLanguageRefsets()) {
