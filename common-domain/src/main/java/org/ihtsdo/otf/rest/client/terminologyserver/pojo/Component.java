@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.ScriptException;
+import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
@@ -44,6 +45,8 @@ public abstract class Component implements RF2Constants {
 	@SerializedName("memberId")
 
 	List<ComponentAnnotationEntry> componentAnnotationEntries;
+
+	String [] previousState;
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
 	private List<String> issues;
@@ -174,16 +177,14 @@ public abstract class Component implements RF2Constants {
 		if (getId() != null) {
 			return getId();  //This might be coming from memberId if loaded directly from API
 		} else {
-			throw new RuntimeException("Attempt to hash/equal component with no id.  Use concrete class check of values instead");
+			throw new TermServerRuntimeException("Attempt to hash/equal component with no id.  Use concrete class check of values instead");
 		}
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Component) {
-			return this.getIdOrThrow().equals(((Component)other).getId());
-		}
-		return false;
+		return (other instanceof Component otherComponent)
+		&& this.getIdOrThrow().equals(otherComponent.getId());
 	}
 	
 	public List<String> fieldComparison(Component other) throws TermServerScriptException {
@@ -203,17 +204,14 @@ public abstract class Component implements RF2Constants {
 			differences.add("Id different in " + name + ": " + this.getId() + " vs " + other.getId());
 		}
 		
-		if (!ignoreEffectiveTime) {
-			if (this.getEffectiveTime() != null || this.getEffectiveTime() != null) {
-				if ((this.getEffectiveTime() == null && this.getEffectiveTime() != null) ||
-						(this.getEffectiveTime() != null && this.getEffectiveTime() == null) ||
-						!this.getEffectiveTime().equals(other.getEffectiveTime())){
-					differences.add("EffectiveTime different in " + name + ": " + this.getEffectiveTime() + " vs " + other.getEffectiveTime());
-				}
-			}
+		if (!ignoreEffectiveTime
+			&& ((this.getEffectiveTime() == null && other.getEffectiveTime() != null)
+			|| 	(this.getEffectiveTime() != null && other.getEffectiveTime() == null)
+			||	!this.getEffectiveTime().equals(other.getEffectiveTime()))) {
+			differences.add("EffectiveTime different in " + name + ": " + this.getEffectiveTime() + " vs " + other.getEffectiveTime());
 		}
 		
-		if (!this.isActive() == other.isActive()) {
+		if (!this.isActiveSafely() == other.isActiveSafely()) {
 			differences.add("Active status different in " + name + ": " + this.isActive() + " vs " + other.isActive());
 		}
 		
@@ -233,11 +231,23 @@ public abstract class Component implements RF2Constants {
 	public boolean isDirty() {
 		return this.isDirty;
 	}
-	
-	public String getMutableFields() {
-		return (this.isActive()?"1,":"0,") + this.getModuleId() + ",";
+
+	/**
+	 * @return an array of fields that can be compared to determine if this component has changed
+	 * Note that the array will be sized according to the specific component type, ready for further
+	 * population
+	 */
+	public String[] getMutableFields() {
+		String[] mutableFields = new String[getMutableFieldCount()];
+		mutableFields[0] = this.isActiveSafely()?"1":"0";
+		mutableFields[1] = this.getModuleId();
+		return mutableFields;
 	}
-	
+
+	public int getMutableFieldCount() {
+		return 2;
+	}
+
 	public String toStringWithId() {
 		//Override is only needed if default implemenation does not include Id eg Descriptions or Refset Members.
 		return toString();
@@ -271,12 +281,7 @@ public abstract class Component implements RF2Constants {
 	}
 	
 	public Boolean isReleased() {
-		//I know you're going to want to put this back in, but resist the temptation.
-		//We should know for sure if a component has been released or not, don't 
-		//fall back on the effective time, it can't be trusted.
-		/*if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}*/
+		//Do not be tempted to try and use effective time here, since it gets nulled out when a component is changed
 		return released;
 	}
 
@@ -285,7 +290,7 @@ public abstract class Component implements RF2Constants {
 	}
 
 	public String toWhitelistString() {
-		return (isActive()?"1":"0") + "," + moduleId + ",";
+		return (isActiveSafely()?"1":"0") + "," + moduleId + ",";
 	}
 
 	public ComponentAnnotationEntry getComponentAnnotationEntry(String refsetId) {
@@ -311,4 +316,11 @@ public abstract class Component implements RF2Constants {
 
 	public abstract boolean matchesMutableFields(Component other);
 
+	public String[] getPreviousState() {
+		return previousState;
+	}
+
+	public void setPreviousState(String[] previousState) {
+		this.previousState = previousState;
+	}
 }

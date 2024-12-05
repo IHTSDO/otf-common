@@ -38,6 +38,10 @@ RefsetMember extends Component implements RF2Constants {
 	protected boolean isDeleted = false;
 	
 	private static boolean firstFieldNamesWarningGiven = false;
+
+	static void setFirstFieldNamesWarningGiven() {
+		firstFieldNamesWarningGiven = true;
+	}
 	
 	public RefsetMember() {}
 
@@ -62,7 +66,7 @@ RefsetMember extends Component implements RF2Constants {
 		this.id = memberId;
 	}
 
-	public RefsetMember(String refsetId, Component referencedCompoment, String[] additionalValues) {
+	public RefsetMember(String refsetId, Component referencedCompoment) {
 		this.refsetId = refsetId;
 		this.referencedComponent = referencedCompoment;
 	}
@@ -101,10 +105,6 @@ RefsetMember extends Component implements RF2Constants {
 	
 	public void setField(String key, String value) {
 		this.additionalFields.put(key, value);
-	}
-
-	public void setReferencedComponent(Object referencedComponent) {
-		this.referencedComponent = referencedComponent;
 	}
 
 	@Override
@@ -161,7 +161,7 @@ RefsetMember extends Component implements RF2Constants {
 				additionalFieldNames = additionalFields.keySet().toArray(String[]::new);
 				if (!firstFieldNamesWarningGiven) {
 					LOGGER.warn("toRF2() called without fieldName order being known, but only 1 field so doesn't matter");
-					RefsetMember.firstFieldNamesWarningGiven = true;
+					setFirstFieldNamesWarningGiven();
 				}
 			} else {
 				throw new IllegalArgumentException("Additional field names supplied do not match data.");
@@ -172,7 +172,7 @@ RefsetMember extends Component implements RF2Constants {
 		int col = 0;
 		row[col++] = getId();
 		row[col++] = effectiveTime==null?"":effectiveTime;
-		row[col++] = active?"1":"0";
+		row[col++] = isActiveSafely()?"1":"0";
 		row[col++] = moduleId;
 		row[col++] = refsetId;
 		row[col++] = referencedComponentId;
@@ -218,8 +218,8 @@ RefsetMember extends Component implements RF2Constants {
 	
 	@Override 
 	public boolean equals(Object o) {
-		if (o instanceof RefsetMember) {
-			return this.getId().equals(((RefsetMember)o).getId());
+		if (o instanceof RefsetMember otherRefsetMember) {
+			return this.getId().equals(otherRefsetMember.getId());
 		}
 		return false;
 	}
@@ -229,14 +229,16 @@ RefsetMember extends Component implements RF2Constants {
 	}
 	
 	public String toString(boolean includeModuleId) {
-		String additionalStr = "";
+		StringBuilder additionalStr = new StringBuilder();
 		boolean isFirst = true;
-		for (String key : additionalFields.keySet()) {
-			additionalStr += isFirst ? "" : ", ";
-			additionalStr += key + "=" + additionalFields.get(key);
+		for (Map.Entry<String, String> entry : additionalFields.entrySet()) {
+			additionalStr.append(isFirst ? "" : ", ");
+			additionalStr.append(entry.getKey())
+					.append("=")
+					.append(entry.getValue());
 			isFirst = false;
 		}
-		String activeIndicator = isActive()?"":"*";
+		String activeIndicator = isActiveSafely()?"":"*";
 		String arrow = additionalStr.isEmpty() ? "" : " -> ";
 		return "[" + activeIndicator + "RM]:" + getId() + " - " + refsetId + " : " + referencedComponentId + arrow + additionalStr + (includeModuleId ? " (Module: " + this.getModuleId() + ")" : "");
 	}
@@ -268,19 +270,23 @@ RefsetMember extends Component implements RF2Constants {
 	}
 
 	@Override
-	public String getMutableFields() {
-		StringBuilder mutableFields = new StringBuilder();
-		mutableFields.append(super.getMutableFields())
-				.append(this.refsetId)
-				.append(",")
-				.append(this.referencedComponentId);
-		
-		for (String additionalField : additionalFields.values()) {
-			mutableFields.append(",")
-					.append(additionalField);
+	public String[] getMutableFields() {
+ 		String[] mutableFields = super.getMutableFields();
+		int idx = super.getMutableFieldCount();
+		mutableFields[idx] = refsetId;
+		mutableFields[++idx] = referencedComponentId;
+		++idx;
+		for (int additionalFieldIdx = 0; idx < additionalFields.size(); additionalFieldIdx++) {
+			mutableFields[idx + additionalFieldIdx] = getField(getAdditionalFieldNames()[additionalFieldIdx]);
 		}
-		return mutableFields.toString();
+		return mutableFields;
 	}
+
+	@Override
+	public int getMutableFieldCount() {
+		return super.getMutableFieldCount() + 2 + additionalFields.size();
+	}
+
 	@Override
 	public String toStringWithId() {
 		return getId() + ": " + toString();
@@ -292,16 +298,22 @@ RefsetMember extends Component implements RF2Constants {
 		return this.getAdditionalFields().equals(otherRM.getAdditionalFields());
 	}
 
-	protected RefsetMember populateClone(RefsetMember clone, String newComponentSctId) {
-		clone.id = UUID.randomUUID().toString();
+	protected RefsetMember populateClone(RefsetMember clone, String newComponentSctId, boolean keepIds) {
+		clone.id = keepIds ? this.getId() : UUID.randomUUID().toString();
 		clone.effectiveTime = null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
-		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
 		clone.isDirty = true; //New components need to be written to any delta
 		clone.released = this.released;
+		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
 		return clone;
+	}
+
+	public void setAdditionalValues(String[] additionalValues) {
+		for (int i=0; i < additionalValues.length; i++) {
+			setField(getAdditionalFieldNames()[i], additionalValues[i]);
+		}
 	}
 }
