@@ -197,4 +197,8 @@ public class SnowstormRestUrlHelper {
     public URI getIntegrityCheckUrl(String branch) {
         return getUri(snowstormUrl + "/" + branch + "/integrity-check");
     }
+
+    public URI getPermissionUrl(String branchPath) {
+		return getUri(snowstormUrl + "/admin/permissions/" + branchPath);
+    }
 }

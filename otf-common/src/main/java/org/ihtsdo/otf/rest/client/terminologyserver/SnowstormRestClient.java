@@ -1243,4 +1243,16 @@ public class SnowstormRestClient {
 
 		restTemplate.exchange(post, Void.class);
 	}
+
+	public List<PermissionRecord> findPermissionForBranch(String branchPath) {
+		URI uri = urlHelper.getPermissionUrl(branchPath);
+		RequestEntity<?> get = RequestEntity.get(uri)
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.build();
+		ParameterizedTypeReference<List<PermissionRecord>> typeRef = new ParameterizedTypeReference<>() {
+		};
+		ResponseEntity<List<PermissionRecord>> response = restTemplate.exchange(get, typeRef);
+		return response.getBody();
+	}
 }
