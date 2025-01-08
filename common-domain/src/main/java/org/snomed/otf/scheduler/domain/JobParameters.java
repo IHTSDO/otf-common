@@ -25,7 +25,7 @@ public class JobParameters implements Serializable {
 
 	//See https://stackoverflow.com/questions/2327971/how-do-you-map-a-map-in-hibernate-using-annotations
 	//Also https://thoughts-on-java.org/hibernate-tips-how-to-delete-child-entities/
-	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@OneToMany(mappedBy="parentParams", orphanRemoval = true, cascade = CascadeType.ALL)
 	@OrderBy("displayOrder ASC")
 	@JsonIgnore
 	private Map<String, JobParameter> parameterMap;
