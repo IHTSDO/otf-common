@@ -276,7 +276,7 @@ RefsetMember extends Component implements RF2Constants {
 		mutableFields[idx] = refsetId;
 		mutableFields[++idx] = referencedComponentId;
 		++idx;
-		for (int additionalFieldIdx = 0; idx < additionalFields.size(); additionalFieldIdx++) {
+		for (int additionalFieldIdx = 0; additionalFieldIdx < additionalFields.size(); additionalFieldIdx++) {
 			mutableFields[idx + additionalFieldIdx] = getField(getAdditionalFieldNames()[additionalFieldIdx]);
 		}
 		return mutableFields;
