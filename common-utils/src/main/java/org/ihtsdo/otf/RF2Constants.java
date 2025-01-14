@@ -241,6 +241,15 @@ public interface RF2Constants {
 	String INACTIVE_FLAG = "0";
 	String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
+	// Common column headers
+	String COL_ID = "id";
+	String COL_EFFECTIVE_TIME = "effectiveTime";
+	String COL_ACTIVE = "active";
+	String COL_MODULE_ID = "moduleId";
+	String COL_TYPE_ID = "typeId";
+	String COL_REFSET_ID = "refsetId";
+	String COL_REFERENCED_COMPONENT_ID = "referencedComponentId";
+
 	//Common columns
 	int IDX_ID = 0;
 	int IDX_EFFECTIVETIME = 1;
