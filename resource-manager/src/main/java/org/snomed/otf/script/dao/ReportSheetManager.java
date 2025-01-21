@@ -19,7 +19,6 @@ import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.script.Script;
 import org.snomed.otf.script.utils.CVSUtils;
 
 public class ReportSheetManager implements RF2Constants, ReportProcessor {
@@ -178,7 +177,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				int maxRows = MAX_ROW_INCREMENT ;
 				tabRowsCount.put(tabIdx, maxRows);
 				currentCellCount += maxColumns * maxRows;
-				Script.debug("Tab " + tabIdx + " rows/cols set to " + maxRows + "/" + maxColumns);
+				LOGGER.debug("Tab {} rows/cols set to {}/{}",tabIdx, maxRows, maxColumns);
 
 				GridProperties gridProperties = new GridProperties()
 						.setRowCount(maxRows)
@@ -281,12 +280,12 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			if (currentCellCount + requestCellIncrement < MAX_CELLS) {
 				currentCellCount += requestCellIncrement;
 				tabRowsCount.put(tabIdx, maxRows + MAX_ROW_INCREMENT);
-				Script.debug("Expanding rows in tabIdx " + tabIdx + " to " + tabRowsCount.get(tabIdx));
+				LOGGER.debug("Expanding rows in tabIdx {} to {}", tabIdx, tabRowsCount.get(tabIdx));
 				expandTabRows(tabIdx);
 			} else if (linesWrittenPerTab.get(tabIdx) == (maxRows - 1)) {
 				linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
 				addDataToBWritten(tabIdx, "Data truncated at " + maxRows + " rows");
-				Script.warn("Number of rows written to tab idx " + tabIdx + " hit limit of " + maxRows);
+				LOGGER.warn("Number of rows written to tab idx {} hit limit of {}", tabIdx, maxRows);
 			}
 			flushWithWait();
 			return false;
@@ -371,7 +370,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				.setValueInputOption(RAW)
 				.setData(dataToBeWritten);
 			try {
-				Script.info(new Date() + " flushing to sheets");
+				LOGGER.info("{} flushing to sheets", new Date());
 				int writeAttempts = 0;
 				boolean writeSuccess = false;
 				while (!writeSuccess && writeAttempts <= MAX_WRITE_ATTEMPTS) {
@@ -383,7 +382,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 						//If we're told about an invalid argument, trying again won't improve the situation!
 						if (writeAttempts <= MAX_WRITE_ATTEMPTS && e.getMessage() == null || !e.getMessage().contains("INVALID_ARGUMENT")) {
 							try {
-								Script.warn("Exception from Google Sheets, sleeping then trying again.  Exception was: " + e);
+								LOGGER.warn("Exception from Google Sheets, sleeping then trying again.  Exception was: ", e);
 								int sleepTime = 10*1000;
 								if (e.getMessage() != null && (
 										e.getMessage().contains("insufficient")
@@ -456,12 +455,12 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		}
 		batch.setRequests(requests);
 
-		Script.info("Formatting Google SpreadSheet Sheet/s (Columns to auto size).");
+		LOGGER.info("Formatting Google SpreadSheet Sheet/s (Columns to auto size).");
 		new Thread(() -> {
 			try {
 				sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
 			} catch (Exception e) {
-				Script.error("Column size formatting attempt failed. Don't care.", e);
+				LOGGER.error("Column size formatting attempt failed. Don't care.", e);
 			}
 		}).start();
 	}
