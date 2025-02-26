@@ -1,5 +1,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
@@ -11,8 +13,24 @@ import java.util.UUID;
 public class ComponentAnnotationEntry extends RefsetMember implements RF2Constants {
 
 	public static final String LANGUAGE_DIALECT_CODE = "languageDialectCode";
-	public static final String TYPE_ID = "typeId";
-	public static final String VALUE = "value";
+
+	//Adding these redundant fields, so that we serialize/deserialize correctly
+	//Alternative is to add a custom (de)serializer
+	@Expose
+	@SerializedName("typeId")
+	private String typeId;
+
+	@Expose
+	@SerializedName("value")
+	private String value;
+
+	@Expose
+	@SerializedName("annotationId")
+	private String annotationId;
+
+	@Expose
+	@SerializedName("languageDialectCode")
+	private String languageDialectCode;
 
 	public String getLanguageDialectCode() {
 		return getField(LANGUAGE_DIALECT_CODE);
@@ -23,19 +41,21 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 	}
 
 	public String getTypeId() {
-		return getField(TYPE_ID);
+		return getField(COL_TYPE_ID);
 	}
 
 	public void setTypeId(String typeId) {
-		setField(TYPE_ID, typeId);
+		this.typeId = typeId;
+		setField(COL_TYPE_ID, typeId);
 	}
 
 	public String getValue() {
-		return getField(VALUE);
+		return getField(COL_VALUE);
 	}
 
 	public void setValue(String value) {
-		setField(VALUE, value);
+		this.value = value;
+		setField(COL_VALUE, value);
 	}
 
 	public ComponentAnnotationEntry clone(String descriptionSctId, boolean keepIds) {
@@ -110,7 +130,7 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		if (this.getId() != null && rhs.getId() != null) {
 			return this.getId().equals(rhs.getId());
 		}
-		//TODO Otherwise compare contents
+		//TO DO Otherwise compare contents
 		return false;
 	}
 	
@@ -163,7 +183,7 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		if (!this.getTypeId().equals(otherL.getTypeId())) {
 			differences.add("Component Annotation is different in type : " + this.getTypeId() + " vs " + otherL.getTypeId());
 		}
-		//TODO Also compare language and value
+		//TO DO Also compare language and value
 		return differences;
 	}
 

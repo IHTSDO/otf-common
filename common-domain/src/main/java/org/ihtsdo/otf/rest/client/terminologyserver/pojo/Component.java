@@ -42,8 +42,9 @@ public abstract class Component implements RF2Constants {
 	@SerializedName("releasedEffectiveTime")
 	@Expose
 	protected  Integer releasedEffectiveTime;
-	@SerializedName("memberId")
 
+	@SerializedName("annotations")
+	@Expose
 	List<ComponentAnnotationEntry> componentAnnotationEntries;
 
 	String [] previousState;

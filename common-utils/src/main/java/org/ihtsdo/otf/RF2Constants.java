@@ -63,7 +63,7 @@ public interface RF2Constants {
 	
 	String SCTID_LOINC_PROJECT_MODULE = "715515008";
 	String SCTID_LOINC_EXTENSION_MODULE = "11010000107";
-	String SCTID_LOINC_CODE_SYSTEM = "705114005";
+	String SCTID_LOINC_SCHEMA = "30051010000102"; // |LOINC code identifier (core metadata concept) - use in Alt Identifier File
 
 	String SCTID_NUVA_SCHEMA = "21002000101";
 	String SCTID_NUVA_EXTENSION_MODULE = "11002000107";
@@ -71,7 +71,7 @@ public interface RF2Constants {
 	String SCTID_NPU_SCHEMA = "21003000106";
 	String SCTID_NPU_EXTENSION_MODULE = "11003000107";
 	
-	String SCTID_LOINC_SCHEMA = "30051010000102"; // |LOINC code identifier (core metadata concept)|
+
 	String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|
 	String SCTID_COMP_ANNOT_REFSET = "1292992004"; // |Component annotation with string value reference set (foundation metadata concept)|
 	String SCTID_MEMB_ANNOT_REFSET = "1292995002"; // |Member annotation with string value reference set (foundation metadata concept)|
@@ -249,6 +249,7 @@ public interface RF2Constants {
 	String COL_TYPE_ID = "typeId";
 	String COL_REFSET_ID = "refsetId";
 	String COL_REFERENCED_COMPONENT_ID = "referencedComponentId";
+	String COL_VALUE = "value";
 
 	//Common columns
 	int IDX_ID = 0;
