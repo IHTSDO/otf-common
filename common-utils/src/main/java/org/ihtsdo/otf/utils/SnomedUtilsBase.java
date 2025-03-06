@@ -80,4 +80,8 @@ public class SnomedUtilsBase implements RF2Constants {
 		String revNameSpace = revSctId.substring(3,10);
 		return new StringBuffer(revNameSpace).reverse().toString();
 	}
+
+	public static boolean translateActiveFlag(String active) {
+		return active.equals("1");
+	}
 }

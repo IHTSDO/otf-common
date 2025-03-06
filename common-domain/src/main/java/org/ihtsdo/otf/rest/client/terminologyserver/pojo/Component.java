@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.ScriptException;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.ihtsdo.otf.exception.TermServerRuntimeException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
@@ -324,4 +325,18 @@ public abstract class Component implements RF2Constants {
 	public void setPreviousState(String[] previousState) {
 		this.previousState = previousState;
 	}
+
+	public void revertToPreviousState() {
+		if (previousState == null) {
+			throw new TermServerRuntimeException("Attempt to revert component to previous state when no previous state recorded");
+		}
+		this.active = SnomedUtilsBase.translateActiveFlag(previousState[IDX_ACTIVE]);
+		this.effectiveTime = previousState[IDX_EFFECTIVETIME];
+	}
+
+	public boolean hasPreviousStateDataRecorded() {
+		return previousState != null;
+	}
+
+
 }
