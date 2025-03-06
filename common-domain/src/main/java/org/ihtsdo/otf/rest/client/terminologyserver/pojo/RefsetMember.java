@@ -127,13 +127,15 @@ RefsetMember extends Component implements RF2Constants {
 			return ComponentType.COMPONENT_ANNOTATION;
 		} else if (additionalFields.containsKey("valueId")) {
 			return ComponentType.ATTRIBUTE_VALUE;
+		} else if (additionalFields.isEmpty()) {
+			return ComponentType.SIMPLE_REFSET_MEMBER;
 		}
-		
-		return null;
+		return ComponentType.UNKNOWN;
 	}
 
 	@Override
-	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
+	public List<String>
+	fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
 		//TODO Add generic field comparison based off field names
 		throw new NotImplementedException();
 	}
