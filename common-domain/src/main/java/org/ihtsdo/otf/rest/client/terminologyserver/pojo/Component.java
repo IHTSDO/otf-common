@@ -330,8 +330,9 @@ public abstract class Component implements RF2Constants {
 		if (previousState == null) {
 			throw new TermServerRuntimeException("Attempt to revert component to previous state when no previous state recorded");
 		}
-		this.active = SnomedUtilsBase.translateActiveFlag(previousState[IDX_ACTIVE]);
-		this.effectiveTime = previousState[IDX_EFFECTIVETIME];
+		//Previous state indexes don't include id or effective time, so step back 2
+		this.active = SnomedUtilsBase.translateActiveFlag(previousState[IDX_ACTIVE - 2]);
+		this.moduleId = previousState[IDX_MODULEID - 2];
 	}
 
 	public boolean hasPreviousStateDataRecorded() {
