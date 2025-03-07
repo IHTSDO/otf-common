@@ -74,7 +74,7 @@ public class TraceabilityServiceClient {
 			return new ArrayList<>();
 		}
 		
-		String url = this.serverUrl + "traceability-service/activitiesBulk?activityType=" + activityType;
+		String url = this.serverUrl + "authoring-traceability-service/activitiesBulk?activityType=" + activityType;
 
 		if (user != null && !StringUtils.isEmpty(user)) {
 			url += "&user=" + user;
@@ -200,7 +200,7 @@ public class TraceabilityServiceClient {
 	//TODO As per SonarQube, create a filter object to populate and pass, rather than all these parameters
 	private String getActivitiesUrl(String componentId, ActivityType activityType, String fromDate, String toDate,
 			boolean summaryOnly, boolean intOnly, String branchPath, boolean isConceptId, boolean useOnBranch) {
-		String url = this.serverUrl + "traceability-service/activities?";
+		String url = this.serverUrl + "authoring-traceability-service/activities?";
 		
 		if (isConceptId) {
 			url += "conceptId=" + componentId;
@@ -255,7 +255,7 @@ public class TraceabilityServiceClient {
 
 
 	public List<Activity> getActivitiesForUsersOnBranches(String componentSubType, String users, String branches, String fromEffectiveTime) throws InterruptedException, TermServerScriptException {
-		String baseUrl = this.serverUrl + "traceability-service/activitiesForUsersOnBranches?componentSubType="+componentSubType+"&users=" + users + "&branches=" + branches + "&fromEffectiveTime=" + fromEffectiveTime;
+		String baseUrl = this.serverUrl + "authoring-traceability-service/activitiesForUsersOnBranches?componentSubType="+componentSubType+"&users=" + users + "&branches=" + branches + "&fromEffectiveTime=" + fromEffectiveTime;
 		return recoverPagesOfActivities(baseUrl);
 	}
 
