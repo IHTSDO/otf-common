@@ -8,15 +8,17 @@ public class ComponentChange {
 	private ChangeType changeType;
 	private ComponentType componentType;
 	private Long componentSubType;
+	private Boolean superseded;
 
 	public ComponentChange() {
 	}
 
-	public ComponentChange(String componentId, ChangeType changeType, ComponentType componentType, Long componentSubType) {
+	public ComponentChange(String componentId, ChangeType changeType, ComponentType componentType, Long componentSubType, Boolean superseded) {
 		this.componentId = componentId;
 		this.changeType = changeType;
 		this.componentType = componentType;
 		this.componentSubType = componentSubType;
+		this.superseded = superseded;
 	}
 
 	public String getComponentId() {
@@ -49,6 +51,14 @@ public class ComponentChange {
 
 	public void setComponentSubType(Long componentSubType) {
 		this.componentSubType = componentSubType;
+	}
+
+	public Boolean superseded() {
+		return superseded;
+	}
+
+	public void setSuperseded(Boolean superseded) {
+		this.superseded = superseded;
 	}
 
 	@Override
