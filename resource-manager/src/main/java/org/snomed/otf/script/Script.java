@@ -88,6 +88,12 @@ public abstract class Script implements RF2Constants {
 	public DataBroker getReportDataUploader() throws TermServerScriptException {
 		throw new NotImplementedException("ReportDataUploader should be provided by TermServerScript.");
 	}
+
+	public String[] getColumnWidths() {
+		// Fixed column widths should be provided by individual reports (optional).
+		// Returning null means all columns will be auto-resized.
+		return null;
+	}
 	
 	public ReportManager getReportManager() {
 		return reportManager;

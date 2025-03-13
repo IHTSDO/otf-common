@@ -151,26 +151,30 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		LOGGER.warn("Spreadsheet opened up to the universe.");
 	}
 
+	private String constructReportTitle() {
+		String titleStr = owner.getScript().getReportName() + " " + df.format(new Date()) + "_" + owner.getEnv();
+		if (owner.getScript().getJobRun() != null && owner.getScript().getJobRun().getUser() != null) {
+			titleStr += "_" + owner.getScript().getJobRun().getUser().toLowerCase();
+		}
+		return titleStr;
+	}
+
 	@Override
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		tabLineCount = new HashMap<>();
 		init();
 		try {
 			List<Request> requests = new ArrayList<>();
-			String titleStr = owner.getScript().getReportName() + " " + df.format(new Date()) + "_" + owner.getEnv();
-			if (owner.getScript().getJobRun() != null && owner.getScript().getJobRun().getUser() != null) {
-				titleStr += "_" + owner.getScript().getJobRun().getUser().toLowerCase();
-			}
+			// Set the title of the spreadsheet
 			requests.add(new Request()
 					.setUpdateSpreadsheetProperties(new UpdateSpreadsheetPropertiesRequest()
 							.setProperties(new SpreadsheetProperties()
-									.setTitle(titleStr))
+									.setTitle(constructReportTitle()))
 									.setFields("title")));
 			tabRowsCount = new HashMap<>();
 			populateColumnsPerTab(columnHeaders);
 			int tabIdx = 0;
 			for (String header : columnHeaders) {
-				Request request = null;
 				//Calculate the number of columns from the header, 
 				//divide the total max cells by both columns and tab count
 				int maxColumns = header.split(COMMA).length;
@@ -179,22 +183,32 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				currentCellCount += maxColumns * maxRows;
 				LOGGER.debug("Tab {} rows/cols set to {}/{}",tabIdx, maxRows, maxColumns);
 
+				String sheetTitle = owner.getTabNames().get(tabIdx);
+
 				GridProperties gridProperties = new GridProperties()
 						.setRowCount(maxRows)
 						.setColumnCount(maxColumns)
 						.setFrozenRowCount(1);
-				SheetProperties properties = new SheetProperties()
-						.setTitle(owner.getTabNames().get(tabIdx))
+
+				SheetProperties sheetProperties = new SheetProperties()
+						.setSheetId(tabIdx)
+						.setTitle(sheetTitle)
 						.setGridProperties(gridProperties);
-				
-				//Sheet 0 already exists, just update - it it's been specified
+
 				if (tabIdx == 0) {
-					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
+					// Sheet 0 already exists, just update it
+					requests.add(new Request()
+							.setUpdateSheetProperties(new UpdateSheetPropertiesRequest()
+									.setProperties(sheetProperties)
+									.setFields("title, gridProperties")));
 				} else {
-					properties.setSheetId(tabIdx);
-					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
+					// Add a new sheet
+					requests.add(new Request()
+							.setAddSheet(new AddSheetRequest()
+									.setProperties(sheetProperties)));
 				}
-				requests.add(request);
+
+				// Set text format and background colour of the header line
 				requests.add(new Request()
 						.setRepeatCell(new RepeatCellRequest()
 								.setRange(new GridRange()
@@ -204,8 +218,48 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 								.setCell(new CellData()
 										.setUserEnteredFormat(new CellFormat()
 												.setTextFormat(new TextFormat()
-														.setBold(true))))
-								.setFields("userEnteredFormat(textFormat)")));
+														.setBold(true))
+												.setBackgroundColor(new Color()
+														.setRed(0.93f)
+														.setGreen(0.93f)
+														.setBlue(0.93f))))
+								.setFields("userEnteredFormat(textFormat,backgroundColor)")));
+
+				// Format fixed width columns
+				String[] columnWidths = owner.getScript().getColumnWidths();
+				if (columnWidths != null) {
+
+					String[] widths = columnWidths[tabIdx].split(COMMA);
+
+					for (int i = 0; i < maxColumns; i++) {
+						Integer columnWidth = Integer.valueOf(widths[i].trim());
+						if (columnWidth > 0) {
+							requests.add(new Request()
+									.setRepeatCell(new RepeatCellRequest()
+											.setRange(new GridRange()
+													.setSheetId(tabIdx)
+													.setStartRowIndex(0)
+													.setEndRowIndex(1)
+													.setStartColumnIndex(i)
+													.setEndColumnIndex(i + 1))
+											.setCell(new CellData()
+													.setUserEnteredFormat(new CellFormat()
+															.setWrapStrategy("WRAP")))
+											.setFields("userEnteredFormat(wrapStrategy)")));
+							requests.add(new Request()
+									.setUpdateDimensionProperties(new UpdateDimensionPropertiesRequest()
+											.setRange(new DimensionRange()
+													.setSheetId(tabIdx)
+													.setDimension("COLUMNS")
+													.setStartIndex(i)
+													.setEndIndex(i + 1))
+											.setProperties(new DimensionProperties()
+													.setPixelSize(columnWidth))
+											.setFields("pixelSize")));
+						}
+					}
+				}
+
 				writeToReportFile(tabIdx, header, true);
 				tabIdx++;
 				numberOfSheets++;
@@ -215,8 +269,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 			flush();
 			moveFile(sheet.getSpreadsheetId());
-		} catch (Exception e) {
-			throw new TermServerScriptException ("Unable to initialise Google Sheet headers",e);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		} catch (IOException e) {
+			throw new TermServerScriptException ("Unable to initialise Google Sheet headers", e);
 		}
 	}
 
@@ -440,18 +496,26 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 		List<Request> requests = new ArrayList<>();
 
+		String[] columnWidths = owner.getScript().getColumnWidths();
+
 		for (int tabIdx = 0; tabIdx < numberOfSheets; tabIdx++) {
 			int maxColumn = maxTabColumns.get(tabIdx);
-			// set the columns to be auto sized
-			AutoResizeDimensionsRequest autoResizeDimensionsRequest = new AutoResizeDimensionsRequest();
-			DimensionRange dimensionRange = new DimensionRange();
-			dimensionRange.setDimension("COLUMNS");
-			dimensionRange.setSheetId(tabIdx);
-			dimensionRange.setStartIndex(0);
-			dimensionRange.setEndIndex(maxColumn);
+			String[] widths = (columnWidths != null ? columnWidths[tabIdx].split(COMMA) : null);
 
-			autoResizeDimensionsRequest.setDimensions(dimensionRange);
-			requests.add(new Request().setAutoResizeDimensions(autoResizeDimensionsRequest));
+			for (int columnIdx = 0; columnIdx < maxColumn; columnIdx++) {
+				// Set the columns without fixed width to be auto sized
+				if (widths == null || Integer.parseInt(widths[columnIdx].trim()) <= 0) {
+					DimensionRange dimensionRange = new DimensionRange();
+					dimensionRange.setDimension("COLUMNS");
+					dimensionRange.setSheetId(tabIdx);
+					dimensionRange.setStartIndex(columnIdx);
+					dimensionRange.setEndIndex(columnIdx + 1);
+
+					requests.add(new Request()
+							.setAutoResizeDimensions(new AutoResizeDimensionsRequest()
+									.setDimensions(dimensionRange)));
+				}
+			}
 		}
 		batch.setRequests(requests);
 

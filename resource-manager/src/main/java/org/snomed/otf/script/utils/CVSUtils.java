@@ -13,6 +13,8 @@ public class CVSUtils {
 	public static List<String> csvSplit(String line) {
 		List<String> list = new ArrayList<>();
 		for(String item : Splitter.on(csvPattern).split(line)) {
+			// Trim leading and trailing white spaces
+			item = item.trim();
 			//Trim leading and trailing double quotes - not needed as already split
 			if (line.charAt(0)=='"') {
 				item = item.substring(1,item.length()-1);
@@ -25,6 +27,8 @@ public class CVSUtils {
 	public static List<Object> csvSplitAsObject(String line) {
 		List<Object> list = new ArrayList<>();
 		for(String item : Splitter.on(csvPattern).split(line)) {
+			// Trim leading and trailing white spaces
+			item = item.trim();
 			//Trim leading and trailing double quotes - not needed as already split
 			if (item.length() > 0) {
 				if (item.charAt(0)=='"') {
