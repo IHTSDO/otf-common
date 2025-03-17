@@ -458,7 +458,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				}
 			} catch (IOException e) {
 				//Output some sample of the data so get an idea of where it's coming from.
-				int dataCutPoint = Math.min(dataToBeWritten.size(), 250);
+				int dataCutPoint = Math.min(dataToBeWritten.size(), 1000);
 				LOGGER.info("Last data attempted: {}", dataToBeWritten.toString().substring(0, dataCutPoint));
 				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
 			} finally {

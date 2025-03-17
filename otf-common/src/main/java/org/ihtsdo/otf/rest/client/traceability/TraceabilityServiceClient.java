@@ -164,7 +164,7 @@ public class TraceabilityServiceClient {
 		try {
 			responseEntity = restTemplate.exchange(activityPages.getThisPageUrl(), HttpMethod.GET, null, Object.class);
 		} catch (RestClientResponseException e) {
-			if (e.getRawStatusCode() == 500) {
+			if (e.getRawStatusCode() == 500 || e.getRawStatusCode() == 404) {
 				//No need to retry if the server is failing this badly
 				throw (e);
 			}

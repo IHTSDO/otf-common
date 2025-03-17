@@ -50,6 +50,10 @@ RefsetMember extends Component implements RF2Constants {
 	}
 	
 	public String getMemberId() {
+		//We get into a pickle here because the fieldname for the id changes from component to component when we're working with the API
+		if (memberId == null && id != null) {
+			return id;
+		}
 		return memberId;
 	}
 
