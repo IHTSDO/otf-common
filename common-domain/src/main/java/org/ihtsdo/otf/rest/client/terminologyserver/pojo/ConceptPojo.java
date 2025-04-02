@@ -84,6 +84,8 @@ public class ConceptPojo implements SnomedComponent, IConcept {
 	private Map<HistoricalAssociation, Set<String>> associationTargets;
 
 	private Set<DescriptionPojo> descriptions;
+
+	private Set<AnnotationPojo> annotations;
 	
 	private Set<AxiomPojo> classAxioms;
 	
@@ -210,6 +212,14 @@ public class ConceptPojo implements SnomedComponent, IConcept {
 
 	public void setDescriptions(Set<DescriptionPojo> descriptions) {
 		this.descriptions = descriptions;
+	}
+
+	public Set<AnnotationPojo> getAnnotations() {
+		return annotations;
+	}
+
+	public void setAnnotations(Set<AnnotationPojo> annotations) {
+		this.annotations = annotations;
 	}
 
 	public Set<RelationshipPojo> getRelationships() {
