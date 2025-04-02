@@ -93,7 +93,7 @@ public class TraceabilityServiceClient {
 			try {
 				responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
 			} catch (RestClientResponseException e) {
-				if (e.getRawStatusCode()==500) {
+				if (e.getStatusCode().value()==500) {
 					//Are we asking for too much here? Try splitting
 					if (conceptIds.size() > BATCH_SIZE / 2) {
 						LOGGER.warn("Issue with call to {}", url);
@@ -164,7 +164,7 @@ public class TraceabilityServiceClient {
 		try {
 			responseEntity = restTemplate.exchange(activityPages.getThisPageUrl(), HttpMethod.GET, null, Object.class);
 		} catch (RestClientResponseException e) {
-			if (e.getRawStatusCode() == 500 || e.getRawStatusCode() == 404) {
+			if (e.getStatusCode().value() == 500 || e.getStatusCode().value() == 404) {
 				//No need to retry if the server is failing this badly
 				throw (e);
 			}
