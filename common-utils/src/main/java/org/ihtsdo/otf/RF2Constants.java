@@ -68,8 +68,8 @@ public interface RF2Constants {
 	String SCTID_NUVA_SCHEMA = "21002000101";
 	String SCTID_NUVA_EXTENSION_MODULE = "11002000107";
 	
-	String SCTID_NPU_SCHEMA = "21003000109";
-	String SCTID_NPU_EXTENSION_MODULE = "11003000107";
+	String SCTID_NPU_SCHEMA = "21003000106";
+	String SCTID_NPU_EXTENSION_MODULE = "11003000102";
 	
 
 	String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|
