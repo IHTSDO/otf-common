@@ -12,6 +12,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.ihtsdo.otf.utils.StringUtils;
 
 public abstract class Component implements RF2Constants {
 
@@ -324,6 +325,12 @@ public abstract class Component implements RF2Constants {
 
 	public void setPreviousState(String[] previousState) {
 		this.previousState = previousState;
+	}
+
+	//Note that we don't record the previous state if the state has not changed.  In this case the previous state is the same as the current state.
+	//So make checking for changes easy so we can see if we'd even want to check for a previous state
+	public boolean isNewOrChangedSinceLastRelease() {
+		return StringUtils.isEmpty(getEffectiveTime());
 	}
 
 	public void revertToPreviousState() {
