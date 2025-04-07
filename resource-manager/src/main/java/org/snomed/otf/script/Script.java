@@ -5,6 +5,7 @@ import java.util.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
@@ -17,7 +18,10 @@ import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.context.ApplicationContext;
 
 public abstract class Script implements RF2Constants {
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(Script.class);
+
+	private static final String DEFAULT_CATEGORY = "Default Category";
 
 	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
@@ -39,7 +43,9 @@ public abstract class Script implements RF2Constants {
 	protected Project project;
 	protected String taskKey;
 	protected Date startTime;
-	protected Map<String, Object> summaryDetails = new TreeMap<>();
+
+	private  Map<String, Map<String, Integer>> summaryCountsByCategory = new HashMap<>();
+
 	protected boolean quiet = false;
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
@@ -132,47 +138,6 @@ public abstract class Script implements RF2Constants {
 
 	public static boolean isHistoricalRefset(String refsetId) {
 		return HISTORICAL_REFSETS.contains(refsetId);
-	}
-	
-	public void addSummaryInformation(String item, Object detail) {
-		LOGGER.info("{}: {}", item, detail);
-		summaryDetails.put(item, detail);
-	}
-	
-	public void incrementSummaryInformation(String key) {
-		if (!quiet) {
-			incrementSummaryInformation(key, 1);
-		}
-	}
-	
-	public int getSummaryInformationInt(String key) {
-		Object info = summaryDetails.get(key);
-		if (!(info instanceof Integer)) {
-			return 0;
-		}
-		return (Integer)info;
-	}
-	
-	public String getTaskKey() {
-		return taskKey;
-	}
-
-	public void incrementSummaryInformationQuiet(String key) {
-		//There are occasions where we can only capture all information when doing the first pass
-		//When we're looking at ALL information eg which concepts do not require changes.
-		if (quiet) {
-			incrementSummaryInformation(key, 1);
-		}
-	}
-	
-	public void initialiseSummaryInformation(String key) {
-		summaryDetails.put(key, 0);
-	}
-	
-	public void incrementSummaryInformation(String key, int incrementAmount) {
-		summaryDetails.computeIfAbsent(key, k -> 0);
-		int newValue = (Integer) summaryDetails.get(key) + incrementAmount;
-		summaryDetails.put(key, newValue);
 	}
 	
 	public void flushFilesSoft() throws TermServerScriptException {
@@ -338,5 +303,117 @@ public abstract class Script implements RF2Constants {
 
 	public ApplicationContext getApplicationContext() {
 		return appContext;
+	}
+
+	public void incrementSummaryCount(String category, String summaryItem) {
+		incrementSummaryCount(category, summaryItem, 1);
+	}
+
+	public void incrementSummaryCount(String summaryItem) {
+		incrementSummaryCount(DEFAULT_CATEGORY, summaryItem, 1);
+	}
+
+	public void incrementSummaryCount(String summaryItem, int increment) {
+		incrementSummaryCount(DEFAULT_CATEGORY, summaryItem, increment);
+	}
+
+	public void addSummaryInformation(String item, Object detail) {
+		LOGGER.info("{}: {}", item, detail);
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(item, k -> new HashMap<>());
+		summaryCounts.put((String)detail, NOT_SET);
+	}
+
+	public void setSummaryInformation(String item, Object detail) {
+		addSummaryInformation(item, detail);
+	}
+
+	public Integer getSummaryCount(String key) {
+		return getSummaryInformationInt(key);
+	}
+
+	public int getSummaryInformationInt(String key) {
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(DEFAULT_CATEGORY, k -> new HashMap<>());
+		return summaryCounts.getOrDefault(key,0);
+	}
+
+	public String getTaskKey() {
+		return taskKey;
+	}
+
+	public void incrementSummaryInformationQuiet(String key) {
+		//There are occasions where we can only capture all information when doing the first pass
+		//When we're looking at ALL information eg which concepts do not require changes.
+		if (quiet) {
+			incrementSummaryInformation(key, 1);
+		}
+	}
+
+	public void initialiseSummaryInformation(String key) {
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(DEFAULT_CATEGORY, k -> new HashMap<>());
+		summaryCounts.put(key, 0);
+	}
+
+	public Map<String, Integer> getSummaryDetails() {
+		return summaryCountsByCategory.computeIfAbsent(DEFAULT_CATEGORY, k -> new HashMap<>());
+	}
+
+	public void incrementSummaryInformation(String key, int incrementAmount) {
+		incrementSummaryCount(DEFAULT_CATEGORY, key, incrementAmount);
+	}
+
+	protected boolean summaryContainsKey(String key) {
+		Map<String, Integer> defaultSummaryCounts = summaryCountsByCategory.computeIfAbsent(DEFAULT_CATEGORY, k -> new HashMap<>());
+		return defaultSummaryCounts.containsKey(key);
+	}
+
+	public void incrementSummaryCount(String category, String summaryItem, int increment) {
+		//Increment the count for this summary item, in the appropriate category
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(category, k -> new HashMap<>());
+		summaryCounts.merge(summaryItem, increment, Integer::sum);
+	}
+
+	public void incrementSummaryInformation(String key) {
+		if (!quiet) {
+			incrementSummaryCount(DEFAULT_CATEGORY, key, 1);
+		}
+	}
+
+	public void populateSummaryTab(int tabIdx) throws TermServerScriptException {
+		populateSummaryTabAndTotal(tabIdx);
+	}
+
+	protected void initialiseSummary(String issue) {
+		Map<String, Integer> summaryCounts = summaryCountsByCategory.computeIfAbsent(DEFAULT_CATEGORY, k -> new HashMap<>());
+		summaryCounts.put(issue, 0);
+	}
+
+	protected void populateSummaryTabAndTotal(int tabIdx) {
+		//Do we only have one category?  No need to report the category in that case
+		boolean isSingleCategory  = summaryCountsByCategory.size() == 1;
+		for (Map.Entry<String, Map<String, Integer>> entry : summaryCountsByCategory.entrySet()) {
+			if (!isSingleCategory) {
+				reportSafely(tabIdx, entry.getKey());
+			}
+			entry.getValue().entrySet().stream()
+					.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+					.forEach(e -> reportSafely(tabIdx, (Component) null, e.getKey(), e.getValue()));
+
+			int total = entry.getValue().values().stream().mapToInt(Integer::intValue).sum();
+			reportSafely(tabIdx, (Component) null, "TOTAL", total);
+		}
+	}
+
+	protected void reportSummaryCounts(int summaryTabIdx) throws TermServerScriptException {
+		report(summaryTabIdx, "");
+		//Work through each category (sorted) and then output each summary Count for that category
+		summaryCountsByCategory.keySet().stream()
+				.sorted()
+				.forEach(cat -> {
+					reportSafely(summaryTabIdx, cat);
+					Map<String, Integer> summaryCounts = summaryCountsByCategory.get(cat);
+					summaryCounts.keySet().stream()
+							.sorted()
+							.forEach(summaryItem -> reportSafely(summaryTabIdx, "", summaryItem, summaryCounts.get(summaryItem)));
+				});
 	}
 }
