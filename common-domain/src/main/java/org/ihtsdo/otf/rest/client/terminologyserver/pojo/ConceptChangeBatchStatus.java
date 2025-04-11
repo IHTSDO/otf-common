@@ -23,6 +23,11 @@ public class ConceptChangeBatchStatus {
 		this.status = status.toString();
 	}
 
+	public ConceptChangeBatchStatus(Status status, String message) {
+		this.status = status.toString();
+		this.message = message;
+	}
+
 	public String getId() {
 		return id;
 	}
