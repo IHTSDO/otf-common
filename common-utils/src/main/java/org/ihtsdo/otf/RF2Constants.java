@@ -175,6 +175,8 @@ public interface RF2Constants {
 	String SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID = "734138000";  //Anatomy structure and entire association reference set (foundation metadata concept)
 	String SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID = "734139008";  //Anatomy structure and part association reference set (foundation metadata concept)
 
+	//Module Dependency Reference Set
+	String SCTID_MODULE_DEPENDENCY_REFSET = "900000000000534007"; // |Module dependency reference set (foundation metadata concept)|
 
 	//Inactivation Indicator Refsets
 	String SCTID_CON_INACT_IND_REFSET = "900000000000489007";
@@ -274,7 +276,7 @@ public interface RF2Constants {
 	int CON_IDX_ID = 0;
 	int CON_IDX_EFFECTIVETIME = 1;
 	int CON_IDX_ACTIVE = 2;
-	int CON_IDX_MODULID = 3;
+	int CON_IDX_MODULEID = 3;
 	int CON_IDX_DEFINITIONSTATUSID = 4;
 
 	// Description columns
@@ -282,7 +284,7 @@ public interface RF2Constants {
 	int DES_IDX_ID = 0;
 	int DES_IDX_EFFECTIVETIME = 1;
 	int DES_IDX_ACTIVE = 2;
-	int DES_IDX_MODULID = 3;
+	int DES_IDX_MODULEID = 3;
 	int DES_IDX_CONCEPTID = 4;
 	int DES_IDX_LANGUAGECODE = 5;
 	int DES_IDX_TYPEID = 6;
@@ -294,7 +296,7 @@ public interface RF2Constants {
 	int LANG_IDX_ID = 0;
 	int LANG_IDX_EFFECTIVETIME = 1;
 	int LANG_IDX_ACTIVE = 2;
-	int LANG_IDX_MODULID = 3;
+	int LANG_IDX_MODULEID = 3;
 	int LANG_IDX_REFSETID = 4;
 	int LANG_IDX_REFCOMPID = 5;
 	int LANG_IDX_ACCEPTABILITY_ID = 6;
@@ -304,7 +306,7 @@ public interface RF2Constants {
 	int COMP_ANNOT_IDX_ID = 0;
 	int COMP_ANNOT_IDX_EFFECTIVETIME = 1;
 	int COMP_ANNOT_IDX_ACTIVE = 2;
-	int COMP_ANNOT_IDX_MODULID = 3;
+	int COMP_ANNOT_IDX_MODULEID = 3;
 	int COMP_ANNOT_IDX_REFSETID = 4;
 	int COMP_ANNOT_IDX_REFCOMPID = 5;
 	int COMP_ANNOT_IDX_LANG_DIALECT_CODE = 6;
@@ -316,7 +318,7 @@ public interface RF2Constants {
 	int INACT_IDX_ID = 0;
 	int INACT_IDX_EFFECTIVETIME = 1;
 	int INACT_IDX_ACTIVE = 2;
-	int INACT_IDX_MODULID = 3;
+	int INACT_IDX_MODULEID = 3;
 	int INACT_IDX_REFSETID = 4;
 	int INACT_IDX_REFCOMPID = 5;
 	int INACT_IDX_REASON_ID = 6;
@@ -326,10 +328,21 @@ public interface RF2Constants {
 	int ASSOC_IDX_ID = 0;
 	int ASSOC_IDX_EFFECTIVETIME = 1;
 	int ASSOC_IDX_ACTIVE = 2;
-	int ASSOC_IDX_MODULID = 3;
+	int ASSOC_IDX_MODULEID = 3;
 	int ASSOC_IDX_REFSETID = 4;
 	int ASSOC_IDX_REFCOMPID = 5;
 	int ASSOC_IDX_TARGET = 6;
+
+	// Module Dependency Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	sourceEffectiveTime	targetEffectiveTime
+	int MDRS_IDX_ID = 0;
+	int MDRS_IDX_EFFECTIVETIME = 1;
+	int MDRS_IDX_ACTIVE = 2;
+	int MDRS_IDX_MODULEID = 3;
+	int MDRS_IDX_REFSETID = 4;
+	int MDRS_IDX_REFCOMPID = 5;
+	int MDRS_IDX_SOURCE_EFFECTIVE_TIME = 6;
+	int MDRS_IDX_TARGET_EFFECTIVE_TIME = 7;
 
 	// Refset columns
 	int REF_IDX_ID = 0;

@@ -107,7 +107,7 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		a.setId(lineItems[COMP_ANNOT_IDX_ID]);
 		a.setEffectiveTime(lineItems[COMP_ANNOT_IDX_EFFECTIVETIME]);
 		a.setActive(lineItems[COMP_ANNOT_IDX_ACTIVE].equals("1"));
-		a.setModuleId(lineItems[COMP_ANNOT_IDX_MODULID]);
+		a.setModuleId(lineItems[COMP_ANNOT_IDX_MODULEID]);
 		a.setRefsetId(lineItems[COMP_ANNOT_IDX_REFSETID]);
 		a.setReferencedComponentId(lineItems[COMP_ANNOT_IDX_REFCOMPID]);
 		a.setLanguageDialectCode(lineItems[COMP_ANNOT_IDX_LANG_DIALECT_CODE]);

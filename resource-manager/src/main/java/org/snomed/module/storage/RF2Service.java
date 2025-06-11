@@ -18,17 +18,17 @@ public class RF2Service {
     public static final Integer TARGET_EFFECTIVE_TIME = 7;
 
     public Set<String> getUniqueModuleIds(File file) {
-        LOGGER.debug("Getting unique module IDs from: {}", file.getName());
         if (file == null) {
             return Collections.emptySet();
         }
 
+        LOGGER.debug("Getting unique module IDs from: {}", file.getName());
         List<List<String>> rows = getRows(file, null, MODULE_ID);
         Set<String> result = new HashSet<>();
         for (List<String> row : rows) {
             result.addAll(row);
         }
-        LOGGER.debug("Collected {} unique module IDs from: {}", file.getName());
+        LOGGER.debug("Collected {} unique module IDs from: {}", rows.size(), file.getName());
         return result;
     }
 

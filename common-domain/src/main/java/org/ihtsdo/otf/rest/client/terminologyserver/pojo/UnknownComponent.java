@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.ihtsdo.otf.exception.ScriptException;
@@ -40,6 +41,11 @@ public class UnknownComponent extends Component {
 	@Override
 	public boolean matchesMutableFields(Component other) {
 		throw new IllegalArgumentException("Can't compare mutable fields on Unknown Component");
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		return Collections.emptyList();
 	}
 
 }

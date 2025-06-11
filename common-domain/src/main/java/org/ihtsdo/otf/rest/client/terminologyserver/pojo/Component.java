@@ -18,7 +18,7 @@ public abstract class Component implements RF2Constants {
 	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP,
 		INFERRED_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE, HISTORICAL_ASSOCIATION,
 		TEXT_DEFINITION, AXIOM, ALTERNATE_IDENTIFIER, COMPONENT_ANNOTATION, REFSET_MEMBER_ANNOTATION,
-		SIMPLE_MAP, SIMPLE_REFSET_MEMBER, UNKNOWN}
+		SIMPLE_MAP, SIMPLE_REFSET_MEMBER, MDRS_REFSET_MEMBER, UNKNOWN}
 	
 	//The id takes a different name in most components, don't expose
 	protected String id;
@@ -339,5 +339,5 @@ public abstract class Component implements RF2Constants {
 		return previousState != null;
 	}
 
-
+	public abstract List<Component> getReferencedComponents(ComponentStore cs);
 }

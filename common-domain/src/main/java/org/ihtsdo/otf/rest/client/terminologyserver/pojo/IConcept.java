@@ -5,5 +5,7 @@ public interface IConcept {
 	public String getConceptId();
 	
 	public String getFsnTerm();
+
+	public String getModuleId();
 	
 }

@@ -11,9 +11,7 @@ import com.google.gson.annotations.SerializedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class 
-
-RefsetMember extends Component implements RF2Constants {
+public class RefsetMember extends Component implements RF2Constants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RefsetMember.class);
 	
@@ -302,6 +300,27 @@ RefsetMember extends Component implements RF2Constants {
 	public boolean matchesMutableFields(Component other) {
 		RefsetMember otherRM = (RefsetMember)other;
 		return this.getAdditionalFields().equals(otherRM.getAdditionalFields());
+	}
+
+	@Override
+	public List<Component> getReferencedComponents(ComponentStore cs) {
+		List<Component> referencedComponents = new ArrayList<>();
+		if (this.referencedComponent instanceof Component c) {
+			referencedComponents.add(c);
+		} else {
+			referencedComponents.add(cs.getComponent(this.referencedComponentId));
+		}
+
+		//Now work through any additional fields that may reference components
+		for (String additionalFieldName : getAdditionalFieldNames()) {
+			if (this.hasAdditionalField(additionalFieldName)) {
+				String additionalFieldValue = this.getField(additionalFieldName);
+				if (cs.isComponentId(additionalFieldValue)) {
+					referencedComponents.add(cs.getComponent(additionalFieldValue));
+				}
+			}
+		}
+		return referencedComponents;
 	}
 
 	protected RefsetMember populateClone(RefsetMember clone, String newComponentSctId, boolean keepIds) {
