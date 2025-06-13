@@ -82,11 +82,13 @@ public class StringUtils implements RF2Constants {
 	}
 	
 	public static boolean isCaseSensitive(String term, boolean expectFirstLetterCapitalization) {
-		String afterFirst = term.substring(1);
-		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
-		
 		//Also case sensitive if we start with a lower case letter
-		return !allLowerCase || (expectFirstLetterCapitalization && initialLetterLowerCase(term));
+		return hasCapitalAfterFirstLetter(term) || (expectFirstLetterCapitalization && initialLetterLowerCase(term));
+	}
+
+	public static boolean hasCapitalAfterFirstLetter(String term) {
+		String afterFirst = term.substring(1);
+		return !afterFirst.equals(afterFirst.toLowerCase());
 	}
 
 	public static boolean isCaseSensitive(String term) {
