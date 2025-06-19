@@ -295,9 +295,9 @@ public abstract class Component implements RF2Constants {
 		return (isActiveSafely()?"1":"0") + "," + moduleId + ",";
 	}
 
-	public ComponentAnnotationEntry getComponentAnnotationEntry(String refsetId) {
+	public ComponentAnnotationEntry getComponentAnnotationEntry(String id) {
 		for (ComponentAnnotationEntry cae : getComponentAnnotationEntries()) {
-			if (cae.getRefsetId().equals(refsetId)) {
+			if (cae.getId().equals(id)) {
 				return cae;
 			}
 		}
