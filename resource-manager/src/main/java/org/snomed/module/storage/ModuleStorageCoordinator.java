@@ -174,6 +174,34 @@ public class ModuleStorageCoordinator {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
         }
     }
+
+    /**
+     * Upload RF2 package to location computed from given arguments. If no exception has been thrown, the method can be considered successful. To handle specific unsuccessful scenarios, catch exceptions that
+     * extend ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
+     *
+     * @param codeSystem    CodeSystem of RF2 package, e.g. INT or XX.
+     * @param moduleId      Most important, or identifying, module id of RF2 package.
+     * @param effectiveTime Effective time of RF2 package.
+     * @param rf2Package    File to upload.
+     * @param md5File       MD5 file
+     * @throws ModuleStorageCoordinatorException.InvalidArgumentsException  if any argument is null or empty.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException  if dependency cannot be found for given RF2 package.
+     * @throws ModuleStorageCoordinatorException.DuplicateResourceException if resource already exists for computed location
+     * @throws ModuleStorageCoordinatorException.OperationFailedException   if any other operation fails, for example, failing to confirm the RF2 package has been uploaded.
+     */
+    public void upload(String codeSystem, String moduleId, String effectiveTime, File rf2Package, File md5File) throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
+        this.upload(codeSystem, moduleId, effectiveTime, rf2Package);
+        if (md5File != null) {
+            // Check if MD5 file already exists
+            String md5ResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, md5File.getName());
+            boolean existingMD5File = resourceManagerStorage.doesObjectExist(md5ResourcePath);
+            if (existingMD5File) {
+                throw new ModuleStorageCoordinatorException.DuplicateResourceException("MD5 file already exists at location: " + md5ResourcePath);
+            }
+            // Upload MD5 file
+            resourceManagerStorage.doWriteResource(md5ResourcePath, asFileInputStream(md5File));
+        }
+    }
     
     /**
      * Overload for Generate ModuleMetadata for given RF2 package, allowing a MetaData object to be used as it contains
