@@ -774,8 +774,9 @@ public class ModuleStorageCoordinator {
                 }
 
                 for (String possibleRF2PackagePath : possibleRF2Packages) {
+                    File possibleRF2Package = null;
                     try {
-                        File possibleRF2Package = resourceManagerStorage.doReadResourceFile(possibleRF2PackagePath);
+                        possibleRF2Package = resourceManagerStorage.doReadResourceFile(possibleRF2PackagePath);
                         Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(possibleRF2Package, false);
                         boolean owningPackageFound = uniqueModuleIds.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
                         if (owningPackageFound) {
@@ -785,6 +786,14 @@ public class ModuleStorageCoordinator {
                         }
                     } catch (IOException e) {
                         throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to read RF2 package " + possibleRF2PackagePath, e);
+                    } finally {
+                        if (possibleRF2Package != null) {
+                            try {
+                                Files.delete(possibleRF2Package.toPath());
+                            } catch (IOException e) {
+                                LOGGER.warn("Failed to delete RF2 package {}", possibleRF2PackagePath, e);
+                            }
+                        }
                     }
                 }
             }
