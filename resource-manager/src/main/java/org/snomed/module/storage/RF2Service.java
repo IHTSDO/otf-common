@@ -17,13 +17,13 @@ public class RF2Service {
     public static final Integer REFERENCED_COMPONENT_ID = 5;
     public static final Integer TARGET_EFFECTIVE_TIME = 7;
 
-    public Set<String> getUniqueModuleIds(File file) {
+    public Set<String> getUniqueModuleIds(File file, boolean rf2DeltaOnly) {
         if (file == null) {
             return Collections.emptySet();
         }
 
         LOGGER.debug("Getting unique module IDs from: {}", file.getName());
-        List<List<String>> rows = getRows(file, null, MODULE_ID);
+        List<List<String>> rows = getRows(file, rf2DeltaOnly, null, MODULE_ID);
         Set<String> result = new HashSet<>();
         for (List<String> row : rows) {
             result.addAll(row);
@@ -32,12 +32,12 @@ public class RF2Service {
         return result;
     }
 
-    public Set<RF2Row> getMDRS(File file) {
+    public Set<RF2Row> getMDRS(File file, boolean rf2DeltaOnly) {
         if (file == null) {
             return Collections.emptySet();
         }
 
-        List<List<String>> rows = getRows(file, "der2_ssRefset_ModuleDependency", REFERENCED_COMPONENT_ID, TARGET_EFFECTIVE_TIME);
+        List<List<String>> rows = getRows(file, rf2DeltaOnly, "ModuleDependency", REFERENCED_COMPONENT_ID, TARGET_EFFECTIVE_TIME);
         Set<RF2Row> rf2Rows = new HashSet<>();
         for (List<String> row : rows) {
             rf2Rows.add(
@@ -50,7 +50,7 @@ public class RF2Service {
         return rf2Rows;
     }
 
-    private List<List<String>> getRows(File file, String fileNamePattern, Integer... columnIndices) {
+    private List<List<String>> getRows(File file, boolean rf2DeltaOnly, String fileNamePattern, Integer... columnIndices) {
         List<List<String>> rows = new ArrayList<>();
         try (ZipFile zipFile = new ZipFile(file)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -60,7 +60,7 @@ public class RF2Service {
 
                 if (resourcePathSegments.length >= 2) {
                     boolean snapshot = "Snapshot".equals(resourcePathSegments[1]);
-                    if (!snapshot) {
+                    if (!rf2DeltaOnly && !snapshot) {
                         continue;
                     }
 

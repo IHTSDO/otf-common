@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -24,6 +25,8 @@ import static org.ihtsdo.otf.RF2Constants.SCTID_CORE_MODULE;
  */
 public class ModuleStorageCoordinator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModuleStorageCoordinator.class);
+    public static final String SLASH = "/";
+    public static final String CACHE = "cache";
 
     private final ResourceManager resourceManagerStorage;
     private final ResourceManager resourceManagerCache;
@@ -78,7 +81,7 @@ public class ModuleStorageCoordinator {
      * @return Instantiated class with Dev-environment configuration.
      */
     public static ModuleStorageCoordinator initDev(ResourceManager resourceManagerStorage) {
-        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local("cache" + "/" + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
+        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local(CACHE + SLASH + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
         return new ModuleStorageCoordinator(resourceManagerStorage, resourceManagerCache, new RF2Service(), "dev", List.of("dev", "prod"), true);
     }
 
@@ -90,7 +93,7 @@ public class ModuleStorageCoordinator {
      * @return Instantiated class with Uat-environment configuration.
      */
     public static ModuleStorageCoordinator initUat(ResourceManager resourceManagerStorage) {
-        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local("cache" + "/" + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
+        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local(CACHE + SLASH + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
         return new ModuleStorageCoordinator(resourceManagerStorage, resourceManagerCache, new RF2Service(), "uat", List.of("uat", "prod"), true);
     }
 
@@ -102,7 +105,7 @@ public class ModuleStorageCoordinator {
      * @return Instantiated class with Prod-environment configuration.
      */
     public static ModuleStorageCoordinator initProd(ResourceManager resourceManagerStorage) {
-        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local("cache" + "/" + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
+        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local(CACHE + SLASH + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
         return new ModuleStorageCoordinator(resourceManagerStorage, resourceManagerCache, new RF2Service(), "prod", List.of("prod"), false);
     }
 
@@ -234,7 +237,7 @@ public class ModuleStorageCoordinator {
         // Validate arguments
         throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
 
-        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package);
+        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package, false);
         if (uniqueModuleIds.isEmpty()) {
             String message = String.format("Failed to generate metadata for %s as no composition modules found.", rf2Package.getName());
             throw new ModuleStorageCoordinatorException.OperationFailedException(message);
@@ -300,7 +303,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if metadata or package cannot be found for computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to copy a resource from original location to the archive location.
      */
-    public void archive(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public void archive(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException, IOException {
         LOGGER.debug("Attempting to archive location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         if (!allowArchive) {
@@ -315,11 +318,17 @@ public class ModuleStorageCoordinator {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Metadata not found with resource path " + metadataResourcePath);
         }
 
-        ModuleMetadata moduleMetadata = null;
+        ModuleMetadata moduleMetadata;
+        File metedataFile = null;
         try {
-            moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.doReadResourceFile(metadataResourcePath), ModuleMetadata.class);
+            metedataFile = resourceManagerStorage.doReadResourceFile(metadataResourcePath);
+            moduleMetadata = FileUtils.convertToObject(metedataFile, ModuleMetadata.class);
         } catch (IOException | ScriptException e) {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Malformed Metadata found with resource path " + metadataResourcePath, e);
+        } finally {
+            if (metedataFile != null) {
+                Files.delete(metedataFile.toPath());
+            }
         }
 
         String packageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, moduleMetadata.getFilename());
@@ -397,7 +406,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, attempting to archive when flag has been disabled.
      */
-    public void setPublished(String codeSystem, String moduleId, String effectiveTime, boolean published) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ScriptException {
+    public void setPublished(String codeSystem, String moduleId, String effectiveTime, boolean published) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException {
         if (!allowArchive) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
         }
@@ -530,6 +539,39 @@ public class ModuleStorageCoordinator {
         return doGetAllReleasesByCodeSystem(codeSystem).stream().map(ModuleMetadata::getEffectiveTime).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     }
 
+
+    /**
+     * Download all dependencies stored for the given MDRS records.
+     * *
+     * @param mdrsRows Collection of MDRS rows
+     * @param excludedModuleIds Collection of Module which will be excluded
+     * @param includeFile Whether or not the release package is downloaded
+     * @return Collection of all stored ModuleMetadata for the MDRS records.
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package(s) cannot be found for given CodeSystem.
+     */
+    public Set<ModuleMetadata> getRequiredDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, boolean includeFile) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+        Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, excludedModuleIds ,null);
+        if (!includeFile) return dependencies;
+        for (ModuleMetadata dependency : dependencies) {
+            for (String readDirectory : this.readDirectories) {
+                String baseResourcePath = getBaseResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
+                String metadataResourcePath = getMetadataResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
+
+                if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
+                    String rf2ResourcePath = baseResourcePath + SLASH + dependency.getFilename();
+                    boolean cacheEnabled = resourceManagerCache != null;
+                    if (cacheEnabled) {
+                        doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, dependency);
+                    } else {
+                        doGetMetadataFromRemote(rf2ResourcePath, dependency);
+                    }
+                }
+            }
+        }
+        return dependencies;
+    }
+
     private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
         if (codeSystem == null || codeSystem.isEmpty()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
@@ -593,7 +635,7 @@ public class ModuleStorageCoordinator {
     }
 
     private String parseCodeSystem(String resourcePath) {
-        String[] splitBySlash = resourcePath.split("/");
+        String[] splitBySlash = resourcePath.split(SLASH);
         if (splitBySlash.length >= 2) {
             String[] splitByUnderscore = splitBySlash[1].split("_");
             if (splitByUnderscore.length >= 2) {
@@ -605,7 +647,7 @@ public class ModuleStorageCoordinator {
     }
 
     private String parseModuleId(String resourcePath) {
-        String[] splitBySlash = resourcePath.split("/");
+        String[] splitBySlash = resourcePath.split(SLASH);
         if (splitBySlash.length >= 2) {
             String[] splitByUnderscore = splitBySlash[1].split("_");
             if (splitByUnderscore.length >= 2) {
@@ -617,7 +659,7 @@ public class ModuleStorageCoordinator {
     }
 
     private String parseEffectiveTime(String resourcePath) {
-        String[] splitBySlash = resourcePath.split("/");
+        String[] splitBySlash = resourcePath.split(SLASH);
         if (splitBySlash.length >= 3) {
             return splitBySlash[2];
         }
@@ -667,7 +709,7 @@ public class ModuleStorageCoordinator {
     }
 
     private String getPackageResourcePath(String directory, String codeSystem, String moduleId, String effectiveTime, String rf2PackageFileName) {
-        return getBaseResourcePath(directory, codeSystem, moduleId, effectiveTime) + "/" + rf2PackageFileName;
+        return getBaseResourcePath(directory, codeSystem, moduleId, effectiveTime) + SLASH + rf2PackageFileName;
     }
 
     private FileInputStream asFileInputStream(File file) throws ModuleStorageCoordinatorException.OperationFailedException {
@@ -679,14 +721,16 @@ public class ModuleStorageCoordinator {
     }
 
     private String getBaseResourcePath(String directory, String codeSystem, String moduleId, String effectiveTime) {
-        return directory + "/" + codeSystem + "_" + moduleId + "/" + effectiveTime;
+        return directory + SLASH + codeSystem + "_" + moduleId + SLASH + effectiveTime;
     }
 
     private Set<ModuleMetadata> getDependencies(File rf2Package, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        Set<RF2Row> rf2Rows = rf2Service.getMDRS(rf2Package);
+        Set<RF2Row> rf2Rows = rf2Service.getMDRS(rf2Package, false);
+        return getDependencies(rf2Rows, excludedModuleIds, rf2Package.getName());
+    }
+    private Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, String rf2Filename) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
         Set<String> dependentTargetEffectiveTimes = new HashSet<>();
-
-        Iterator<RF2Row> iterator = rf2Rows.iterator();
+        Iterator<RF2Row> iterator = mdrsRows.iterator();
         while (iterator.hasNext()) {
             RF2Row rf2Row = iterator.next();
             // Remove if "dependency" module found in own package
@@ -699,7 +743,7 @@ public class ModuleStorageCoordinator {
         }
 
         // No external dependencies
-        if (rf2Rows.isEmpty()) {
+        if (mdrsRows.isEmpty()) {
             return Collections.emptySet();
         }
 
@@ -710,7 +754,7 @@ public class ModuleStorageCoordinator {
                 continue;
             }
 
-            for (RF2Row rf2Row : rf2Rows) {
+            for (RF2Row rf2Row : mdrsRows) {
                 if (rf2Row.isFound()) {
                     continue;
                 }
@@ -718,7 +762,7 @@ public class ModuleStorageCoordinator {
                 // Filter available RF2 packages on matching effective time
                 Set<String> possibleRF2Packages = new HashSet<>();
                 for (String availableRF2Package : availableRF2Packages) {
-                    String[] resourcePathSegments = availableRF2Package.split("/");
+                    String[] resourcePathSegments = availableRF2Package.split(SLASH);
                     String effectiveTime = resourcePathSegments[2];
                     if (dependentTargetEffectiveTimes.contains(effectiveTime)) {
                         possibleRF2Packages.add(availableRF2Package);
@@ -732,7 +776,7 @@ public class ModuleStorageCoordinator {
                 for (String possibleRF2PackagePath : possibleRF2Packages) {
                     try {
                         File possibleRF2Package = resourceManagerStorage.doReadResourceFile(possibleRF2PackagePath);
-                        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(possibleRF2Package);
+                        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(possibleRF2Package, false);
                         boolean owningPackageFound = uniqueModuleIds.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
                         if (owningPackageFound) {
                             rf2Row.setFound(true);
@@ -745,15 +789,15 @@ public class ModuleStorageCoordinator {
                 }
             }
 
-            if (found == rf2Rows.size()) {
+            if (found == mdrsRows.size()) {
                 break;
             }
         }
 
         Set<String> metadataResourcePaths = new HashSet<>();
-        for (RF2Row rf2Row : rf2Rows) {
+        for (RF2Row rf2Row : mdrsRows) {
             if (!rf2Row.isFound()) {
-                String message = String.format("Cannot generate metadata for %s as dependency '%s' cannot be found. Ensure dependent packages are uploaded first.", rf2Package.getName(), rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
+                String message = String.format("Cannot generate metadata %s as dependency '%s' cannot be found. Ensure dependent packages are uploaded first.", (rf2Filename == null ? "" : "for " + rf2Filename), rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
                 throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
             } else {
                 metadataResourcePaths.add(rf2Row.getMetadataResourcePath());
@@ -783,10 +827,10 @@ public class ModuleStorageCoordinator {
     }
 
     private String asMetadataResourcePath(String packageResourcePath) {
-        String[] splits = packageResourcePath.split("/");
+        String[] splits = packageResourcePath.split(SLASH);
         splits = Arrays.copyOf(splits, splits.length - 1); // Remove last segment, i.e. a/b/c/d => a/b/c
 
-        return String.join("/", splits) + "/metadata.json";
+        return String.join(SLASH, splits) + "/metadata.json";
     }
 
     private ModuleMetadata doGetMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
@@ -800,7 +844,7 @@ public class ModuleStorageCoordinator {
             if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
                 try {
                     ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
-                    String rf2ResourcePath = baseResourcePath + "/" + moduleMetadata.getFilename();
+                    String rf2ResourcePath = baseResourcePath + SLASH + moduleMetadata.getFilename();
                     if (resourceManagerStorage.doesObjectExist(rf2ResourcePath)) {
                         if (includeFile) {
                             boolean cacheEnabled = resourceManagerCache != null;
@@ -871,7 +915,7 @@ public class ModuleStorageCoordinator {
 
     private String asArchivePath(String resourcePath, String epochSecond) {
         // otf-common/files/ABC_12345/20240101/metadata.json => // otf-common/files/ABC_12345/archive/$epochSecond/metadata.json
-        return resourcePath.replaceAll("/\\d{8}/", "/archive/" + epochSecond + "/");
+        return resourcePath.replaceAll("/\\d{8}/", "/archive/" + epochSecond + SLASH);
     }
 
     private void doUpdateModuleMetadata(String codeSystem, String moduleId, String effectiveTime, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException.OperationFailedException {
