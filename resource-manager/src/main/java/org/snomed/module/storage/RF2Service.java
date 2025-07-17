@@ -65,7 +65,7 @@ public class RF2Service {
                     }
 
                     String fileName = resourcePathSegments[resourcePathSegments.length - 1];
-                    boolean rf2TextFile = fileName.startsWith("der2_") || fileName.startsWith("sct2_") || fileName.startsWith("xder2_") || fileName.startsWith("xsct2_");
+                    boolean rf2TextFile = fileName.startsWith("der2_") || fileName.startsWith("sct2_") || fileName.startsWith("xder2_") || fileName.startsWith("xsct2_") || fileName.startsWith("rel2_");
                     if (!rf2TextFile) {
                         continue;
                     }
