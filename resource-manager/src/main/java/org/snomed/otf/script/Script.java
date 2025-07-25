@@ -1,6 +1,7 @@
 package org.snomed.otf.script;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.ihtsdo.otf.RF2Constants;
@@ -39,7 +40,7 @@ public abstract class Script implements RF2Constants {
 	protected Project project;
 	protected String taskKey;
 	protected Date startTime;
-	protected Map<String, Object> summaryDetails = new TreeMap<>();
+	protected Map<String, Object> summaryDetails = new ConcurrentSkipListMap<>();
 	protected boolean quiet = false;
 	protected boolean suppressOutput = false;
 	protected ReportConfiguration reportConfiguration;
