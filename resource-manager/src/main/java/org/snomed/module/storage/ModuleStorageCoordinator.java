@@ -539,6 +539,21 @@ public class ModuleStorageCoordinator {
         return doGetAllReleasesByCodeSystem(codeSystem).stream().map(ModuleMetadata::getEffectiveTime).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     }
 
+    /**
+     * Download all dependencies stored for the given RF2 Package.
+     * *
+     * @param rf2Package RF2 package file
+     * @param rf2DeltaOnly Delta or full release
+     * @param includeFile Whether or not the dependency package is downloaded
+     * @return Collection of all stored ModuleMetadata for given RF2 package.
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package(s) cannot be found for given CodeSystem.
+     */
+    public Set<ModuleMetadata> getRequiredDependencies(File rf2Package, boolean rf2DeltaOnly,  boolean includeFile) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+        Set<RF2Row> mdrsRows = rf2Service.getMDRS(rf2Package, rf2DeltaOnly);
+        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package, rf2DeltaOnly);
+        return getRequiredDependencies(mdrsRows, uniqueModuleIds, includeFile);
+    }
 
     /**
      * Download all dependencies stored for the given MDRS records.
