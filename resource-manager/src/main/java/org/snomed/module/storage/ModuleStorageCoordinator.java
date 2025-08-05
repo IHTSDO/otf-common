@@ -568,23 +568,182 @@ public class ModuleStorageCoordinator {
     public Set<ModuleMetadata> getRequiredDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, boolean includeFile) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
         Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, excludedModuleIds ,null);
         if (!includeFile) return dependencies;
-        for (ModuleMetadata dependency : dependencies) {
-            for (String readDirectory : this.readDirectories) {
-                String baseResourcePath = getBaseResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
-                String metadataResourcePath = getMetadataResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
+        addFile(dependencies);
+        return dependencies;
+    }
 
-                if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
-                    String rf2ResourcePath = baseResourcePath + SLASH + dependency.getFilename();
-                    boolean cacheEnabled = resourceManagerCache != null;
-                    if (cacheEnabled) {
-                        doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, dependency);
-                    } else {
-                        doGetMetadataFromRemote(rf2ResourcePath, dependency);
-                    }
+    /**
+     * Return dependencies stored for given MDRS entries.
+     *
+     * @param mdrsRows    MDRS entries to process.
+     * @param includeFile Whether to include RF2 file.
+     * @return Dependencies stored for given MDRS entries.
+     */
+    public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, boolean includeFile) {
+        if (mdrsRows == null || mdrsRows.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        // Collect available rf2 packages
+        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+
+		// Remove those not specified in MDRS
+		rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
+
+		// No dependencies when MDRS references single CodeSystem
+		if (isSingleCodeSystem(rf2Packages)) {
+			return Collections.emptySet();
+		}
+
+		// Remove Extensions packaged as Editions
+		rf2Packages = filterByExtensionsPackagedAsEditions(rf2Packages);
+
+        // Group by CodeSystem
+        Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
+
+        // Flatten into single collection with latest or specified version
+        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
+
+        if (!includeFile) {
+            return moduleMetadata;
+        }
+
+        addFile(moduleMetadata);
+        return moduleMetadata;
+    }
+
+    private boolean isSingleCodeSystem(Set<ModuleMetadata> moduleMetadata) {
+        if (moduleMetadata == null || moduleMetadata.isEmpty()) {
+            return true;
+        }
+
+        return moduleMetadata.stream().map(ModuleMetadata::getCodeSystemShortName).collect(Collectors.toSet()).size() == 1;
+    }
+
+    private Set<ModuleMetadata> filterByExtensionsPackagedAsEditions(Set<ModuleMetadata> rf2Packages) {
+        Map<String, List<ModuleMetadata>> byIdentifyingModule = new HashMap<>();
+        for (ModuleMetadata rf2Package : rf2Packages) {
+            List<ModuleMetadata> value = byIdentifyingModule.get(rf2Package.getIdentifyingModuleId());
+            if (value == null) {
+                value = new ArrayList<>();
+            }
+            value.add(rf2Package);
+            byIdentifyingModule.put(rf2Package.getIdentifyingModuleId(), value);
+        }
+
+        Set<ModuleMetadata> filtered = new HashSet<>();
+        for (ModuleMetadata rf2Package : rf2Packages) {
+            List<String> compositionModuleIds = rf2Package.getCompositionModuleIds();
+            compositionModuleIds.remove(rf2Package.getIdentifyingModuleId());
+
+            for (String compositionModuleId : compositionModuleIds) {
+                List<ModuleMetadata> value = byIdentifyingModule.get(compositionModuleId);
+                if (value != null) {
+                    filtered.addAll(value);
                 }
             }
         }
+
+        return filtered;
+    }
+
+	private Set<ModuleMetadata> getRF2Packages() {
+        Set<ModuleMetadata> rf2Packages = new HashSet<>();
+        for (String readDirectory : readDirectories) {
+            Set<String> rf2PackagePaths = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
+            if (rf2PackagePaths.isEmpty()) {
+                return Collections.emptySet();
+            }
+
+            for (String rfPackagePath : rf2PackagePaths) {
+                ModuleMetadata moduleMetadata = asModuleMetadata(asMetadataResourcePath(rfPackagePath));
+                if (moduleMetadata != null && !Objects.equals("SIMPLEX", moduleMetadata.getCodeSystemShortName())) {
+                    rf2Packages.add(moduleMetadata);
+                }
+            }
+        }
+
+        return rf2Packages;
+    }
+
+    private Set<ModuleMetadata> flattenByLatest(Map<String, Set<ModuleMetadata>> byCodeSystem) {
+        Set<ModuleMetadata> dependencies = new HashSet<>();
+        for (Map.Entry<String, Set<ModuleMetadata>> entrySet : byCodeSystem.entrySet()) {
+            dependencies.add(entrySet.getValue().iterator().next());
+        }
+
         return dependencies;
+    }
+
+    private Map<String, Set<ModuleMetadata>> sortByCodeSystem(Set<ModuleMetadata> rf2Packages) {
+        Map<String, Set<ModuleMetadata>> versionsByCodeSystem = new HashMap<>();
+        for (ModuleMetadata rf2Package : rf2Packages) {
+            String key = rf2Package.getCodeSystemShortName();
+            Set<ModuleMetadata> value = versionsByCodeSystem.get(key);
+            if (value == null) {
+                value = new TreeSet<>((o1, o2) -> o2.getEffectiveTime().compareTo(o1.getEffectiveTime()));
+            }
+            value.add(rf2Package);
+            versionsByCodeSystem.put(key, value);
+        }
+
+        return versionsByCodeSystem;
+    }
+
+    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
+        Set<ModuleMetadata> filtered = new HashSet<>();
+        for (ModuleMetadata rf2Package : rf2Packages) {
+            String identifyingModuleId = rf2Package.getIdentifyingModuleId();
+            String effectiveTimeString = rf2Package.getEffectiveTimeString();
+
+            for (RF2Row row : mdrs) {
+                String moduleId = row.getColumn(RF2Service.MODULE_ID);
+                String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+                String sourceEffectiveTime = row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+                String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+
+                boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
+                boolean d = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
+
+                boolean b = Objects.equals(identifyingModuleId, moduleId);
+                boolean c = sourceEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, sourceEffectiveTime);
+
+                // Dependency found
+                if (a && d) {
+                    filtered.add(rf2Package);
+                }
+
+                // Self found
+                if (b && c) {
+                    filtered.add(rf2Package);
+                }
+            }
+        }
+
+        return filtered;
+    }
+
+    private void addFile(Set<ModuleMetadata> moduleMetadata) {
+        try {
+            for (ModuleMetadata dependency : moduleMetadata) {
+                for (String readDirectory : this.readDirectories) {
+                    String baseResourcePath = getBaseResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
+                    String metadataResourcePath = getMetadataResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
+
+                    if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
+                        String rf2ResourcePath = baseResourcePath + SLASH + dependency.getFilename();
+                        boolean cacheEnabled = resourceManagerCache != null;
+                        if (cacheEnabled) {
+                            doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, dependency);
+                        } else {
+                            doGetMetadataFromRemote(rf2ResourcePath, dependency);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
@@ -1014,5 +1173,13 @@ public class ModuleStorageCoordinator {
 
         int toIndex = (fromIndex == 0 ? size : fromIndex * size);
         return list.subList(fromIndex, Math.min(toIndex, list.size()));
+    }
+
+    private ModuleMetadata asModuleMetadata(String metadataResourcePath) {
+        try {
+            return FileUtils.convertToObject(resourceManagerStorage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

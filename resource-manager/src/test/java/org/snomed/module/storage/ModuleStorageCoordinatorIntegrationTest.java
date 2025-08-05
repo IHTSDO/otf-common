@@ -1446,6 +1446,126 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals(20240101, releaseDates.get(0));
     }
 
+    @Test
+    void getDependencies_ShouldReturnBlank_WhenGivenIntMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenIntMDRS();
+
+        // when
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+
+        // then
+        assertTrue(dependencies.isEmpty());
+    }
+
+    @Test
+    void getDependencies_ShouldReturnExpected_WhenGivenDKMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenDKMDRS();
+
+        // when
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+
+        // then
+        assertEquals(1, dependencies.size());
+        assertEquals("INT", dependencies.iterator().next().getCodeSystemShortName());
+        assertEquals("20250801", dependencies.iterator().next().getEffectiveTimeString());
+    }
+
+    @Test
+    void getDependencies_ShouldReturnExpected_WhenGivenAUMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenAUMDRS();
+
+        // when
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+
+        // then
+        assertEquals(1, dependencies.size());
+        assertEquals("INT", dependencies.iterator().next().getCodeSystemShortName());
+        assertEquals("20250701", dependencies.iterator().next().getEffectiveTimeString());
+    }
+
+    private void givenProdReleasePackages() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // INT
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250401", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250501", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250601", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250701", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250801", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250901", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251001", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251201", getLocalFile("test-rf2-edition.zip"));
+
+        // DK
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250430", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250531", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250630", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250731", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250831", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250930", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251031", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251130", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251231", getLocalFile("test-rf2-edition.zip"));
+
+        // AU
+        givenProdReleasePackage("AU", "32506021000036107", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250228", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250331", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250430", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250531", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250630", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250731", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250831", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250930", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251031", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251130", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251231", getLocalFile("test-rf2-edition.zip"));
+
+
+    }
+
+    private Set<RF2Row> givenIntMDRS() {
+        return Set.of(
+                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000207008").addRow(6, "20250801").addRow(7, "20250801"),
+                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000012004").addRow(6, "20250801").addRow(7, "20250801"),
+                new RF2Row().addRow(3, "900000000000207008").addRow(5, "900000000000012004").addRow(6, "20250801").addRow(7, "20250801")
+        );
+    }
+
+    private Set<RF2Row> givenDKMDRS() {
+        return Set.of(
+                new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250801"),
+                new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000012004").addRow(6, "").addRow(7, "20250801")
+        );
+    }
+
+    private Set<RF2Row> givenAUMDRS() {
+        return Set.of(
+                new RF2Row().addRow(3, "32506021000036107").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
+                new RF2Row().addRow(3, "900000000000207008").addRow(5, "900000000000012004").addRow(6, "20250701").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "32506021000036107").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
+                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000207008").addRow(6, "20250701").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "351000168100").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
+                new RF2Row().addRow(3, "351000168100").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
+                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000012004").addRow(6, "20250701").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701")
+        );
+    }
+
     private Set<String> doListfilenames(String prefix) {
         try {
             return resourceManager.listFilenames(prefix);
