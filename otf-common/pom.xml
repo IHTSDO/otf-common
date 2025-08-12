@@ -53,7 +53,7 @@
 		<!-- Messaging -->
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
-			<artifactId>activemq-client-jakarta</artifactId>
+			<artifactId>activemq-client</artifactId>
 		</dependency>
 
 		<!-- Commons -->
