@@ -86,11 +86,19 @@
 					<groupId>io.grpc</groupId>
 					<artifactId>grpc-api</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>io.grpc</groupId>
+					<artifactId>grpc-context</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-context</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.google.apis</groupId>
