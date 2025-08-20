@@ -612,6 +612,38 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
+    /**
+     * Return composition for given MDRS entries.
+     *
+     * @param mdrsRows    MDRS entries to process.
+     * @param includeFile Whether to include RF2 file.
+     * @return Composition for given MDRS entries.
+     */
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile) {
+        if (mdrsRows == null || mdrsRows.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        // Collect available rf2 packages
+        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+
+        // Remove those not specified in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
+
+        // Group by CodeSystem
+        Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
+
+        // Flatten into single collection with latest or specified version
+        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
+
+        if (!includeFile) {
+            return moduleMetadata;
+        }
+
+        addFile(moduleMetadata);
+        return moduleMetadata;
+    }
+
     private boolean isSingleCodeSystem(Set<ModuleMetadata> moduleMetadata) {
         if (moduleMetadata == null || moduleMetadata.isEmpty()) {
             return true;

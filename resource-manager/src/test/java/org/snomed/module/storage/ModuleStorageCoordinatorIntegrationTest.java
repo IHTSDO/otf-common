@@ -9,6 +9,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -1487,6 +1489,51 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals(1, dependencies.size());
         assertEquals("INT", dependencies.iterator().next().getCodeSystemShortName());
         assertEquals("20250701", dependencies.iterator().next().getEffectiveTimeString());
+    }
+
+    @Test
+    void getComposition_ShouldReturnBlank_WhenGivenIntMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenIntMDRS();
+
+        // when
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getComposition(mdrs, false);
+
+        // then
+        assertEquals(1, dependencies.size());
+        assertEquals("INT", dependencies.iterator().next().getCodeSystemShortName());
+        assertEquals("20250801", dependencies.iterator().next().getEffectiveTimeString());
+    }
+
+    @Test
+    void getComposition_ShouldReturnExpected_WhenGivenDKMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenDKMDRS();
+
+        // when
+        Map<String, ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getComposition(mdrs, false).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
+
+        // then
+        assertEquals(2, dependencies.size());
+        assertEquals("20250801", dependencies.get("INT").getEffectiveTimeString());
+        assertEquals("20251231", dependencies.get("DK").getEffectiveTimeString());
+    }
+
+    @Test
+    void getComposition_ShouldReturnExpected_WhenGivenAUMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenAUMDRS();
+
+        // when
+        Map<String, ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getComposition(mdrs, false).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
+
+        // then
+        assertEquals(2, dependencies.size());
+        assertEquals("20250701", dependencies.get("INT").getEffectiveTimeString());
+        assertEquals("20250731", dependencies.get("AU").getEffectiveTimeString());
     }
 
     private void givenProdReleasePackages() throws ScriptException, ModuleStorageCoordinatorException, IOException {
