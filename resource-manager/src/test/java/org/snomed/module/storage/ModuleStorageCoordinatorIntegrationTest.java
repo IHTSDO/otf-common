@@ -1491,6 +1491,25 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals("20250701", dependencies.iterator().next().getEffectiveTimeString());
     }
 
+    /*
+    * SE's MDRS references a future date (2025-08-21) but they have only published 2025-01-31.
+    * This scenario is for transitive effectiveTimes, i.e. RVF.
+    * */
+    @Test
+    void getDependencies_ShouldReturnExpected_WhenGivenSEMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackages();
+        Set<RF2Row> mdrs = givenSEMDRS();
+
+        // when
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+
+        // then
+        assertEquals(1, dependencies.size());
+        assertEquals("INT", dependencies.iterator().next().getCodeSystemShortName());
+        assertEquals("20250701", dependencies.iterator().next().getEffectiveTimeString());
+    }
+
     @Test
     void getComposition_ShouldReturnBlank_WhenGivenIntMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given
@@ -1579,7 +1598,8 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         givenProdReleasePackage("AU", "32506021000036107", "20251130", getLocalFile("test-rf2-edition.zip"));
         givenProdReleasePackage("AU", "32506021000036107", "20251231", getLocalFile("test-rf2-edition.zip"));
 
-
+        // SE (only published once)
+        givenProdReleasePackage("SE", "45991000052106", "20250131", getLocalFile("test-rf2-edition.zip"));
     }
 
     private Set<RF2Row> givenIntMDRS() {
@@ -1610,6 +1630,13 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
                 new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701")
+        );
+    }
+
+    private Set<RF2Row> givenSEMDRS() {
+        return Set.of(
+                new RF2Row().addRow(3, "45991000052106").addRow(5, "900000000000012004").addRow(6, "20250821").addRow(7, "20250701"),
+                new RF2Row().addRow(3, "45991000052106").addRow(5, "900000000000207008").addRow(6, "20250821").addRow(7, "20250701")
         );
     }
 

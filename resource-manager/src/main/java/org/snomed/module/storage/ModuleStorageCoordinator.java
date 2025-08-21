@@ -587,16 +587,24 @@ public class ModuleStorageCoordinator {
         // Collect available rf2 packages
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
-		// Remove those not specified in MDRS
-		rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
+        // Remove where MODULE not in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true);
 
-		// No dependencies when MDRS references single CodeSystem
-		if (isSingleCodeSystem(rf2Packages)) {
-			return Collections.emptySet();
-		}
+        // No dependencies when MDRS references single CodeSystem
+        if (isSingleCodeSystem(rf2Packages)) {
+            return Collections.emptySet();
+        }
 
-		// Remove Extensions packaged as Editions
-		rf2Packages = filterByExtensionsPackagedAsEditions(rf2Packages);
+        // Remove where EFFECTIVE TIME not in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false);
+
+        // Remove Extensions packaged as Editions
+        if (!isSingleCodeSystem(rf2Packages)) {
+            // Note, this can remove INT as a dependency when given transitive effectiveTimes,
+            // i.e. MDRS references unavailable & unpublished package.
+            // Therefore, hidden within previous if-statement
+            rf2Packages = filterByExtensionsPackagedAsEditions(rf2Packages);
+        }
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -628,7 +636,7 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those not specified in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -722,37 +730,51 @@ public class ModuleStorageCoordinator {
         return versionsByCodeSystem;
     }
 
-    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
+    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, boolean moduleOnly) {
         Set<ModuleMetadata> filtered = new HashSet<>();
         for (ModuleMetadata rf2Package : rf2Packages) {
-            String identifyingModuleId = rf2Package.getIdentifyingModuleId();
-            String effectiveTimeString = rf2Package.getEffectiveTimeString();
-
             for (RF2Row row : mdrs) {
-                String moduleId = row.getColumn(RF2Service.MODULE_ID);
-                String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
-                String sourceEffectiveTime = row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-                String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
-
-                boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
-                boolean d = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
-
-                boolean b = Objects.equals(identifyingModuleId, moduleId);
-                boolean c = sourceEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, sourceEffectiveTime);
-
-                // Dependency found
-                if (a && d) {
-                    filtered.add(rf2Package);
-                }
-
-                // Self found
-                if (b && c) {
+                if (inScope(moduleOnly, rf2Package, row)) {
                     filtered.add(rf2Package);
                 }
             }
         }
 
         return filtered;
+    }
+
+    private boolean inScope(boolean moduleOnly, ModuleMetadata rf2Package, RF2Row row) {
+        String identifyingModuleId = rf2Package.getIdentifyingModuleId();
+        String effectiveTimeString = rf2Package.getEffectiveTimeString();
+        String moduleId = row.getColumn(RF2Service.MODULE_ID);
+        String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+        String sourceEffectiveTime = row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+        String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+
+        if (moduleOnly) {
+            boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
+            boolean b = Objects.equals(identifyingModuleId, moduleId);
+
+            return a || b;
+        } else {
+            boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
+            boolean d = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
+
+            boolean b = Objects.equals(identifyingModuleId, moduleId);
+            boolean c = sourceEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, sourceEffectiveTime);
+
+            // Dependency found
+            if (a && d) {
+                return true;
+            }
+
+            // Self found
+            if (b && c) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void addFile(Set<ModuleMetadata> moduleMetadata) {
