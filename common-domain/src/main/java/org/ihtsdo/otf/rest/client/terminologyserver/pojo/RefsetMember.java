@@ -323,13 +323,23 @@ public class RefsetMember extends Component implements RF2Constants {
 		return referencedComponents;
 	}
 
+	public RefsetMember clone(String newComponentSctId, boolean keepIds) {
+		RefsetMember clone = new RefsetMember();
+		populateClone(clone, newComponentSctId, keepIds);
+		return clone;
+	}
+
 	protected RefsetMember populateClone(RefsetMember clone, String newComponentSctId, boolean keepIds) {
 		clone.id = keepIds ? this.getId() : UUID.randomUUID().toString();
 		clone.effectiveTime = null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = newComponentSctId;
+		if (newComponentSctId == null) {
+			clone.referencedComponent = this.referencedComponentId;
+		} else {
+			clone.referencedComponentId = newComponentSctId;
+		}
 		clone.isDirty = true; //New components need to be written to any delta
 		clone.released = this.released;
 		clone.setAdditionalFields(new HashMap<>(this.additionalFields));

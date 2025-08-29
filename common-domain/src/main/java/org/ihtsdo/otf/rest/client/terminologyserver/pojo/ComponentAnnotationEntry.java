@@ -58,6 +58,7 @@ public class ComponentAnnotationEntry extends RefsetMember implements RF2Constan
 		setField(COL_VALUE, value);
 	}
 
+	@Override
 	public ComponentAnnotationEntry clone(String descriptionSctId, boolean keepIds) {
 		ComponentAnnotationEntry clone = new ComponentAnnotationEntry();
 		clone.id = keepIds ? this.id : UUID.randomUUID().toString();

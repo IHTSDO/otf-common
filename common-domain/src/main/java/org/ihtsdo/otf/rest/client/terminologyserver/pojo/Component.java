@@ -2,7 +2,6 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.ScriptException;
@@ -122,7 +121,9 @@ public abstract class Component implements RF2Constants {
 		if (this.issues == null) {
 			this.issues = new ArrayList<>();
 		}
-		this.issues.add(issue);
+		if (!this.issues.contains(issue)) {
+			this.issues.add(issue);
+		}
 	}
 
 	public void setIssues(List<String> issues) {
@@ -155,7 +156,7 @@ public abstract class Component implements RF2Constants {
 	}
 
 	public String getIssues(String delimiter) {
-		return issues == null ? "" : issues.stream().collect(Collectors.joining(delimiter));
+		return issues == null ? "" : String.join(delimiter, issues);
 	}
 
 	public List<String> getIssueList() {
