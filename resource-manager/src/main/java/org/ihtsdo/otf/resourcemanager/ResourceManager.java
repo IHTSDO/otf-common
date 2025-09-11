@@ -6,14 +6,12 @@ import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.utils.FileUtils;
-import org.springframework.core.io.FileSystemResourceLoader;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.WritableResource;
+import org.springframework.core.io.*;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StreamUtils;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
@@ -318,6 +316,22 @@ public class ResourceManager {
 			this.writeResource(resourcePath, resourceInputStream);
 		} catch (IOException e) {
 			throw new IOException("Failed to write resource '" + resourcePath + "'.", e);
+		}
+	}
+
+	public void writeFolder(String resourcePath) {
+		if (resourceConfiguration.isUseCloud()) {
+			if (!resourcePath.endsWith("/")) {
+				resourcePath += "/";
+			}
+
+			String path = resourceConfiguration.getPath();
+			PutObjectRequest request = PutObjectRequest.builder()
+					.bucket(resourceConfiguration.getBucketName())
+					.key(path == null || path.isEmpty() ? resourcePath : path + "/" + resourcePath)
+					.build();
+
+			s3Client.putObject(request, RequestBody.empty());
 		}
 	}
 

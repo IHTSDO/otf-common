@@ -27,6 +27,7 @@ public class ModuleStorageCoordinator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModuleStorageCoordinator.class);
     public static final String SLASH = "/";
     public static final String CACHE = "cache";
+    public static final String ADDITIONAL_DELIVERABLES = "deliverables";
 
     private final ResourceManager resourceManagerStorage;
     private final ResourceManager resourceManagerCache;
@@ -142,6 +143,13 @@ public class ModuleStorageCoordinator {
             throw new ModuleStorageCoordinatorException.DuplicateResourceException("Package already exists at location: " + metadataResourcePath);
         }
 
+        // Check if additional deliverables already exists
+        String additionalResourcesPath = getAdditionalResourcesPath(writeDirectory, codeSystem, moduleId, effectiveTime);
+        boolean existingAdditionalResources = resourceManagerStorage.doesObjectExist(additionalResourcesPath);
+        if (existingAdditionalResources) {
+            throw new ModuleStorageCoordinatorException.DuplicateResourceException("Additional deliverables already exists at location: " + metadataResourcePath);
+        }
+
         // Build metadata object
         ModuleMetadata moduleMetadata = this.generateMetadata(codeSystem, moduleId, effectiveTime, rf2Package);
 
@@ -176,7 +184,10 @@ public class ModuleStorageCoordinator {
 
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload package to location: " + rf2PackageResourcePath);
         }
-    }
+
+        // Create blank additional resources folder
+        resourceManagerStorage.writeFolder(additionalResourcesPath);
+	}
 
     /**
      * Upload RF2 package to location computed from given arguments. If no exception has been thrown, the method can be considered successful. To handle specific unsuccessful scenarios, catch exceptions that
@@ -349,6 +360,12 @@ public class ModuleStorageCoordinator {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy package from " + packageResourcePath + " to " + packageArchivePath);
         }
 
+        String additionalResourcesPath = getAdditionalResourcesPath(writeDirectory, codeSystem, moduleId, effectiveTime);
+        Set<String> additionalResourcesPaths = resourceManagerStorage.listFilenames(additionalResourcesPath);
+        for (String i : additionalResourcesPaths) {
+            resourceManagerStorage.doCopyResource(i, asArchivePath(i, epochSecond));
+        }
+
         boolean metadataDeleted = resourceManagerStorage.doDeleteResource(metadataResourcePath);
         if (!metadataDeleted) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to metadata package from " + metadataResourcePath);
@@ -357,6 +374,10 @@ public class ModuleStorageCoordinator {
         boolean packageDeleted = resourceManagerStorage.doDeleteResource(packageResourcePath);
         if (!packageDeleted) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to delete package from " + packageResourcePath);
+        }
+
+        for (String string : additionalResourcesPaths) {
+            resourceManagerStorage.doDeleteResource(string);
         }
     }
 
@@ -938,6 +959,10 @@ public class ModuleStorageCoordinator {
 
     private String getPackageResourcePath(String directory, String codeSystem, String moduleId, String effectiveTime, String rf2PackageFileName) {
         return getBaseResourcePath(directory, codeSystem, moduleId, effectiveTime) + SLASH + rf2PackageFileName;
+    }
+
+    private String getAdditionalResourcesPath(String directory, String codeSystem, String moduleId, String effectiveTime) {
+        return getBaseResourcePath(directory, codeSystem, moduleId, effectiveTime) + SLASH + ADDITIONAL_DELIVERABLES;
     }
 
     private FileInputStream asFileInputStream(File file) throws ModuleStorageCoordinatorException.OperationFailedException {

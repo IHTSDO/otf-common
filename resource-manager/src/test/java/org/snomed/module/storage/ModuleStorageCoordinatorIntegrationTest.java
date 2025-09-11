@@ -112,7 +112,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         // given
         ResourceManager resourceManagerMock = mock(ResourceManager.class);
         ModuleStorageCoordinator msc = new ModuleStorageCoordinator(resourceManagerMock, rf2Service, "dev", List.of("dev", "uat", "prod"), true);
-        givenDoesObjectExist(resourceManagerMock, false, false, true, false);
+        givenDoesObjectExist(resourceManagerMock, false, false, false, true, false);
 
         // then
         assertThrows(ModuleStorageCoordinatorException.OperationFailedException.class, () -> {
@@ -125,7 +125,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         // given
         ResourceManager resourceManagerMock = mock(ResourceManager.class);
         ModuleStorageCoordinator msc = new ModuleStorageCoordinator(resourceManagerMock, rf2Service, "dev", List.of("dev", "uat", "prod"), true);
-        givenDoesObjectExist(resourceManagerMock, false, false, true, false);
+        givenDoesObjectExist(resourceManagerMock, false, false, false, true, false);
 
         // then
         assertThrows(ModuleStorageCoordinatorException.OperationFailedException.class, () -> {
@@ -198,6 +198,23 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         boolean existsOnDev = doDoesObjectExist("dev/INT_12345/20240101/test-rf2-edition.zip");
         boolean existsOnUat = doDoesObjectExist("uat/INT_12345/20240101/test-rf2-edition.zip");
         boolean existsOnProd = doDoesObjectExist("prod/INT_12345/20240101/test-rf2-edition.zip");
+
+        // then
+        assertFalse(existsOnDev);
+        assertFalse(existsOnUat);
+        assertTrue(existsOnProd);
+    }
+
+    @Test
+    void upload_ShouldCreateAdditionalFolder() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException {
+        // given
+        ModuleStorageCoordinator msc = ModuleStorageCoordinator.initProd(resourceManager);
+
+        // when
+        msc.upload("INT", "12345", "20240101", getLocalFile("test-rf2-edition.zip"));
+        boolean existsOnDev = doDoesObjectExist("dev/INT_12345/20240101/deliverables/");
+        boolean existsOnUat = doDoesObjectExist("uat/INT_12345/20240101/deliverables/");
+        boolean existsOnProd = doDoesObjectExist("prod/INT_12345/20240101/deliverables/");
 
         // then
         assertFalse(existsOnDev);
@@ -677,7 +694,27 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
 
         // then
         assertEquals(0, source.size()); // Originals deleted
-        assertEquals(2, destination.size()); // Originals copied here
+        assertEquals(3, destination.size()); // Originals copied here
+    }
+
+    @Test
+    void archive_ShouldMoveChildDeliverables() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        moduleStorageCoordinatorDev.upload("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+        givenAdditionalDeliverable("dev", "INT", "900000000000012004", "20240101", "a.txt");
+        givenAdditionalDeliverable("dev", "INT", "900000000000012004", "20240101", "b.txt");
+        givenAdditionalDeliverable("dev", "INT", "900000000000012004", "20240101", "c.txt");
+        givenAdditionalDeliverable("dev", "INT", "900000000000012004", "20240101", "d.txt");
+
+        moduleStorageCoordinatorDev.archive("INT", "900000000000012004", "20240101");
+
+        // when
+        Set<String> source = doListfilenames("dev/INT_900000000000012004/20240101");
+        Set<String> destination = doListfilenames("dev/INT_900000000000012004/archive");
+
+        // then
+        assertEquals(0, source.size()); // Originals deleted
+        assertEquals(7, destination.size()); // Originals copied here
     }
 
     @Test
@@ -1736,5 +1773,14 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
 
     private void givenDoesObjectExist(ResourceManager resourceManager, Boolean bool1, Boolean bool2, Boolean bool3, Boolean bool4) throws IOException {
         when(resourceManager.doesObjectExist(anyString())).thenReturn(bool1).thenReturn(bool2).thenReturn(bool3).thenReturn(bool4);
+    }
+
+    private void givenDoesObjectExist(ResourceManager resourceManager, Boolean bool1, Boolean bool2, Boolean bool3, Boolean bool4, Boolean bool5) throws IOException {
+        when(resourceManager.doesObjectExist(anyString())).thenReturn(bool1).thenReturn(bool2).thenReturn(bool3).thenReturn(bool4).thenReturn(bool5);
+    }
+
+    private void givenAdditionalDeliverable(String env, String codeSystem, String module, String effectiveTime, String fileName) throws IOException, ModuleStorageCoordinatorException {
+        File file = FileUtils.doCreateTempFile(fileName);
+        doWriteResource(env + "/" + codeSystem + "_" + module + "/" + effectiveTime + "/deliverables/" + fileName, asFileInputStream(file));
     }
 }

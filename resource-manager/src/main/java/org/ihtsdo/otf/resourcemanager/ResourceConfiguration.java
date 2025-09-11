@@ -55,6 +55,26 @@ public abstract class ResourceConfiguration {
 		this.cloud = cloud;
 	}
 
+	public String getBucketName() {
+		if (cloud != null) {
+			return cloud.getBucketName();
+		}
+
+		return null;
+	}
+
+	public String getPath() {
+		if (cloud != null) {
+			return cloud.getPath();
+		}
+
+		if (local != null) {
+			return local.getPath();
+		}
+
+		return null;
+	}
+
 	@Override
 	public String toString() {
 		return "ResourceConfiguration{" +
