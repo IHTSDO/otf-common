@@ -608,16 +608,19 @@ public class ModuleStorageCoordinator {
         // Collect available rf2 packages
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
-        // Remove where MODULE not in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true);
+        // Remove where either moduleId or referencedComponentId not in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true, false);
 
         // No dependencies when MDRS references single CodeSystem
         if (isSingleCodeSystem(rf2Packages)) {
             return Collections.emptySet();
         }
 
-        // Remove where EFFECTIVE TIME not in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false);
+        // Remove where referencedComponentId not in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true, true);
+
+        // Remove where effectiveTime not in MDRS
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false, false);
 
         // Remove Extensions packaged as Editions
         if (!isSingleCodeSystem(rf2Packages)) {
@@ -657,7 +660,7 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those not specified in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false);
+        rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -695,13 +698,21 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> filtered = new HashSet<>();
         for (ModuleMetadata rf2Package : rf2Packages) {
             List<String> compositionModuleIds = rf2Package.getCompositionModuleIds();
-            compositionModuleIds.remove(rf2Package.getIdentifyingModuleId());
+            if (compositionModuleIds.size() != 1) {
+                compositionModuleIds.remove(rf2Package.getIdentifyingModuleId());
+            }
 
+            boolean found = false;
             for (String compositionModuleId : compositionModuleIds) {
                 List<ModuleMetadata> value = byIdentifyingModule.get(compositionModuleId);
                 if (value != null) {
                     filtered.addAll(value);
+                    found = true;
                 }
+            }
+
+            if (!found) {
+                filtered.addAll(byIdentifyingModule.get(rf2Package.getIdentifyingModuleId()));
             }
         }
 
@@ -751,11 +762,15 @@ public class ModuleStorageCoordinator {
         return versionsByCodeSystem;
     }
 
-    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, boolean moduleOnly) {
+    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
+        return filterByMDRS(rf2Packages, mdrs, false, false);
+    }
+
+    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, boolean moduleOnly, boolean referencedComponentIdOnly) {
         Set<ModuleMetadata> filtered = new HashSet<>();
         for (ModuleMetadata rf2Package : rf2Packages) {
             for (RF2Row row : mdrs) {
-                if (inScope(moduleOnly, rf2Package, row)) {
+                if (inScope(moduleOnly, referencedComponentIdOnly, rf2Package, row)) {
                     filtered.add(rf2Package);
                 }
             }
@@ -764,7 +779,7 @@ public class ModuleStorageCoordinator {
         return filtered;
     }
 
-    private boolean inScope(boolean moduleOnly, ModuleMetadata rf2Package, RF2Row row) {
+    private boolean inScope(boolean moduleOnly, boolean referencedComponentIdOnly, ModuleMetadata rf2Package, RF2Row row) {
         String identifyingModuleId = rf2Package.getIdentifyingModuleId();
         String effectiveTimeString = rf2Package.getEffectiveTimeString();
         String moduleId = row.getColumn(RF2Service.MODULE_ID);
@@ -776,7 +791,11 @@ public class ModuleStorageCoordinator {
             boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
             boolean b = Objects.equals(identifyingModuleId, moduleId);
 
-            return a || b;
+            if (referencedComponentIdOnly) {
+                return a;
+            } else {
+                return a || b;
+            }
         } else {
             boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
             boolean d = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
