@@ -62,6 +62,9 @@ public class JobRun {
 
 	@Transient
 	String dependencyPackage;
+
+	@Transient
+	String additionalConfigStr;
 	
 	public JobRun () {
 		parameters = new JobRunParameters();
@@ -311,5 +314,13 @@ public class JobRun {
 
 	public void setDependencyPackage(String dependencyPackage) {
 		this.dependencyPackage = dependencyPackage;
+	}
+
+	public void setAdditionalConfig(String parameter) {
+		this.additionalConfigStr = parameter;
+	}
+
+	public String getAdditionalConfig() {
+		return additionalConfigStr;
 	}
 }
