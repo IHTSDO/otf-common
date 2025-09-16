@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -644,14 +645,19 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile) {
+        return getComposition(mdrsRows, includeFile, null);
+    }
+
     /**
      * Return composition for given MDRS entries.
      *
-     * @param mdrsRows    MDRS entries to process.
-     * @param includeFile Whether to include RF2 file.
+     * @param mdrsRows      MDRS entries to process.
+     * @param includeFile   Whether to include RF2 file.
+     * @param upperBoundary Whether to remove future versions from scope.
      * @return Composition for given MDRS entries.
      */
-    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile) {
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, String upperBoundary) {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
         }
@@ -664,6 +670,11 @@ public class ModuleStorageCoordinator {
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
+
+        if (upperBoundary != null && !upperBoundary.isEmpty()) {
+            // Remove those where effectiveTime greater than upperBoundary
+            byCodeSystem = filterByUpperBoundary(byCodeSystem, upperBoundary);
+        }
 
         // Flatten into single collection with latest or specified version
         Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
@@ -1279,5 +1290,23 @@ public class ModuleStorageCoordinator {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private Map<String, Set<ModuleMetadata>> filterByUpperBoundary(Map<String, Set<ModuleMetadata>> byCodeSystem, String upperBoundary) {
+        Map<String, Set<ModuleMetadata>> dup = new HashMap<>();
+
+        for (Map.Entry<String, Set<ModuleMetadata>> entrySet : byCodeSystem.entrySet()) {
+            String key = entrySet.getKey();
+            Set<ModuleMetadata> value = entrySet.getValue();
+
+            Predicate<ModuleMetadata> effectiveTimeGreaterThanUpperBoundary = moduleMetadata -> moduleMetadata.getEffectiveTimeString().compareTo(upperBoundary) > 0;
+            value.removeIf(effectiveTimeGreaterThanUpperBoundary);
+
+            if (!value.isEmpty()) {
+                dup.put(key, value);
+            }
+        }
+
+        return dup;
     }
 }

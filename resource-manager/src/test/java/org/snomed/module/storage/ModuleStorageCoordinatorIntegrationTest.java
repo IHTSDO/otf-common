@@ -1592,6 +1592,59 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals("20250731", dependencies.get("AU").getEffectiveTimeString());
     }
 
+    /*
+     * This scenario is for sharing data across multiple environments, i.e. 'latest' in the Dev environment is older than
+     * 'latest' in the Prod environment.
+     * */
+    @Test
+    void getComposition_ShouldReturnExpected_WhenGivenUpperBoundary() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+
+        Set<RF2Row> mdrs = Set.of(
+                new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250101")
+        );
+
+        // when
+        String upperBoundary = "20250131"; // i.e. latest version available on Dev
+        Map<String, ModuleMetadata> composition = moduleStorageCoordinatorProd.getComposition(mdrs, false, upperBoundary).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
+
+        // then
+        assertEquals(2, composition.size());
+        assertEquals("20250101", composition.get("INT").getEffectiveTimeString());
+        assertEquals("20250131", composition.get("DK").getEffectiveTimeString());
+    }
+
+    @Test
+    void getComposition_ShouldReturnExpected_WhenGivenNoUpperBoundary() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+
+        Set<RF2Row> mdrs = Set.of(
+                new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250101")
+        );
+
+        // when
+        Map<String, ModuleMetadata> composition = moduleStorageCoordinatorProd.getComposition(mdrs, false, null).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
+
+        // then
+        assertEquals(2, composition.size());
+        assertEquals("20250101", composition.get("INT").getEffectiveTimeString());
+        assertEquals("20250331", composition.get("DK").getEffectiveTimeString());
+    }
+
     private void givenProdReleasePackages() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // INT
         givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
