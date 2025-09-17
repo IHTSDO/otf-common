@@ -1612,7 +1612,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         );
 
         // when
-        String upperBoundary = "20250131"; // i.e. latest version available on Dev
+        Set<String> upperBoundary = Set.of("20250131"); // i.e. latest version available on Dev
         Map<String, ModuleMetadata> composition = moduleStorageCoordinatorProd.getComposition(mdrs, false, upperBoundary).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
 
         // then

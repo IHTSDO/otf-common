@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -654,12 +653,16 @@ public class ModuleStorageCoordinator {
      *
      * @param mdrsRows      MDRS entries to process.
      * @param includeFile   Whether to include RF2 file.
-     * @param upperBoundary Whether to remove future versions from scope.
      * @return Composition for given MDRS entries.
      */
-    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, String upperBoundary) {
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> transientSourceEffectiveTimes) {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
+        }
+
+        // Replace entries blank sourceEffectiveTimes with transientSourceEffectiveTimes
+        if (transientSourceEffectiveTimes != null && !transientSourceEffectiveTimes.isEmpty()) {
+            mdrsRows = setTransientSourceEffectiveTimes(mdrsRows, transientSourceEffectiveTimes);
         }
 
         // Collect available rf2 packages
@@ -670,11 +673,6 @@ public class ModuleStorageCoordinator {
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
-
-        if (upperBoundary != null && !upperBoundary.isEmpty()) {
-            // Remove those where effectiveTime greater than upperBoundary
-            byCodeSystem = filterByUpperBoundary(byCodeSystem, upperBoundary);
-        }
 
         // Flatten into single collection with latest or specified version
         Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
@@ -1292,18 +1290,20 @@ public class ModuleStorageCoordinator {
         }
     }
 
-    private Map<String, Set<ModuleMetadata>> filterByUpperBoundary(Map<String, Set<ModuleMetadata>> byCodeSystem, String upperBoundary) {
-        Map<String, Set<ModuleMetadata>> dup = new HashMap<>();
+    private Set<RF2Row> setTransientSourceEffectiveTimes(Set<RF2Row> mdrsRows, Set<String> transientSourceEffectiveTimes) {
+        Set<RF2Row> dup = new HashSet<>();
 
-        for (Map.Entry<String, Set<ModuleMetadata>> entrySet : byCodeSystem.entrySet()) {
-            String key = entrySet.getKey();
-            Set<ModuleMetadata> value = entrySet.getValue();
+        for (RF2Row mdrsRow : mdrsRows) {
+            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+            if (sourceEffectiveTime != null && sourceEffectiveTime.isEmpty()) {
+                for (String transientSourceEffectiveTime : transientSourceEffectiveTimes) {
+                    RF2Row copy = new RF2Row(mdrsRow);
+                    copy.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, transientSourceEffectiveTime);
 
-            Predicate<ModuleMetadata> effectiveTimeGreaterThanUpperBoundary = moduleMetadata -> moduleMetadata.getEffectiveTimeString().compareTo(upperBoundary) > 0;
-            value.removeIf(effectiveTimeGreaterThanUpperBoundary);
-
-            if (!value.isEmpty()) {
-                dup.put(key, value);
+                    dup.add(copy);
+                }
+            } else {
+                dup.add(mdrsRow);
             }
         }
 

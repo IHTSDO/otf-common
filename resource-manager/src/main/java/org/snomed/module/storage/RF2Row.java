@@ -9,6 +9,14 @@ public class RF2Row {
     private boolean found;
     private String metadataResourcePath;
 
+    public RF2Row() {
+
+    }
+
+    public RF2Row(RF2Row rf2Row) {
+        this.columns.putAll(rf2Row.getColumns());
+    }
+
     public Map<Integer, String> getColumns() {
         return columns;
     }
