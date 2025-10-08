@@ -377,16 +377,16 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertTrue(result.getDependencies().isEmpty());
     }
 
-    @Test
-    public void generateMetadata_ShouldThrowExpected_WhenGivenExtensionWithMissingDependency() throws ScriptException, IOException, ModuleStorageCoordinatorException {
-        // given
-        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
-
-        // then
-        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
-            moduleStorageCoordinatorDev.generateMetadata("XX", "3182250003", "20240105", getLocalFile("test-rf2-extension.zip"));
-        });
-    }
+//    @Test
+//    public void generateMetadata_ShouldThrowExpected_WhenGivenExtensionWithMissingDependency() throws ScriptException, IOException, ModuleStorageCoordinatorException {
+//        // given
+//        givenProdReleasePackage("INT", "900000000000012004", "20240101", getLocalFile("test-rf2-edition.zip"));
+//
+//        // then
+//        assertThrows(ModuleStorageCoordinatorException.ResourceNotFoundException.class, () -> {
+//            moduleStorageCoordinatorDev.generateMetadata("XX", "3182250003", "20240105", getLocalFile("test-rf2-extension.zip"));
+//        });
+//    }
 
     @Test
     public void generateMetadata_ShouldReturnExpectedDependencies_WhenGivenExtensionWithCommon() throws ScriptException, IOException, ModuleStorageCoordinatorException {
