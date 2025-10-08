@@ -568,9 +568,8 @@ public class ModuleStorageCoordinator {
      * @param includeFile Whether or not the dependency package is downloaded
      * @return Collection of all stored ModuleMetadata for given RF2 package.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
-     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package(s) cannot be found for given CodeSystem.
      */
-    public Set<ModuleMetadata> getRequiredDependencies(File rf2Package, boolean rf2DeltaOnly,  boolean includeFile) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public Set<ModuleMetadata> getRequiredDependencies(File rf2Package, boolean rf2DeltaOnly,  boolean includeFile) throws ModuleStorageCoordinatorException.OperationFailedException {
         Set<RF2Row> mdrsRows = rf2Service.getMDRS(rf2Package, rf2DeltaOnly);
         Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package, rf2DeltaOnly);
         return getRequiredDependencies(mdrsRows, uniqueModuleIds, includeFile);
@@ -584,10 +583,9 @@ public class ModuleStorageCoordinator {
      * @param includeFile Whether or not the release package is downloaded
      * @return Collection of all stored ModuleMetadata for the MDRS records.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
-     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package(s) cannot be found for given CodeSystem.
      */
-    public Set<ModuleMetadata> getRequiredDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, boolean includeFile) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, excludedModuleIds ,null);
+    public Set<ModuleMetadata> getRequiredDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, boolean includeFile) throws ModuleStorageCoordinatorException.OperationFailedException {
+        Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, excludedModuleIds);
         if (!includeFile) return dependencies;
         addFile(dependencies);
         return dependencies;
@@ -1005,11 +1003,11 @@ public class ModuleStorageCoordinator {
         return directory + SLASH + codeSystem + "_" + moduleId + SLASH + effectiveTime;
     }
 
-    private Set<ModuleMetadata> getDependencies(File rf2Package, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    private Set<ModuleMetadata> getDependencies(File rf2Package, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.OperationFailedException {
         Set<RF2Row> rf2Rows = rf2Service.getMDRS(rf2Package, false);
-        return getDependencies(rf2Rows, excludedModuleIds, rf2Package.getName());
+        return getDependencies(rf2Rows, excludedModuleIds);
     }
-    private Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, String rf2Filename) throws ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    private Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.OperationFailedException {
         Set<String> dependentTargetEffectiveTimes = new HashSet<>();
         Iterator<RF2Row> iterator = mdrsRows.iterator();
         while (iterator.hasNext()) {
@@ -1058,8 +1056,8 @@ public class ModuleStorageCoordinator {
                     File possibleRF2Package = null;
                     try {
                         possibleRF2Package = resourceManagerStorage.doReadResourceFile(possibleRF2PackagePath);
-                        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(possibleRF2Package, false);
-                        boolean owningPackageFound = uniqueModuleIds.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
+                        Set<RF2Row> rf2Rows = rf2Service.getUniqueModulesWithLatestEffectiveTime(possibleRF2Package, false);
+                        boolean owningPackageFound = rf2Rows.stream().anyMatch(item -> item.getColumn(RF2Service.MODULE_ID).equals(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)) && item.getColumn(RF2Service.EFFECTIVE_TIME).equals(rf2Row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME)));
                         if (owningPackageFound) {
                             rf2Row.setFound(true);
                             found = found + 1;
@@ -1087,8 +1085,8 @@ public class ModuleStorageCoordinator {
         Set<String> metadataResourcePaths = new HashSet<>();
         for (RF2Row rf2Row : mdrsRows) {
             if (!rf2Row.isFound()) {
-                String message = String.format("Cannot generate metadata %s as dependency '%s' cannot be found. Ensure dependent packages are uploaded first.", (rf2Filename == null ? "" : "for " + rf2Filename), rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID));
-                throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
+                String message = String.format("The referenced module %s with target effective time '%s' cannot be found. Ensure dependent packages are uploaded first.", rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID), rf2Row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME));
+                LOGGER.warn(message);
             } else {
                 metadataResourcePaths.add(rf2Row.getMetadataResourcePath());
             }

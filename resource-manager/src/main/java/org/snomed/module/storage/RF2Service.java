@@ -6,12 +6,14 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class RF2Service {
     private static final Logger LOGGER = LoggerFactory.getLogger(RF2Service.class);
 
+    public static final Integer EFFECTIVE_TIME = 1;
     public static final Integer ACTIVE = 2;
     public static final Integer MODULE_ID = 3;
     public static final Integer REFERENCED_COMPONENT_ID = 5;
@@ -31,6 +33,36 @@ public class RF2Service {
         }
         LOGGER.debug("Collected {} unique module IDs from: {}", rows.size(), file.getName());
         return result;
+    }
+
+    public Set<RF2Row> getUniqueModulesWithLatestEffectiveTime(File file, boolean rf2DeltaOnly) {
+        if (file == null) {
+            return Collections.emptySet();
+        }
+
+        LOGGER.debug("Getting unique modules with latest effective time from: {}", file.getName());
+        List<List<String>> rows = getRows(file, rf2DeltaOnly, null, EFFECTIVE_TIME, MODULE_ID);
+        Set<RF2Row> rf2Rows = new HashSet<>();
+        for (List<String> row : rows) {
+            String effectiveTime = row.get(0);
+            String moduleId = row.get(1);
+            boolean shouldAdd = false;
+            boolean isModuleFound = rf2Rows.stream().anyMatch(item -> moduleId.equals(item.getColumn(MODULE_ID)));
+            if (isModuleFound) {
+                boolean isModuleWithLatestEffectiveTime = rf2Rows.stream().anyMatch(item -> moduleId.equals(item.getColumn(MODULE_ID)) && Integer.parseInt(item.getColumn(EFFECTIVE_TIME)) > Integer.parseInt(effectiveTime));
+                if (!isModuleWithLatestEffectiveTime) {
+                    rf2Rows = rf2Rows.stream().filter(item -> !moduleId.equals(item.getColumn(MODULE_ID))).collect(Collectors.toSet());
+                    shouldAdd = true;
+                }
+            } else {
+                shouldAdd = true;
+            }
+            if (shouldAdd) {
+                rf2Rows.add(new RF2Row().addRow(EFFECTIVE_TIME, row.get(0)).addRow(MODULE_ID, row.get(1)));
+            }
+        }
+
+        return rf2Rows;
     }
 
     public Set<RF2Row> getMDRS(File file, boolean rf2DeltaOnly) {
