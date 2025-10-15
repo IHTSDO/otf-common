@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.ihtsdo.otf.RF2Constants.SCTID_CORE_MODULE;
+import static org.snomed.module.storage.ModuleMetadataFilterer.*;
 
 /**
  * Write, read & update RF2 packages and their metadata from either a remote or local filesystem.
@@ -606,26 +607,24 @@ public class ModuleStorageCoordinator {
         // Collect available rf2 packages
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
-        // Remove where either moduleId or referencedComponentId not in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true, false);
+        // Keep those with matching moduleId or referencedComponentId
+        rf2Packages = filterByReferencedComponentIdOrModuleId(rf2Packages, mdrsRows);
 
-        // No dependencies when MDRS references single CodeSystem
+        // No dependencies when referencing single CodeSystem
         if (isSingleCodeSystem(rf2Packages)) {
             return Collections.emptySet();
         }
 
-        // Remove where referencedComponentId not in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, true, true);
+        // Self-depending modules have no unknown, external dependencies
+        removeSelfDependingModules(mdrsRows);
 
-        // Remove where effectiveTime not in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows, false, false);
-
-        // Remove Extensions packaged as Editions
-        if (!isSingleCodeSystem(rf2Packages)) {
-            // Note, this can remove INT as a dependency when given transitive effectiveTimes,
-            // i.e. MDRS references unavailable & unpublished package.
-            // Therefore, hidden within previous if-statement
-            rf2Packages = filterByExtensionsPackagedAsEditions(rf2Packages);
+        boolean canMatchByIdentifyingModule = matchByIdentifyingModuleId(rf2Packages, mdrsRows);
+        if (canMatchByIdentifyingModule) {
+            // Keep those with matching referencedComponentId and targetEffectiveTime (for extensions)
+            rf2Packages = filterByReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
+        } else {
+            // Keep those where compositionModuleIds contain any referencedComponentId (for editions)
+            rf2Packages = filterByCompositionModulesContainReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
         }
 
         // Group by CodeSystem
@@ -667,7 +666,7 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those not specified in MDRS
-        rf2Packages = filterByMDRS(rf2Packages, mdrsRows);
+        rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -691,42 +690,7 @@ public class ModuleStorageCoordinator {
         return moduleMetadata.stream().map(ModuleMetadata::getCodeSystemShortName).collect(Collectors.toSet()).size() == 1;
     }
 
-    private Set<ModuleMetadata> filterByExtensionsPackagedAsEditions(Set<ModuleMetadata> rf2Packages) {
-        Map<String, List<ModuleMetadata>> byIdentifyingModule = new HashMap<>();
-        for (ModuleMetadata rf2Package : rf2Packages) {
-            List<ModuleMetadata> value = byIdentifyingModule.get(rf2Package.getIdentifyingModuleId());
-            if (value == null) {
-                value = new ArrayList<>();
-            }
-            value.add(rf2Package);
-            byIdentifyingModule.put(rf2Package.getIdentifyingModuleId(), value);
-        }
-
-        Set<ModuleMetadata> filtered = new HashSet<>();
-        for (ModuleMetadata rf2Package : rf2Packages) {
-            List<String> compositionModuleIds = rf2Package.getCompositionModuleIds();
-            if (compositionModuleIds.size() != 1) {
-                compositionModuleIds.remove(rf2Package.getIdentifyingModuleId());
-            }
-
-            boolean found = false;
-            for (String compositionModuleId : compositionModuleIds) {
-                List<ModuleMetadata> value = byIdentifyingModule.get(compositionModuleId);
-                if (value != null) {
-                    filtered.addAll(value);
-                    found = true;
-                }
-            }
-
-            if (!found) {
-                filtered.addAll(byIdentifyingModule.get(rf2Package.getIdentifyingModuleId()));
-            }
-        }
-
-        return filtered;
-    }
-
-	private Set<ModuleMetadata> getRF2Packages() {
+    private Set<ModuleMetadata> getRF2Packages() {
         Set<ModuleMetadata> rf2Packages = new HashSet<>();
         for (String readDirectory : readDirectories) {
             Set<String> rf2PackagePaths = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
@@ -767,61 +731,6 @@ public class ModuleStorageCoordinator {
         }
 
         return versionsByCodeSystem;
-    }
-
-    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
-        return filterByMDRS(rf2Packages, mdrs, false, false);
-    }
-
-    private Set<ModuleMetadata> filterByMDRS(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, boolean moduleOnly, boolean referencedComponentIdOnly) {
-        Set<ModuleMetadata> filtered = new HashSet<>();
-        for (ModuleMetadata rf2Package : rf2Packages) {
-            for (RF2Row row : mdrs) {
-                if (inScope(moduleOnly, referencedComponentIdOnly, rf2Package, row)) {
-                    filtered.add(rf2Package);
-                }
-            }
-        }
-
-        return filtered;
-    }
-
-    private boolean inScope(boolean moduleOnly, boolean referencedComponentIdOnly, ModuleMetadata rf2Package, RF2Row row) {
-        String identifyingModuleId = rf2Package.getIdentifyingModuleId();
-        String effectiveTimeString = rf2Package.getEffectiveTimeString();
-        String moduleId = row.getColumn(RF2Service.MODULE_ID);
-        String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
-        String sourceEffectiveTime = row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-        String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
-
-        if (moduleOnly) {
-            boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
-            boolean b = Objects.equals(identifyingModuleId, moduleId);
-
-            if (referencedComponentIdOnly) {
-                return a;
-            } else {
-                return a || b;
-            }
-        } else {
-            boolean a = Objects.equals(identifyingModuleId, referencedComponentId);
-            boolean d = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
-
-            boolean b = Objects.equals(identifyingModuleId, moduleId);
-            boolean c = sourceEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, sourceEffectiveTime);
-
-            // Dependency found
-            if (a && d) {
-                return true;
-            }
-
-            // Self found
-            if (b && c) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void addFile(Set<ModuleMetadata> moduleMetadata) {
@@ -1306,5 +1215,25 @@ public class ModuleStorageCoordinator {
         }
 
         return dup;
+    }
+
+    private void removeSelfDependingModules(Set<RF2Row> rows) {
+        List<String> moduleIds = rows.stream().map(r -> r.getColumn(RF2Service.MODULE_ID)).toList();
+        List<String> referencedComponentIds = rows.stream().map(r -> r.getColumn(RF2Service.REFERENCED_COMPONENT_ID)).toList();
+        List<String> diff = new ArrayList<>();
+        for (String referencedComponentId : referencedComponentIds) {
+            if (moduleIds.contains(referencedComponentId)) {
+                diff.add(referencedComponentId);
+            }
+        }
+
+        rows.removeIf(rf2Row -> diff.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)));
+    }
+
+    private boolean matchByIdentifyingModuleId(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows) {
+        List<String> identifyingModuleIds = rf2Packages.stream().map(ModuleMetadata::getIdentifyingModuleId).toList();
+        List<String> referencedComponentIds = mdrsRows.stream().map(r -> r.getColumn(RF2Service.REFERENCED_COMPONENT_ID)).toList();
+
+        return identifyingModuleIds.stream().anyMatch(referencedComponentIds::contains);
     }
 }

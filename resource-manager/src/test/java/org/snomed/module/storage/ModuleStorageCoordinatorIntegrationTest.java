@@ -1701,14 +1701,14 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     private Set<RF2Row> givenDKMDRS() {
-        return Set.of(
+        return new HashSet<>(Arrays.asList(
                 new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250801"),
                 new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000012004").addRow(6, "").addRow(7, "20250801")
-        );
+        ));
     }
 
     private Set<RF2Row> givenAUMDRS() {
-        return Set.of(
+        return new HashSet<>(Arrays.asList(
                 new RF2Row().addRow(3, "32506021000036107").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
                 new RF2Row().addRow(3, "900000000000207008").addRow(5, "900000000000012004").addRow(6, "20250701").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "32506021000036107").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
@@ -1720,14 +1720,14 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
                 new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701")
-        );
+        ));
     }
 
     private Set<RF2Row> givenSEMDRS() {
-        return Set.of(
+        return new HashSet<>(Arrays.asList(
                 new RF2Row().addRow(3, "45991000052106").addRow(5, "900000000000012004").addRow(6, "20250821").addRow(7, "20250701"),
                 new RF2Row().addRow(3, "45991000052106").addRow(5, "900000000000207008").addRow(6, "20250821").addRow(7, "20250701")
-        );
+        ));
     }
 
     private Set<String> doListfilenames(String prefix) {
