@@ -917,6 +917,7 @@ public class ModuleStorageCoordinator {
         return getDependencies(rf2Rows, excludedModuleIds);
     }
     private Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.OperationFailedException {
+        mdrsRows = filterLatestTargetEffectiveTime(mdrsRows);
         Set<String> dependentTargetEffectiveTimes = new HashSet<>();
         Iterator<RF2Row> iterator = mdrsRows.iterator();
         while (iterator.hasNext()) {
@@ -1013,6 +1014,53 @@ public class ModuleStorageCoordinator {
         }
 
         return moduleMetadatas;
+    }
+
+    private Set<RF2Row> filterLatestTargetEffectiveTime(Set<RF2Row> mdrsRows) {
+        if (mdrsRows == null || mdrsRows.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Map<String, RF2Row> latestByModuleAndReference = new HashMap<>();
+        for (RF2Row mdrsRow : mdrsRows) {
+            if (mdrsRow == null) {
+                continue;
+            }
+
+            String moduleId = mdrsRow.getColumn(RF2Service.MODULE_ID);
+            String referencedComponentId = mdrsRow.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+            String key = (moduleId == null ? "" : moduleId) + "|" + (referencedComponentId == null ? "" : referencedComponentId);
+
+            RF2Row existing = latestByModuleAndReference.get(key);
+            if (existing == null) {
+                latestByModuleAndReference.put(key, mdrsRow);
+            } else {
+                String candidateEffectiveTime = mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+                String existingEffectiveTime = existing.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+
+                if (isLaterTargetEffectiveTime(candidateEffectiveTime, existingEffectiveTime)) {
+                    latestByModuleAndReference.put(key, mdrsRow);
+                }
+            }
+        }
+
+        return new HashSet<>(latestByModuleAndReference.values());
+    }
+
+    private boolean isLaterTargetEffectiveTime(String candidate, String current) {
+        if (candidate == null || candidate.isBlank()) {
+            return false;
+        }
+
+        if (current == null || current.isBlank()) {
+            return true;
+        }
+
+        try {
+            return asInteger(candidate) > asInteger(current);
+        } catch (NumberFormatException e) {
+            return candidate.compareTo(current) > 0;
+        }
     }
 
     private Integer asInteger(String value) {
