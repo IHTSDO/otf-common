@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -192,7 +191,7 @@ public class SnowstormRestClient {
 	}
 
 	public void  updateCodeSystemVersionPackage(String codeSystemShortname, String effectiveDate, String releasePackage) throws RestClientException {
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getUpdateCodeSystemVersionPackageUri(codeSystemShortname, effectiveDate).toString())
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString(urlHelper.getUpdateCodeSystemVersionPackageUri(codeSystemShortname, effectiveDate).toString())
 				.queryParam("releasePackage", releasePackage);
 		URI uri = queryBuilder.build().toUri();
 		try {
@@ -301,7 +300,7 @@ public class SnowstormRestClient {
 		}
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
 				(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("active", true)
 				.queryParam("offset", 0)
@@ -419,7 +418,7 @@ public class SnowstormRestClient {
 			String termPrefix, Collection<String> concepts, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
 				(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("active", true)
 				.queryParam("offset", 0)
@@ -451,7 +450,7 @@ public class SnowstormRestClient {
 
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int offset, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromHttpUrl(urlHelper.getSimpleConceptsUrl(branchPath))
+		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString(urlHelper.getSimpleConceptsUrl(branchPath))
 				.queryParam("active", true)
 				.queryParam("offset", offset)
 				.queryParam("limit", limit);
