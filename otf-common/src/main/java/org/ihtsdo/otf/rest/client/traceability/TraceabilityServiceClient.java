@@ -50,8 +50,8 @@ public class TraceabilityServiceClient {
 		restTemplate = new RestTemplateBuilder()
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
-				.setConnectTimeout(Duration.ofMinutes(3)) // 3 minutes
-				.setReadTimeout(Duration.ofMinutes(3))
+				.connectTimeout(Duration.ofMinutes(3)) // 3 minutes
+				.readTimeout(Duration.ofMinutes(3))
 				.build();
 		
 		//Add a ClientHttpRequestInterceptor to the RestTemplate
