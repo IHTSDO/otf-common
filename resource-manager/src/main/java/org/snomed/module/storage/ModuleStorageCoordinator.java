@@ -659,14 +659,14 @@ public class ModuleStorageCoordinator {
 
         // Replace entries blank sourceEffectiveTimes with transientSourceEffectiveTimes
         if (transientSourceEffectiveTimes != null && !transientSourceEffectiveTimes.isEmpty()) {
-            mdrsRows = setTransientSourceEffectiveTimes(mdrsRows, transientSourceEffectiveTimes);
+            mdrsRows = rf2Service.setTransientSourceEffectiveTimes(mdrsRows, transientSourceEffectiveTimes);
         }
 
         // Collect available rf2 packages
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those not specified in MDRS
-        rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
+        rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows, transientSourceEffectiveTimes);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -1243,26 +1243,6 @@ public class ModuleStorageCoordinator {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    private Set<RF2Row> setTransientSourceEffectiveTimes(Set<RF2Row> mdrsRows, Set<String> transientSourceEffectiveTimes) {
-        Set<RF2Row> dup = new HashSet<>();
-
-        for (RF2Row mdrsRow : mdrsRows) {
-            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-            if (sourceEffectiveTime != null && sourceEffectiveTime.isEmpty()) {
-                for (String transientSourceEffectiveTime : transientSourceEffectiveTimes) {
-                    RF2Row copy = new RF2Row(mdrsRow);
-                    copy.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, transientSourceEffectiveTime);
-
-                    dup.add(copy);
-                }
-            } else {
-                dup.add(mdrsRow);
-            }
-        }
-
-        return dup;
     }
 
     private void removeSelfDependingModules(Set<RF2Row> rows) {

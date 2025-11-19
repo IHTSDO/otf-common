@@ -105,6 +105,26 @@ public class RF2Service {
         return rf2Rows;
     }
 
+    public Set<RF2Row> setTransientSourceEffectiveTimes(Set<RF2Row> mdrsRows, Set<String> transientSourceEffectiveTimes) {
+        Set<RF2Row> dup = new HashSet<>();
+
+        for (RF2Row mdrsRow : mdrsRows) {
+            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+            if (sourceEffectiveTime != null && sourceEffectiveTime.isEmpty()) {
+                for (String transientSourceEffectiveTime : transientSourceEffectiveTimes) {
+                    RF2Row copy = new RF2Row(mdrsRow);
+                    copy.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, transientSourceEffectiveTime);
+
+                    dup.add(copy);
+                }
+            } else {
+                dup.add(mdrsRow);
+            }
+        }
+
+        return dup;
+    }
+
     @SuppressWarnings("java:S5042")
     private List<List<String>> getRows(File file, boolean rf2DeltaOnly, String fileNamePattern, Integer... columnIndices) {
         try (FileInputStream fileInputStream = new FileInputStream(file)) {

@@ -1621,6 +1621,35 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         assertEquals("20250131", composition.get("DK").getEffectiveTimeString());
     }
 
+    /*
+     * This scenario is for a future package, i.e. 2025-02-02 has been versioned but not published.
+     * */
+    @Test
+    void getComposition_ShouldReturnExpected_WhenGivenFutureVersion() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // given
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+
+        // 20250202  has been versioned but not technically available yet as it's unpublished
+        Set<RF2Row> mdrs = Set.of(
+                new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "20250202").addRow(7, "20250101")
+        );
+
+        // when
+        Set<String> upperBoundary = Set.of("20250131"); // i.e. latest version available on Dev
+        Map<String, ModuleMetadata> composition = moduleStorageCoordinatorProd.getComposition(mdrs, false, upperBoundary).stream().collect(Collectors.toMap(ModuleMetadata::getCodeSystemShortName, Function.identity()));
+
+        // then
+        assertEquals(2, composition.size());
+        assertEquals("20250101", composition.get("INT").getEffectiveTimeString());
+        assertEquals("20250131", composition.get("DK").getEffectiveTimeString()); // This is the latest published package available
+    }
+
     @Test
     void getComposition_ShouldReturnExpected_WhenGivenNoUpperBoundary() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given

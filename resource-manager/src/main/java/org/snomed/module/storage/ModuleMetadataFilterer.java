@@ -14,6 +14,8 @@ public class ModuleMetadataFilterer {
 			"4", ModuleMetadataFilterer::compositionModulesContainReferencedComponentIdAndEffectiveTimeEqualsTargetEffectiveTime
 	);
 
+	private static final RF2Service RF2_SERVICE = new RF2Service();
+
 	private ModuleMetadataFilterer() {
 
 	}
@@ -49,10 +51,18 @@ public class ModuleMetadataFilterer {
 	 *
 	 * @param rf2Packages Collection of ModuleMetadata to filter.
 	 * @param mdrs        Collection of RF2Row to help with filtering.
+	 *                       @param transientSourceEffectiveTimes        Collection of RF2Row to help with filtering.
 	 * @return Filtered collection of ModuleMetadata.
 	 */
-	public static Set<ModuleMetadata> filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
-		return filter(rf2Packages, mdrs, PREDICATES.get("3"));
+	public static Set<ModuleMetadata> filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, Set<String> transientSourceEffectiveTimes) {
+		Set<ModuleMetadata> filter = filter(rf2Packages, mdrs, PREDICATES.get("3"));
+
+		// Try again if an entry has had no hits
+		if (transientSourceEffectiveTimes != null && !transientSourceEffectiveTimes.isEmpty()) {
+			filter = tryAgain(filter, rf2Packages, mdrs, transientSourceEffectiveTimes);
+		}
+
+		return filter;
 	}
 
 	/**
@@ -132,5 +142,29 @@ public class ModuleMetadataFilterer {
 		boolean matchTargetEffectiveTime = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
 
 		return matchReferencedComponentId && matchTargetEffectiveTime;
+	}
+
+	private static Set<ModuleMetadata> tryAgain(Set<ModuleMetadata> filter, Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, Set<String> transientSourceEffectiveTimes) {
+		for (RF2Row entry : mdrs) {
+			String moduleId = entry.getColumn(RF2Service.MODULE_ID);
+			String sourceEffectiveTime = entry.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+			boolean found = false;
+
+			for (ModuleMetadata moduleMetadata : filter) {
+				boolean matchModuleId = moduleMetadata.getIdentifyingModuleId().equals(moduleId);
+				boolean matchSourceEffectiveTime = moduleMetadata.getEffectiveTimeString().equals(sourceEffectiveTime);
+				if (matchModuleId && matchSourceEffectiveTime) {
+					found = true;
+				}
+			}
+
+			// Prepare entry for transient replacement
+			if (!found) {
+				entry.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, "");
+			}
+		}
+
+		mdrs = RF2_SERVICE.setTransientSourceEffectiveTimes(mdrs, transientSourceEffectiveTimes);
+		return filter(rf2Packages, mdrs, PREDICATES.get("3"));
 	}
 }
