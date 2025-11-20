@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.ihtsdo.otf.common</groupId>
 		<artifactId>otf-common-parent</artifactId>
-		<version>7.9.1-SNAPSHOT</version>
+		<version>7.9.1</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
