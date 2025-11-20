@@ -92,7 +92,6 @@ public class GoogleClient {
 			throw new IllegalStateException("No properties file found. Provide application-local.properties or application.properties");
 		}
 
-		// Optional sanity check
 		if ("YOUR_CERT_URL_HERE".equals(choose("google.client.client_x509_cert_url", clientX509CertUrl))) {
 			throw new IllegalStateException("Google client not configured. Supply value via Consul, or in application.properties or application-local.properties");
 		}
