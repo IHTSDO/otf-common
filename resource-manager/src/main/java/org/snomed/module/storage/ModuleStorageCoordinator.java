@@ -695,7 +695,7 @@ public class ModuleStorageCoordinator {
         for (String readDirectory : readDirectories) {
             Set<String> rf2PackagePaths = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
             if (rf2PackagePaths.isEmpty()) {
-                return Collections.emptySet();
+                continue;
             }
 
             for (String rfPackagePath : rf2PackagePaths) {
