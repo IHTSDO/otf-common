@@ -52,8 +52,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			ApplicationContext appContext = owner.getScript().getApplicationContext();
 			if (appContext == null) {
 				googleClient = new GoogleClient();
+				LOGGER.info("ReportSheetManager initializing in a locally run context");
 			} else {
 				googleClient = appContext.getBean(GoogleClient.class);
+				LOGGER.info("ReportSheetManager initializing in a Spring context");
 			}
 			//Are we re-intialising?  Flush last data if so
 			if (sheet != null) {
