@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -140,6 +141,16 @@ public class ResourceManager {
 		} catch (IOException e) {
 			return tmpFile;
 		}
+	}
+
+	public File getNullable(String resourcePath) {
+		File file = Paths.get(resourcePath).toFile();
+		boolean exists = file.exists();
+		if (!exists) {
+			return null;
+		}
+
+		return file;
 	}
 
 	public Set<String> listCachedFilenames(String prefix) throws IOException {
