@@ -8,10 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.utils.FileUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
@@ -1105,44 +1102,32 @@ public class ModuleStorageCoordinator {
         throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
     }
 
-    private void doGetMetadataFromCacheWithRemoteFallBack(String rf2ResourcePath, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException.OperationFailedException {
-        try {
-            File localRF2Package = null;
-            try {
-                localRF2Package =  resourceManagerCache.doReadResourceFile(rf2ResourcePath);
-            } catch (FileNotFoundException e) {
-                //This is expected if the file is not in the cache
-            }
+	private void doGetMetadataFromCacheWithRemoteFallBack(String rf2ResourcePath, ModuleMetadata moduleMetadata) {
+		String cachePath = resourceManagerCache.getCachePath();
+		String pathName = String.format("%s/%s", cachePath, rf2ResourcePath);
+		File localRF2Package = resourceManagerCache.getNullable(pathName);
+		moduleMetadata.setFile(localRF2Package);
 
-            if (localRF2Package != null) {
-                boolean localMD5MatchesRemote = Objects.equals(FileUtils.getMD5(localRF2Package).orElse(null), moduleMetadata.getFileMD5());
-                if (localMD5MatchesRemote) {
-                    // Local copy is same as remote; use local
-                    moduleMetadata.setFile(localRF2Package);
-                } else {
-                    // Local copy differs from remote; use remote
-                    File remoteRF2Package = resourceManagerStorage.doReadResourceFile(rf2ResourcePath);
-                    moduleMetadata.setFile(remoteRF2Package);
+		if (localRF2Package != null) {
+			boolean localMD5MatchesRemote = Objects.equals(FileUtils.getMD5Nullable(localRF2Package), moduleMetadata.getFileMD5());
+			if (!localMD5MatchesRemote) {
+				// Remote fallback
+				localRF2Package = null;
+			}
+		}
 
-                    // Attempt to replace local copy with remote
-                    boolean success = resourceManagerCache.doDeleteResource(rf2ResourcePath);
-                    if (success) {
-                       resourceManagerCache.doWriteResource(rf2ResourcePath, asFileInputStream(remoteRF2Package));
-                    } else {
-                        LOGGER.debug("Failed to delete {} from cache (location:  {}).", remoteRF2Package.getPath(), rf2ResourcePath);
-                    }
-                }
-            } else {
-                File remoteRF2Package = resourceManagerStorage.doReadResourceFile(rf2ResourcePath);
-                moduleMetadata.setFile(remoteRF2Package);
+		// Remote fallback
+		if (localRF2Package == null) {
+			try (InputStream inputStream = resourceManagerStorage.readResourceStream(rf2ResourcePath)) {
+				resourceManagerCache.doWriteResource(rf2ResourcePath, inputStream);
+			} catch (Exception e) {
+				// ignore
+			}
 
-                // Add remote copy to cache
-                resourceManagerCache.doWriteResource(rf2ResourcePath, asFileInputStream(remoteRF2Package));
-            }
-        } catch (ScriptException | IOException e) {
-            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to get metadata from cache " + rf2ResourcePath + " with remote fallback", e);
-        }
-    }
+			localRF2Package = new File(pathName);
+			moduleMetadata.setFile(localRF2Package);
+		}
+	}
 
     private void doGetMetadataFromRemote(String rf2ResourcePath, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException.OperationFailedException {
         try {
