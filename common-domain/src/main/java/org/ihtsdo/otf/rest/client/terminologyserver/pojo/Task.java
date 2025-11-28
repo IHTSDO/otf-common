@@ -20,17 +20,20 @@ public class Task {
 	
 	@Expose
 	String summary;
+
+	@Expose
+	String status;
 	
+	@Expose
+	Map<String, String> assignee = new HashMap<>();
+
 	IBatch batch;
 	List<Component> components = new ArrayList<>();
 	String author = null;
 	String reviewer = null;
 	String taskInfo;
-	
-	boolean preExistingTask = false;
 
-	@Expose
-	Map<String, String> assignee = new HashMap<>();
+	boolean preExistingTask = false;
 
 	/* Call IBatch.addNewTask instead of creating a Task directly */
 	public Task(IBatch batch, String author, String reviewer) {
@@ -198,5 +201,13 @@ public class Task {
 	
 	public static int getNextTaskSequence() {
 		return taskSequence + 1;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
 	}
 }
