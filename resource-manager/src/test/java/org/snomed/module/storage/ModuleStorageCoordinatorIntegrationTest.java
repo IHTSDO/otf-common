@@ -573,7 +573,10 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         msc.getMetadata("INT", "900000000000012004", "20240101", true);
 
         // then
-        verify(resourceManagerCacheMock).doReadResourceFile(anyString());
+		verify(resourceManagerCacheMock).doReadResourceFile(anyString());
+		verify(resourceManagerCacheMock).getNullable(anyString());
+		verify(resourceManagerCacheMock).getNullable(anyString());
+		verify(resourceManagerCacheMock).doWriteResource(anyString(), any());
     }
 
     @Test
