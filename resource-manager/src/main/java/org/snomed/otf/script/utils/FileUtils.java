@@ -70,6 +70,14 @@ public class FileUtils {
         }
     }
 
+	public static String getMD5Nullable(File file) {
+		try {
+			return getMD5OrThrow(file);
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
     public static String getMD5OrThrow(File file) throws IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
             return DigestUtils.md5DigestAsHex(fis);
