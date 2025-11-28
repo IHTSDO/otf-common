@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.rest.client.authoringservices;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
@@ -21,6 +22,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.springframework.web.util.UriComponentsBuilder;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -28,6 +30,8 @@ import us.monoid.web.Resty;
 public class AuthoringServicesClient {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(AuthoringServicesClient.class);
+
+	private static final String STATUS_PARAM = "statuses";
 	
 	private RestTemplate restTemplate;
 	private HttpHeaders headers;
@@ -128,6 +132,12 @@ public class AuthoringServicesClient {
 		restTemplate.put(endPoint, requestEntity);
 		return taskKey;
 	}
+
+	public void updateTask(String project, Task task) {
+		String endPoint = serverUrl + API_ROOT + "projects/" + project + "/tasks/" + task.getKey();
+		HttpEntity<Task> requestEntity = new HttpEntity<>(task, headers);
+		restTemplate.put(endPoint, requestEntity);
+	}
 	
 	public void deleteTask(String project, String taskKey, boolean optional) throws RestClientException {
 		String endPoint = serverUrl + API_ROOT + "projects/" + project + "/tasks/" + taskKey;
@@ -215,6 +225,21 @@ public class AuthoringServicesClient {
         };
 		LOGGER.info("Recovering list of visible projects from {}", endPoint);
 		return restTemplate.exchange(endPoint, HttpMethod.GET, null, type).getBody();
+	}
+
+	public List<Task> listTasksOnProject(String projectKey) {
+		String baseUrl = serverUrl + API_ROOT;
+		URI uri = UriComponentsBuilder
+				.fromUriString(baseUrl + "/projects/tasks/search")
+				.queryParam("projectKeys", projectKey)
+				.queryParam(STATUS_PARAM, "New")
+				.queryParam(STATUS_PARAM, "In Review")
+				.queryParam(STATUS_PARAM, "In Progress")
+				.queryParam("lightweight", true)
+				.build()
+				.toUri();ParameterizedTypeReference<List<Task>> type = new ParameterizedTypeReference<>(){};
+		LOGGER.info("Recovering list of active tasks from {}", uri);
+		return restTemplate.exchange(uri, HttpMethod.GET, null, type).getBody();
 	}
 
 }
