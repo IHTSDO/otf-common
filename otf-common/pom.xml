@@ -71,12 +71,6 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- JIRA client -->
-		<dependency>
-			<groupId>us.monoid.web</groupId>
-			<artifactId>ihtsdo-resty</artifactId>
-		</dependency>
-		
 		<!-- Google Sheet API -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
