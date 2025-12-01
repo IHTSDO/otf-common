@@ -6,18 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonWriter;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.time.FastDateFormat;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
+import com.google.gson.JsonObject;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
-import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -37,28 +27,22 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import us.monoid.json.JSONArray;
-import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
-import us.monoid.web.JSONResource;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
-
-import static org.springframework.util.Assert.notNull;
 
 // TODO: This whole class is a mess and needs refactoring.
 public class SnowstormRestClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormRestClient.class);
-
 	private static final String COOKIE = "Cookie";
-	public static final String JSON_CONTENT_TYPE = "application/json";
-	public static final String ANY_CONTENT_TYPE = "*/*";
-	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
-	public static final String US_EN_LANG_REFSET = "900000000000509007";
+	public static final String ITEMS = "items";
 	public static final String LOCK = "lock";
+	public static final String STATUS = "status";
+	public static final String TRANSIENT_ET = "transientEffectiveTime";
+	public static final String URI_CURLIES = "URI {}";
+	public static final String URL_SEPARATOR = "/";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -73,39 +57,33 @@ public class SnowstormRestClient {
 	}
 
 	private String singleSignOnCookie;
-	private RestTemplate restTemplate;
-	private final RestyHelper resty;
+	private final RestTemplate restTemplate;
 
 	private String reasonerId = "org.semanticweb.elk.owlapi.ElkReasonerFactory";
 	private boolean useExternalClassificationService = true;
 
 	private boolean flatIndexExportStyle = true;
 	private final Gson gson;
-	private int importTimeoutMinutes;
 	private int classificationTimeoutMinutes; //Timeout of 0 means don't time out.
 	private final SnowstormRestUrlHelper urlHelper;
 
 	private static final int BATCH_SIZE = 200;
 	private static final int MAX_PAGE_SIZE = 10_000;
-	private static final int INDENT = 2;
 	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
     };
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
     };
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private SnowstormRestClient(String snowstormUrl) {
 		urlHelper = new SnowstormRestUrlHelper(snowstormUrl);
 		gson = new GsonBuilder().setPrettyPrinting().create();
 		restTemplate = new RestTemplate();
-		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 	}
 
 	public SnowstormRestClient(String snowstormUrl, String singleSignOnCookie) {
 		this(snowstormUrl);
 		this.singleSignOnCookie = " " + singleSignOnCookie;
-		resty.withHeader(HttpHeaders.COOKIE, singleSignOnCookie);
 		restTemplate.setInterceptors(Collections.singletonList((request, body, execution) -> {
 			// Set cookie
 			request.getHeaders().set(HttpHeaders.COOKIE, singleSignOnCookie);
@@ -119,7 +97,7 @@ public class SnowstormRestClient {
 				LOGGER.debug("Header      : {}", k);
 				LOGGER.debug("Value       : {}", HttpHeaders.COOKIE.equals(k) ? mask(v.toString()) : v);
 			});
-			LOGGER.debug("Request body: {}", new String(body, "UTF-8"));
+			LOGGER.debug("Request body: {}", new String(body, StandardCharsets.UTF_8));
 			LOGGER.debug("==========================request end================================================");
 
 			ClientHttpResponse response = execution.execute(request, body);
@@ -190,25 +168,27 @@ public class SnowstormRestClient {
 		return page.getItems();
 	}
 
-	public void  updateCodeSystemVersionPackage(String codeSystemShortname, String effectiveDate, String releasePackage) throws RestClientException {
-		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString(urlHelper.getUpdateCodeSystemVersionPackageUri(codeSystemShortname, effectiveDate).toString())
-				.queryParam("releasePackage", releasePackage);
-		URI uri = queryBuilder.build().toUri();
+	public void updateCodeSystemVersionPackage(String codeSystemShortname, String effectiveDate, String releasePackage) throws RestClientException {
+		URI uri = UriComponentsBuilder
+				.fromUriString(urlHelper.getUpdateCodeSystemVersionPackageUri(codeSystemShortname, effectiveDate).toString())
+				.queryParam("releasePackage", releasePackage)
+				.build()
+				.toUri();
+
 		try {
-			restTemplate.exchange(uri, HttpMethod.PUT, new org.springframework.http.HttpEntity<>(null), Void.class);
+			restTemplate.exchange(uri, HttpMethod.PUT, HttpEntity.EMPTY, Void.class);
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
-			int statusCode = e.getStatusCode().value();
-			if (statusCode == 404 && StringUtils.hasLength(e.getResponseBodyAsString())) {
+			if (e.getStatusCode() == HttpStatus.NOT_FOUND && StringUtils.hasLength(e.getResponseBodyAsString())) {
 				try {
-					JSONObject jsonObject = new JSONObject(e.getResponseBodyAsString());
+					JsonObject jsonObject = com.google.gson.JsonParser.parseString(e.getResponseBodyAsString()).getAsJsonObject();
 					if (jsonObject.has("message")) {
-						throw new RestClientException(jsonObject.getString("message"));
+						throw new RestClientException(jsonObject.get("message").getAsString());
 					}
-				}catch (JSONException err){
-					// do nothing
+				} catch (com.google.gson.JsonSyntaxException ex) {
+					// Ignore parsing errors
 				}
 			}
-			throw  e;
+			throw e;
 		}
 	}
 
@@ -220,33 +200,13 @@ public class SnowstormRestClient {
 	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
 		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
 	}
-	
-	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) throws RestClientException {
-		try {
-			JSONResource response = resty.json(urlHelper.getBrowserConceptsUrl(branchPath), RestyHelper.contentJSON(gson.toJson(newConcept)));
-			ConceptPojo savedConcept = null;
-			//Check successful creation (NB Receiving 200 rather than 201 currently)
-			if (!response.getHTTPStatus().toString().startsWith("2")) {
-				String msg = "<unparsable>";
-				try {
-					msg = response.toObject().toString(1);
-				} catch (Exception e) {
-					logger.error("Unable to parse response",e);
-				}
-				throw new IOException ("Received HTTPStatus: " + response.getHTTPStatus() + ": " + msg);
-			}
-			try {
-				savedConcept = mapper.readValue(response.stream(), ConceptPojo.class);
-			} catch (Exception e){
-				logger.error("Failed to recover save result",e);
-			}
-			return savedConcept;
-		} catch (IOException e) {
-			final String message = "Failed to create concept";
-			logger.error(message, e);
-			throw new RestClientException(message, e);
-		}
+
+	public ConceptPojo createConcept(String branchPath, ConceptPojo newConcept) {
+		String endPoint = urlHelper.getBrowserConceptsUrl(branchPath);
+		HttpEntity<ConceptPojo> request = new HttpEntity<>(newConcept);
+		return restTemplate.postForObject(endPoint, request, ConceptPojo.class);
 	}
+
 
 	public Branch getBranch(String branchPath) throws RestClientException {
 		Branch branch = getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
@@ -309,7 +269,7 @@ public class SnowstormRestClient {
 				.queryParam("limit", limit)
 				.queryParam("conceptIds", conceptIds.toArray());
 		URI uri = queryBuilder.build().toUri();
-		logger.debug("URI {}", uri);
+		LOGGER.debug(URI_CURLIES, uri);
 		return RequestEntity.get(uri)
 				.header(COOKIE, authenticationToken)
 				.build();
@@ -442,7 +402,7 @@ public class SnowstormRestClient {
 			queryBuilder.queryParam("conceptIds", concepts.toArray());
 		}
 		URI uri = queryBuilder.build().toUri();
-		logger.debug("URI {}", uri);
+		LOGGER.debug(URI_CURLIES, uri);
 		return RequestEntity.get(uri)
 				.header(COOKIE, authenticationToken)
 				.build();
@@ -461,7 +421,7 @@ public class SnowstormRestClient {
 		}
 		
 		URI uri = queryBuilder.build().encode().toUri();
-		logger.debug("URI {}", uri);
+		LOGGER.debug(URI_CURLIES, uri);
 		return RequestEntity.get(uri)
 				.header(COOKIE, authenticationToken)
 				.build();
@@ -521,14 +481,14 @@ public class SnowstormRestClient {
 			return null;
 		} else if (!statusCode.is2xxSuccessful()) {
 			String errorMessage = "Failed to create entity URI:" + uri.toString();
-			logger.error(errorMessage + ", status code {}", statusCode);
+			LOGGER.error("{}, status code {}", errorMessage, statusCode);
 			throw new RestClientException(errorMessage);
 		}
 
 		String location = responseEntity.getHeaders().getFirst("Location");
 		if (Strings.isNullOrEmpty(location)) {
 			String errorMessage = "Failed to create entity, location header missing from response. URI:" + uri.toString();
-			logger.error(errorMessage + ", status code {}", statusCode);
+			LOGGER.error("{}, status code {}", errorMessage, statusCode);
 			throw new RestClientException(errorMessage);
 		}
 		return location.substring(location.lastIndexOf("/") + 1);
@@ -550,14 +510,18 @@ public class SnowstormRestClient {
 
 	private void createBranch(String parentBranch, String newBranchName) throws RestClientException {
 		try {
-			JSONObject jsonObject = new JSONObject();
-			jsonObject.put("parent", parentBranch);
-			jsonObject.put("name", newBranchName);
-			resty.json(urlHelper.getBranchesUrl(), RestyHelper.content((jsonObject), JSON_CONTENT_TYPE));
+			Map<String, String> body = new HashMap<>();
+			body.put("parent", parentBranch);
+			body.put("name", newBranchName);
+
+			HttpEntity<Map<String, String>> request = new HttpEntity<>(body);
+			restTemplate.postForObject(urlHelper.getBranchesUrl(), request, Void.class);
 		} catch (Exception e) {
-			throw new RestClientException("Failed to create branch " + newBranchName + ", parent branch " + parentBranch, e);
+			throw new RestClientException(
+					"Failed to create branch " + newBranchName + ", parent branch " + parentBranch, e);
 		}
 	}
+
 
 	public List<String> listProjectBranches() throws RestClientException {
 		return listBranchDirectChildren(urlHelper.getMainBranchPath());
@@ -569,47 +533,32 @@ public class SnowstormRestClient {
 
 	private List<String> listBranchDirectChildren(String branchPath) throws RestClientException {
 		String url = "";
-		int status = -1;
 		try {
-			List<String> projectNames = new ArrayList<>();
 			url = urlHelper.getBranchChildrenUrl(branchPath);
-			JSONResource json = resty.json(url);
-			status = json.getHTTPStatus();
-			try {
+			Map<String, Object> responseJson = restTemplate.getForObject(url, Map.class);
+
+			List<String> projectNames = new ArrayList<>();
+			if (responseJson != null && responseJson.containsKey(ITEMS)) {
 				@SuppressWarnings("unchecked")
-				List<String> childBranchPaths = (List<String>) json.get("items.path");
-				for (String childBranchPath : childBranchPaths) {
-					String branchName = childBranchPath.substring((branchPath + "/").length());
-					if (!branchName.contains("/")) {
-						projectNames.add(branchName);
+				List<Map<String, Object>> items = (List<Map<String, Object>>) responseJson.get(ITEMS);
+
+				for (Map<String, Object> item : items) {
+					Object pathObj = item.get("path");
+					if (pathObj instanceof String childBranchPath) {
+						String branchName = childBranchPath.substring((branchPath + "/").length());
+						if (!branchName.contains("/")) {
+							projectNames.add(branchName);
+						}
 					}
 				}
-			} catch (JSONException e) {
-				// this thrown if there are no items.. do nothing
 			}
+
 			return projectNames;
-		} catch (IOException e) {
-			throw new RestClientException("Failed to retrieve branch list, status: " + status + ", from " + url, e);
 		} catch (Exception e) {
-			throw new RestClientException("Failed to parse branch list from, status: " + status + ", from " + url, e);
+			throw new RestClientException("Failed to retrieve or parse branch list from " + url, e);
 		}
 	}
 
-	public void deleteProjectBranch(String projectBranchName) throws RestClientException {
-		deleteBranch(projectBranchName);
-	}
-
-	public void deleteTaskBranch(String projectName, String taskName) throws RestClientException {
-		deleteBranch(projectName + "/" + taskName);
-	}
-
-	private void deleteBranch(String branchPathRelativeToMain) throws RestClientException {
-		try {
-			resty.json(urlHelper.getBranchUrlRelativeToMain(branchPathRelativeToMain), RestyHelper.delete());
-		} catch (Exception e) {
-			throw new RestClientException("Failed to delete branch " + branchPathRelativeToMain, e);
-		}
-	}
 
 	public void createProjectTask(String projectName, String taskName) throws RestClientException {
 		createBranch(urlHelper.getBranchPath(projectName), taskName);
@@ -639,101 +588,38 @@ public class SnowstormRestClient {
 	public Merge getMerge(String mergeId) throws RestClientException {
 		return getEntity(urlHelper.getMergeUri(mergeId), Merge.class);
 	}
-	
-	public MergeReviewsResults getMergeReviewsResult(String mergeId) throws RestClientException {
-		return getEntity(urlHelper.getMergeReviewsUri(mergeId), MergeReviewsResults.class);
-	}
-	
-	public boolean isNoMergeConflict(String mergeId) throws RestClientException{
-		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class).isEmpty();
-	}
 
-	public Set getMergeReviewsDetails(String mergeId) throws RestClientException{
-		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class);
-	}
-	
-	public boolean importRF2Archive(String projectName, String taskName, final InputStream rf2ZipFileStream)
-			throws RestClientException {
-		notNull(rf2ZipFileStream, "Archive to import should not be null.");
-
-		try {
-			// Create import
-			String branchPath = urlHelper.getBranchPath(projectName, taskName);
-			logger.info("Create import, branch '{}'", branchPath);
-
-			JSONObject params = new JSONObject();
-			params.put("type", "DELTA");
-			params.put("branchPath", branchPath);
-			params.put("languageRefSetId", US_EN_LANG_REFSET);
-			params.put("createVersions", "false");
-			resty.withHeader("Accept", JSON_CONTENT_TYPE);
-			JSONResource json = resty.json(urlHelper.getImportsUrl(), RestyHelper.content(params, JSON_CONTENT_TYPE));
-			String location = json.getUrlConnection().getHeaderField("Location");
-			String importId = location.substring(location.lastIndexOf("/") + 1);
-
-			// Create file from stream
-			File tempDirectory = Files.createTempDirectory(getClass().getSimpleName()).toFile();
-			File tempFile = new File(tempDirectory, "SnomedCT_Release_INT_20150101.zip");
-			try {
-				try (FileOutputStream output = new FileOutputStream(tempFile)) {
-					IOUtils.copy(rf2ZipFileStream, output);
-				}
-
-				// Post file to TS
-				MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
-				multipartEntityBuilder.addBinaryBody("file", tempFile, ContentType.create("application/zip"), tempFile.getName());
-				multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-				HttpEntity httpEntity = multipartEntityBuilder.build();
-				resty.withHeader("Accept", ANY_CONTENT_TYPE);
-				resty.json(urlHelper.getImportArchiveUrl(importId), new HttpEntityContent(httpEntity));
-
-			} finally {
-				tempFile.delete();
-				tempDirectory.delete();
-			}
-
-			// Poll import entity until complete or times-out
-			logger.info("Snowstorm processing import, this will probably take a few minutes. (Import ID '{}')", importId);
-			return waitForStatus(urlHelper.getImportUrl(importId), getTimeoutDate(importTimeoutMinutes), ProcessingStatus.COMPLETED,
-					"import");
-		} catch (Exception e) {
-			throw new RestClientException("Import failed.", e);
-		}
-	}
-	
-	public String createBranchMergeReviews(String sourceBranchPath, String targetBranchPath) throws RestClientException{
-		Map<String, String> request = new HashMap<>();
-		request.put("source", sourceBranchPath);
-		request.put("target", targetBranchPath);
-		return createEntity(urlHelper.getMergeReviewsUri(), request);
-	}
-	
 	public ClassificationResults startClassification(String branchPath) throws RestClientException {
 		ClassificationResults results = new ClassificationResults();
 		try {
-			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId).put("useExternalService", useExternalClassificationService);
+			Map<String, Object> requestBody = new HashMap<>();
+			requestBody.put("reasonerId", reasonerId);
+			requestBody.put("useExternalService", useExternalClassificationService);
+
 			String classifyURL = urlHelper.getClassificationsUrl(branchPath);
-			logger.info("Initiating classification via {}, reasonerId:{}, useExternalService:{}", classifyURL, reasonerId, useExternalClassificationService);
-			JSONResource jsonResponse = resty.json(classifyURL, requestJson, JSON_CONTENT_TYPE);
-			String classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
+			LOGGER.info("Initiating classification via {}, reasonerId:{}, useExternalService:{}",
+					classifyURL, reasonerId, useExternalClassificationService);
+
+			HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody);
+			ResponseEntity<Void> response = restTemplate.postForEntity(classifyURL, request, Void.class);
+
+			String classificationLocation = response.getHeaders().getFirst("Location");
 			if (classificationLocation == null) {
-				String errorMsg = "Failed to recover classificationLocation.  Call to " 
-						+ classifyURL + " returned httpStatus '"
-						+ jsonResponse.getHTTPStatus() + "'";
-				try {
-					errorMsg += " and body '" + jsonResponse.toObject().toString(INDENT) + "'.";
-				} catch (Exception e) {
-					errorMsg += ". Also failed to parse response object.";
-				}
-				throw new RestClientException (errorMsg);
+				throw new RestClientException(
+						"Failed to recover classificationLocation. Call to " + classifyURL
+								+ " returned httpStatus '" + response.getStatusCode() + "'.");
 			}
+
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 			results.setClassificationLocation(classificationLocation);
-		} catch (JSONException | IOException e) {
+
+		} catch (Exception e) {
 			throw new RestClientException("Create classification failed.", e);
 		}
+
 		return results;
 	}
+
 
 	/**
 	 * Initiates a classification and waits for the results.
@@ -753,7 +639,7 @@ public class SnowstormRestClient {
 	
 	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws RestClientException, InterruptedException {
 		String classificationLocation = results.getClassificationLocation();
-		logger.info("Classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
+		LOGGER.info("Classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
 			// Fetch classification to get result summary flags.
@@ -771,64 +657,76 @@ public class SnowstormRestClient {
 	}
 
 	public String getLatestClassificationOnBranch(String branchPath) throws RestClientException {
-		JSONObject obj = getLatestClassificationObjectOnBranch(branchPath);
-		return (obj != null) ? obj.toString() : null;
+		Map<String, Object> obj = getLatestClassificationObjectOnBranch(branchPath);
+		return (obj != null) ? gson.toJson(obj) : null;
 	}
 
-	public boolean isClassificationInProgressOnBranch(String branchPath) throws RestClientException, JSONException {
-		final JSONObject classification = getLatestClassificationObjectOnBranch(branchPath);
+	public boolean isClassificationInProgressOnBranch(String branchPath) throws RestClientException {
+		Map<String, Object> classification = getLatestClassificationObjectOnBranch(branchPath);
 		if (classification != null) {
-			final String status = classification.getString("status");
-			return "SCHEDULED".equals(status) || "RUNNING".equals(status);
+			Object statusObj = classification.get(STATUS);
+			if (statusObj instanceof String status) {
+				return "SCHEDULED".equals(status) || "RUNNING".equals(status);
+			}
 		}
 		return false;
 	}
 
-	private JSONObject getLatestClassificationObjectOnBranch(String branchPath) throws RestClientException {
-		final String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
+	private Map<String, Object> getLatestClassificationObjectOnBranch(String branchPath) throws RestClientException {
+		String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
 		try {
-			final JSONArray items = getItems(classificationsUrl);
-			if (items != null && items.length() > 0) {
-				return items.getJSONObject(items.length() - 1);
+			List<Map<String, Object>> items = getItems(classificationsUrl);
+			if (items != null && !items.isEmpty()) {
+				return items.get(items.size() - 1);
 			}
-			return null;
+			return new HashMap<>();
 		} catch (Exception e) {
 			throw new RestClientException("Failed to retrieve list of classifications.", e);
 		}
 	}
 
-	public void saveClassification(String branchPath, String classificationId) throws RestClientException,
-			InterruptedException {
-		String classifyURL = urlHelper.getClassificationsUrl(branchPath);
+	public void saveClassification(String branchPath, String classificationId) throws RestClientException {
+		String classifyURL = urlHelper.getClassificationsUrl(branchPath) + URL_SEPARATOR + classificationId;
 		try {
-			logger.debug("Saving classification via {}", classifyURL);
-			JSONObject jsonObj = new JSONObject().put("status", "SAVED");
-			resty.put(classifyURL, jsonObj, JSON_CONTENT_TYPE);
-			//We'll wait the same time for saving as we do for the classification
-			boolean savingCompleted = waitForStatus(classifyURL, getTimeoutDate(classificationTimeoutMinutes),
-					ProcessingStatus.SAVED, "classifier result saving");
+			LOGGER.debug("Saving classification via {}", classifyURL);
+			Map<String, String> body = new HashMap<>();
+			body.put(STATUS, "SAVED");
+
+			HttpEntity<Map<String, String>> request = new HttpEntity<>(body);
+			restTemplate.put(classifyURL, request);
+
+			boolean savingCompleted = waitForStatus(
+					classifyURL,
+					getTimeoutDate(classificationTimeoutMinutes),
+					ProcessingStatus.SAVED,
+					"classifier result saving"
+			);
+
 			if (!savingCompleted) {
 				throw new IOException("Classifier reported non-saved status when saving");
 			}
 		} catch (Exception e) {
+			Thread.currentThread().interrupt();
 			throw new RestClientException("Failed to save classification via URL " + classifyURL, e);
 		}
 	}
 
-	private JSONArray getItems(String url) throws Exception {
-		JSONResource jsonResource = resty.json(url);
-		JSONArray items = null;
+	private List<Map<String, Object>> getItems(String url) throws RestClientException {
 		try {
-			items = (JSONArray) jsonResource.get("items");
+			Map<String, Object> responseJson = restTemplate.getForObject(url, Map.class);
+			if (responseJson != null && responseJson.containsKey(ITEMS)) {
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> items = (List<Map<String, Object>>) responseJson.get(ITEMS);
+				return items;
+			} else {
+				LOGGER.debug("No items property of resource at '{}'", url);
+				return Collections.emptyList();
+			}
 		} catch (Exception e) {
-			// TODO Change this back to JSONException when Resty handles that.
-			// this gets thrown when the attribute does not exist
-			logger.debug("No items property of resource at '{}'", url);
+			throw new RestClientException("Failed to retrieve items from " + url, e);
 		}
-		return items;
 	}
 
-	
 	public File exportTask(String projectName, String taskName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);
 		return export(branchPath, null, null, ExportCategory.UNPUBLISHED, exportType);
@@ -854,66 +752,84 @@ public class SnowstormRestClient {
 	public File export(String branchPath, String effectiveDate, Set<String> moduleIds, ExportCategory exportCategory, ExportType exportType)
 			throws BusinessServiceException {
 
-		JSONObject exportConfigJson = prepareExportJSON(branchPath, effectiveDate, moduleIds, exportCategory, exportType);
+		Map<String, Object> exportConfig = prepareExportMap(branchPath, effectiveDate, moduleIds, exportCategory, exportType);
 
-		String exportLocationURL = initiateExport(exportConfigJson.toString());
+		String exportLocationURL = initiateExport(gson.toJson(exportConfig));
 
 		return recoverExportedArchive(exportLocationURL);
 	}
-	
-	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, Set<String> moduleIds, ExportCategory exportCategory, ExportType exportType)
-			throws BusinessServiceException {
-		JSONObject jsonObj = new JSONObject();
-		try {
-			jsonObj.put("type", exportType);
-			jsonObj.put("branchPath", branchPath);
-			if (moduleIds != null) {
-				jsonObj.put("moduleIds", moduleIds);
-			}
-            switch (exportCategory) {
-                case UNPUBLISHED -> {
-                    String tet = (effectiveDate == null) ? DateUtils.now(DateUtils.YYYYMMDD) : effectiveDate;
-                    jsonObj.put("transientEffectiveTime", tet);
-                    if (flatIndexExportStyle) {
-                        jsonObj.put("type", ExportType.DELTA);
-                    }
-                }
-                case PUBLISHED -> {
-                    if (effectiveDate == null) {
-                        throw new ProcessingException("Cannot export published data without an effective date");
-                    }
-                    if (flatIndexExportStyle) {
-                        jsonObj.put("startEffectiveTime", effectiveDate);
 
-                    } else {
-                        jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-                        jsonObj.put("deltaEndEffectiveTime", effectiveDate);
-                        jsonObj.put("transientEffectiveTime", effectiveDate);
-                    }
-                }
-                case FEEDBACK_FIX -> {
-                    if (effectiveDate == null) {
-                        throw new ProcessingException("Cannot export feedback-fix data without an effective date");
-                    }
-                    if (flatIndexExportStyle) {
-                        jsonObj.put("startEffectiveTime", effectiveDate);
-                        jsonObj.put("includeUnpublished", true);
+	private Map<String, Object> prepareExportMap(
+			String branchPath,
+			String effectiveDate,
+			Set<String> moduleIds,
+			ExportCategory exportCategory,
+			ExportType exportType
+	) throws BusinessServiceException {
 
-                    } else {
-                        jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-                    }
-                    jsonObj.put("transientEffectiveTime", effectiveDate);
-                }
-                default -> throw new BadRequestException("Export type " + exportCategory + " not recognised");
-            }
-		} catch (JSONException e) {
-			throw new ProcessingException("Failed to prepare JSON for export request.", e);
+		Map<String, Object> jsonObj = new HashMap<>();
+		jsonObj.put("type", exportType);
+		jsonObj.put("branchPath", branchPath);
+
+		if (moduleIds != null) {
+			jsonObj.put("moduleIds", moduleIds);
 		}
+
+		switch (exportCategory) {
+			case UNPUBLISHED -> handleUnpublished(jsonObj, effectiveDate);
+			case PUBLISHED -> handlePublished(jsonObj, effectiveDate);
+			case FEEDBACK_FIX -> handleFeedbackFix(jsonObj, effectiveDate);
+			default -> throw new BadRequestException("Export type " + exportCategory + " not recognised");
+		}
+
 		return jsonObj;
 	}
 
+	private void handleUnpublished(Map<String, Object> jsonObj, String effectiveDate) {
+		String tet = (effectiveDate == null)
+				? DateUtils.now(DateUtils.YYYYMMDD)
+				: effectiveDate;
+
+		jsonObj.put(TRANSIENT_ET, tet);
+
+		if (flatIndexExportStyle) {
+			jsonObj.put("type", ExportType.DELTA);
+		}
+	}
+
+	private void handlePublished(Map<String, Object> jsonObj, String effectiveDate) throws BusinessServiceException {
+		if (effectiveDate == null) {
+			throw new BusinessServiceException("Cannot export published data without an effective date");
+		}
+
+		if (flatIndexExportStyle) {
+			jsonObj.put("startEffectiveTime", effectiveDate);
+		} else {
+			jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+			jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+			jsonObj.put(TRANSIENT_ET, effectiveDate);
+		}
+	}
+
+	private void handleFeedbackFix(Map<String, Object> jsonObj, String effectiveDate) throws BusinessServiceException {
+		if (effectiveDate == null) {
+			throw new BusinessServiceException("Cannot export feedback-fix data without an effective date");
+		}
+
+		if (flatIndexExportStyle) {
+			jsonObj.put("startEffectiveTime", effectiveDate);
+			jsonObj.put("includeUnpublished", true);
+		} else {
+			jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+		}
+
+		jsonObj.put(TRANSIENT_ET, effectiveDate);
+	}
+
+
+
 	private String initiateExport(String exportJsonString) throws BusinessServiceException {
-		logger.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
+		LOGGER.info("Initiating export via url {} with json: {}", urlHelper.getExportsUrl(), exportJsonString);
 		RequestEntity<?> post = RequestEntity.post(urlHelper.getExportsUri())
 				.header(COOKIE, singleSignOnCookie)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -926,7 +842,7 @@ public class SnowstormRestClient {
 	}
 
 	private File recoverExportedArchive(String exportLocationURL) {
-		logger.debug("Recovering exported archive from {}", exportLocationURL);
+		LOGGER.debug("Recovering exported archive from {}", exportLocationURL);
 		File exportedArchive = restTemplate.execute(exportLocationURL, HttpMethod.GET, null, responseExtractor -> {
 			File archive = File.createTempFile("ts-extract", ".zip");
 			try (OutputStream outputStream = new FileOutputStream(archive)) {
@@ -934,7 +850,10 @@ public class SnowstormRestClient {
 				return archive;
 			}
 		});
-		logger.debug("Extract saved to {}", exportedArchive.getAbsolutePath());
+		if (exportedArchive == null) {
+			throw new IllegalStateException("Failed to recover exported archive from " + exportLocationURL + ", null file received.");
+		}
+		LOGGER.debug("Extract saved to {}", exportedArchive.getAbsolutePath());
 		return exportedArchive;
 	}
 
@@ -945,7 +864,7 @@ public class SnowstormRestClient {
 	public void rebaseTask(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
-		logger.info("Rebasing branch {} from parent {}", taskPath, projectPath);
+		LOGGER.info("Rebasing branch {} from parent {}", taskPath, projectPath);
 		doMerge(projectPath, taskPath);
 	}
 
@@ -956,16 +875,18 @@ public class SnowstormRestClient {
 	public void mergeTaskToProject(String projectName, String taskName) throws RestClientException {
 		String taskPath = urlHelper.getBranchPath(projectName, taskName);
 		String projectPath = urlHelper.getBranchPath(projectName);
-		logger.info("Promoting branch {} to {}", taskPath, projectPath);
+		LOGGER.info("Promoting branch {} to {}", taskPath, projectPath);
 		doMerge(taskPath, projectPath);
 	}
 
 	private void doMerge(String sourcePath, String targetPath) throws RestClientException {
 		try {
-			JSONObject params = new JSONObject();
+			Map<String, String> params = new HashMap<>();
 			params.put("source", sourcePath);
 			params.put("target", targetPath);
-			resty.put(urlHelper.getMergesUrl(), params, JSON_CONTENT_TYPE);
+
+			HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
+			restTemplate.put(urlHelper.getMergesUrl(), request);
 		} catch (Exception e) {
 			throw new RestClientException("Failed to merge " + sourcePath + " to " + targetPath, e);
 		}
@@ -975,18 +896,22 @@ public class SnowstormRestClient {
 			throws RestClientException, InterruptedException {
 		String status = "";
 		boolean finalStateAchieved = false;
+
 		while (!finalStateAchieved) {
 			try {
-				Object statusObj = resty.json(url).get("status");
-				status = statusObj.toString() ;
+				Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+				Object statusObj = response != null ? response.get(STATUS) : null;
+				status = statusObj != null ? statusObj.toString() : "";
 			} catch (Exception e) {
 				throw new RestClientException("Rest client error while checking status of " + waitingFor + ".", e);
 			}
+
 			finalStateAchieved = !("RUNNING".equals(status) || "SCHEDULED".equals(status) || "SAVING_IN_PROGRESS".equals(status));
+
 			if (!finalStateAchieved && timeoutDate != null && new Date().after(timeoutDate)) {
 				throw new RestClientException("Client timeout waiting for " + waitingFor + ".");
 			}
-			
+
 			if (!finalStateAchieved) {
 				Thread.sleep(1000 * 10);
 			}
@@ -994,10 +919,12 @@ public class SnowstormRestClient {
 
 		boolean targetStatusAchieved = targetStatus.toString().equals(status);
 		if (!targetStatusAchieved) {
-			logger.warn("TS reported non-complete status {} from URL {}", status, url);
+			LOGGER.warn("TS reported non-complete status {} from URL {}", status, url);
 		}
+
 		return targetStatusAchieved;
 	}
+
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
 		if (importTimeoutMinutes > 0) {
@@ -1007,18 +934,6 @@ public class SnowstormRestClient {
 		} 
 
 		return null;
-	}
-
-	private String toPrettyJson(String jsonString) {
-		JsonElement el = new JsonParser().parse(jsonString);
-		return gson.toJson(el);
-	}
-
-	private void toPrettyJson(String jsonString, File outFile) throws IOException {
-		JsonElement el = new JsonParser().parse(jsonString);
-		try (JsonWriter writer = new JsonWriter(new FileWriter(outFile))) {
-			gson.toJson(el, writer);
-		}
 	}
 
 	public void setReasonerId(String reasonerId) {
@@ -1035,10 +950,6 @@ public class SnowstormRestClient {
 
 	public void setUseExternalClassificationService(boolean useExternalClassificationService) {
 		this.useExternalClassificationService = useExternalClassificationService;
-	}
-
-	public void setImportTimeoutMinutes(int importTimeoutMinutes) {
-		this.importTimeoutMinutes = importTimeoutMinutes;
 	}
 
 	public void setClassificationTimeoutMinutes(int classificationTimeoutMinutes) {
