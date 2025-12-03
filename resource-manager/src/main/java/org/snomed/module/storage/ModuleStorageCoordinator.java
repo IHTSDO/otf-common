@@ -618,14 +618,8 @@ public class ModuleStorageCoordinator {
         // Self-depending modules have no unknown, external dependencies
         removeSelfDependingModules(mdrsRows);
 
-        boolean canMatchByIdentifyingModule = matchByIdentifyingModuleId(rf2Packages, mdrsRows);
-        if (canMatchByIdentifyingModule) {
-            // Keep those with matching referencedComponentId and targetEffectiveTime (for extensions)
-            rf2Packages = filterByReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
-        } else {
-            // Keep those where compositionModuleIds contain any referencedComponentId (for editions)
-            rf2Packages = filterByCompositionModulesContainReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
-        }
+		// Keep those with matching referencedComponentId & targetEffectiveTime
+		rf2Packages = keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime(rf2Packages, mdrsRows);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
@@ -1256,12 +1250,5 @@ public class ModuleStorageCoordinator {
         }
 
         rows.removeIf(rf2Row -> diff.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)));
-    }
-
-    private boolean matchByIdentifyingModuleId(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows) {
-        List<String> identifyingModuleIds = rf2Packages.stream().map(ModuleMetadata::getIdentifyingModuleId).toList();
-        List<String> referencedComponentIds = mdrsRows.stream().map(r -> r.getColumn(RF2Service.REFERENCED_COMPONENT_ID)).toList();
-
-        return identifyingModuleIds.stream().anyMatch(referencedComponentIds::contains);
     }
 }

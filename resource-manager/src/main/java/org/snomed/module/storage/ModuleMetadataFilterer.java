@@ -1,7 +1,10 @@
 package org.snomed.module.storage;
 
+import org.apache.jena.atlas.lib.Pair;
+
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Utility to help with ModuleMetadata filtering.
@@ -75,6 +78,32 @@ public class ModuleMetadataFilterer {
 	 */
 	public static Set<ModuleMetadata> filterByCompositionModulesContainReferencedComponentIdAndTargetEffectiveTime(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
 		return filter(rf2Packages, mdrs, PREDICATES.get("4"));
+	}
+
+	/**
+	 * Return a filtered collection of ModuleMetadata. Only entries whose identifyingModuleId matches the referencedComponentId and targetEffectiveTime matching the effectiveTime
+	 * will be returned.
+	 *
+	 * @param rf2Packages Collection of ModuleMetadata to filter.
+	 * @param mdrs        Collection of RF2Row to help with filtering.
+	 * @return Filtered collection of ModuleMetadata.
+	 */
+	public static Set<ModuleMetadata> keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
+		if (rf2Packages == null || rf2Packages.isEmpty() || mdrs == null || mdrs.isEmpty()) {
+			return Collections.emptySet();
+		}
+
+		Set<Pair<String, String>> referencedComponentIdTargetEffectiveTimes = mdrs.stream().map(entry -> {
+			String referencedComponentId = entry.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+			String targetEffectiveTime = entry.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+
+			return Pair.create(referencedComponentId, targetEffectiveTime);
+		}).collect(Collectors.toSet());
+
+		return rf2Packages.stream().filter(rf2Package -> {
+			Pair<String, String> identifyingModuleIdEffectiveTime = Pair.create(rf2Package.getIdentifyingModuleId(), rf2Package.getEffectiveTimeString());
+			return referencedComponentIdTargetEffectiveTimes.contains(identifyingModuleIdEffectiveTime);
+		}).collect(Collectors.toSet());
 	}
 
 	private static Set<ModuleMetadata> filter(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs, BiPredicate<ModuleMetadata, RF2Row> predicate) {
