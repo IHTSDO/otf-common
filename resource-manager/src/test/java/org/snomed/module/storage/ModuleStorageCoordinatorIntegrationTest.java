@@ -1736,21 +1736,18 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         ));
     }
 
-    private Set<RF2Row> givenAUMDRS() {
-        return new HashSet<>(Arrays.asList(
-                new RF2Row().addRow(3, "32506021000036107").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
-                new RF2Row().addRow(3, "900000000000207008").addRow(5, "900000000000012004").addRow(6, "20250701").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "32506021000036107").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
-                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000207008").addRow(6, "20250701").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "351000168100").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
-                new RF2Row().addRow(3, "351000168100").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
-                new RF2Row().addRow(3, "449080006").addRow(5, "900000000000012004").addRow(6, "20250701").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
-                new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701")
-        ));
-    }
+	private Set<RF2Row> givenAUMDRS() {
+		return new HashSet<>(Arrays.asList(
+				new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
+				new RF2Row().addRow(3, "32506021000036107").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
+				new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000207008").addRow(6, "20250731").addRow(7, "20250701"),
+				new RF2Row().addRow(3, "351000168100").addRow(5, "900000000000012004").addRow(6, "20250731").addRow(7, "20250701"),
+				new RF2Row().addRow(3, "32506021000036107").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
+				new RF2Row().addRow(3, "32506021000036107").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731"),
+				new RF2Row().addRow(3, "351000168100").addRow(5, "32506021000036107").addRow(6, "20250731").addRow(7, "20250731"),
+				new RF2Row().addRow(3, "351000168100").addRow(5, "351000168100").addRow(6, "20250731").addRow(7, "20250731")
+		));
+	}
 
     private Set<RF2Row> givenSEMDRS() {
         return new HashSet<>(Arrays.asList(
