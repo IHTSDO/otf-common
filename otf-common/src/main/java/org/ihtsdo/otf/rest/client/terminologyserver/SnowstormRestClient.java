@@ -89,31 +89,31 @@ public class SnowstormRestClient {
 			request.getHeaders().set(HttpHeaders.COOKIE, singleSignOnCookie);
 
 			// Log request
-			LOGGER.debug("===========================request begin================================================");
-			LOGGER.debug("URI         : {}", request.getURI());
-			LOGGER.debug("Method      : {}", request.getMethod());
+			LOGGER.trace("===========================request begin================================================");
+			LOGGER.trace("URI         : {}", request.getURI());
+			LOGGER.trace("Method      : {}", request.getMethod());
 			HttpHeaders headers = request.getHeaders();
 			headers.forEach((k, v) -> {
-				LOGGER.debug("Header      : {}", k);
-				LOGGER.debug("Value       : {}", HttpHeaders.COOKIE.equals(k) ? mask(v.toString()) : v);
+				LOGGER.trace("Header      : {}", k);
+				LOGGER.trace("Value       : {}", HttpHeaders.COOKIE.equals(k) ? mask(v.toString()) : v);
 			});
-			LOGGER.debug("Request body: {}", new String(body, StandardCharsets.UTF_8));
-			LOGGER.debug("==========================request end================================================");
+			LOGGER.trace("Request body: {}", new String(body, StandardCharsets.UTF_8));
+			LOGGER.trace("==========================request end================================================");
 
 			ClientHttpResponse response = execution.execute(request, body);
 
 			// Log response
-			LOGGER.debug("============================response begin==========================================");
-			LOGGER.debug("Status code  : {}", response.getStatusCode());
-			LOGGER.debug("Status text  : {}", response.getStatusText());
-			LOGGER.debug("Headers      : {}", response.getHeaders());
+			LOGGER.trace("============================response begin==========================================");
+			LOGGER.trace("Status code  : {}", response.getStatusCode());
+			LOGGER.trace("Status text  : {}", response.getStatusText());
+			LOGGER.trace("Headers      : {}", response.getHeaders());
 			headers = response.getHeaders();
 			headers.forEach((k, v) -> {
-				LOGGER.debug("Header      : {}", k);
-				LOGGER.debug("Value       : {}", v);
+				LOGGER.trace("Header      : {}", k);
+				LOGGER.trace("Value       : {}", v);
 			});
-			LOGGER.debug("Response body: {}", Arrays.toString(body));
-			LOGGER.debug("=======================response end=================================================");
+			LOGGER.trace("Response body: {}", Arrays.toString(body));
+			LOGGER.trace("=======================response end=================================================");
 
 			return response;
 		}));
