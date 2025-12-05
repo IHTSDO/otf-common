@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>3.12.2</version>
+		<version>3.12.3</version>
 	</parent>
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common-parent</artifactId>
-	<version>7.9.2</version>
+	<version>7.9.3</version>
 	<name>OTF Common Parent</name>
 	<packaging>pom</packaging>
 
