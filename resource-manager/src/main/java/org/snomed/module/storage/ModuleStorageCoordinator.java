@@ -561,36 +561,6 @@ public class ModuleStorageCoordinator {
         return doGetAllReleasesByCodeSystem(codeSystem).stream().map(ModuleMetadata::getEffectiveTime).sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     }
 
-    /**
-     * Download all dependencies stored for the given RF2 Package.
-     * *
-     * @param rf2Package RF2 package file
-     * @param rf2DeltaOnly Delta or full release
-     * @param includeFile Whether or not the dependency package is downloaded
-     * @return Collection of all stored ModuleMetadata for given RF2 package.
-     * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
-     */
-    public Set<ModuleMetadata> getRequiredDependencies(File rf2Package, boolean rf2DeltaOnly,  boolean includeFile) throws ModuleStorageCoordinatorException.OperationFailedException {
-        Set<RF2Row> mdrsRows = rf2Service.getMDRS(rf2Package, rf2DeltaOnly);
-        Set<String> uniqueModuleIds = rf2Service.getUniqueModuleIds(rf2Package, rf2DeltaOnly);
-        return getRequiredDependencies(mdrsRows, uniqueModuleIds, includeFile);
-    }
-
-    /**
-     * Download all dependencies stored for the given MDRS records.
-     * *
-     * @param mdrsRows Collection of MDRS rows
-     * @param excludedModuleIds Collection of Module which will be excluded
-     * @param includeFile Whether or not the release package is downloaded
-     * @return Collection of all stored ModuleMetadata for the MDRS records.
-     * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, de-serialising fails.
-     */
-    public Set<ModuleMetadata> getRequiredDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds, boolean includeFile) throws ModuleStorageCoordinatorException.OperationFailedException {
-        Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, excludedModuleIds);
-        if (!includeFile) return dependencies;
-        addFile(dependencies);
-        return dependencies;
-    }
 
     /**
      * Return dependencies stored for given MDRS entries.
@@ -599,24 +569,18 @@ public class ModuleStorageCoordinator {
      * @param includeFile Whether to include RF2 file.
      * @return Dependencies stored for given MDRS entries.
      */
-    public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, boolean includeFile) {
-        if (mdrsRows == null || mdrsRows.isEmpty()) {
+    public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> expectedModules, boolean includeFile) {
+        if (mdrsRows == null || mdrsRows.isEmpty() || expectedModules == null || expectedModules.isEmpty()) {
             return Collections.emptySet();
         }
-
-        // Collect available rf2 packages
-        Set<ModuleMetadata> rf2Packages = getRF2Packages();
-
-        // Keep those with matching moduleId or referencedComponentId
-        rf2Packages = filterByReferencedComponentIdOrModuleId(rf2Packages, mdrsRows);
-
-        // No dependencies when referencing single CodeSystem
-        if (isSingleCodeSystem(rf2Packages)) {
-            return Collections.emptySet();
-        }
+        // Remove MDRS rows if they don't exist in the extension module
+        mdrsRows.removeIf(item -> !expectedModules.contains(item.getColumn(RF2Service.MODULE_ID)));
 
         // Self-depending modules have no unknown, external dependencies
         removeSelfDependingModules(mdrsRows);
+
+        // Collect available rf2 packages
+        Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
 		// Keep those with matching referencedComponentId & targetEffectiveTime
 		rf2Packages = keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime(rf2Packages, mdrsRows);
@@ -674,14 +638,6 @@ public class ModuleStorageCoordinator {
 
         addFile(moduleMetadata);
         return moduleMetadata;
-    }
-
-    private boolean isSingleCodeSystem(Set<ModuleMetadata> moduleMetadata) {
-        if (moduleMetadata == null || moduleMetadata.isEmpty()) {
-            return true;
-        }
-
-        return moduleMetadata.stream().map(ModuleMetadata::getCodeSystemShortName).collect(Collectors.toSet()).size() == 1;
     }
 
     private Set<ModuleMetadata> getRF2Packages() {

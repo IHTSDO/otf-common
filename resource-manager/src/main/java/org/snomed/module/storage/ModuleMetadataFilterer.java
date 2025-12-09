@@ -24,18 +24,6 @@ public class ModuleMetadataFilterer {
 	}
 
 	/**
-	 * Return a filtered collection of ModuleMetadata. Only entries whose identifyingModuleId matches either referencedComponentId or moduleId
-	 * will be returned.
-	 *
-	 * @param rf2Packages Collection of ModuleMetadata to filter.
-	 * @param mdrs        Collection of RF2Row to help with filtering.
-	 * @return Filtered collection of ModuleMetadata.
-	 */
-	public static Set<ModuleMetadata> filterByReferencedComponentIdOrModuleId(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
-		return filter(rf2Packages, mdrs, PREDICATES.get("1"));
-	}
-
-	/**
 	 * Return a filtered collection of ModuleMetadata. Only entries whose identifyingModuleId matches the referencedComponentId and
 	 * effectiveTime matching the targetEffectiveTime will be returned.
 	 *

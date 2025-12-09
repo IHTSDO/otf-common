@@ -1492,7 +1492,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         Set<RF2Row> mdrs = givenIntMDRS();
 
         // when
-        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, Collections.emptySet(), false);
 
         // then
         assertTrue(dependencies.isEmpty());
@@ -1505,7 +1505,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         Set<RF2Row> mdrs = givenDKMDRS();
 
         // when
-        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, Set.of("554471000005108"), false);
 
         // then
         assertEquals(1, dependencies.size());
@@ -1520,7 +1520,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         Set<RF2Row> mdrs = givenAUMDRS();
 
         // when
-        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, Set.of("32506021000036107", "351000168100"), false);
 
         // then
         assertEquals(1, dependencies.size());
@@ -1539,7 +1539,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
         Set<RF2Row> mdrs = givenSEMDRS();
 
         // when
-        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, false);
+        Set<ModuleMetadata> dependencies = moduleStorageCoordinatorProd.getDependencies(mdrs, Set.of("45991000052106"), false);
 
         // then
         assertEquals(1, dependencies.size());
