@@ -105,25 +105,29 @@ public class RF2Service {
         return rf2Rows;
     }
 
-    public Set<RF2Row> setTransientSourceEffectiveTimes(Set<RF2Row> mdrsRows, Set<String> transientSourceEffectiveTimes) {
-        Set<RF2Row> dup = new HashSet<>();
+	public Set<RF2Row> setTransientEffectiveTimes(Set<RF2Row> mdrsRows, Set<String> transientEffectiveTimes) {
+		Set<RF2Row> duplicates = new HashSet<>();
+		for (RF2Row mdrsRow : mdrsRows) {
+			String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+			String targetEffectiveTime = mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
 
-        for (RF2Row mdrsRow : mdrsRows) {
-            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-            if (sourceEffectiveTime != null && sourceEffectiveTime.isEmpty()) {
-                for (String transientSourceEffectiveTime : transientSourceEffectiveTimes) {
-                    RF2Row copy = new RF2Row(mdrsRow);
-                    copy.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, transientSourceEffectiveTime);
+			for (String transientEffectiveTime : transientEffectiveTimes) {
+				RF2Row copy = new RF2Row(mdrsRow);
 
-                    dup.add(copy);
-                }
-            } else {
-                dup.add(mdrsRow);
-            }
-        }
+				if (sourceEffectiveTime != null && sourceEffectiveTime.isEmpty()) {
+					copy.addRow(RF2Service.SOURCE_EFFECTIVE_TIME, transientEffectiveTime);
+				}
 
-        return dup;
-    }
+				if (targetEffectiveTime != null && targetEffectiveTime.isEmpty()) {
+					copy.addRow(RF2Service.TARGET_EFFECTIVE_TIME, transientEffectiveTime);
+				}
+
+				duplicates.add(copy);
+			}
+		}
+
+		return duplicates;
+	}
 
     @SuppressWarnings("java:S5042")
     private List<List<String>> getRows(File file, boolean rf2DeltaOnly, String fileNamePattern, Integer... columnIndices) {

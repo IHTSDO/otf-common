@@ -607,21 +607,21 @@ public class ModuleStorageCoordinator {
      * @param includeFile   Whether to include RF2 file.
      * @return Composition for given MDRS entries.
      */
-    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> transientSourceEffectiveTimes) {
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> transientEffectiveTimes) {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
         }
 
-        // Replace entries blank sourceEffectiveTimes with transientSourceEffectiveTimes
-        if (transientSourceEffectiveTimes != null && !transientSourceEffectiveTimes.isEmpty()) {
-            mdrsRows = rf2Service.setTransientSourceEffectiveTimes(mdrsRows, transientSourceEffectiveTimes);
-        }
+		// Replace blank sourceEffectiveTimes and targetEffectiveTimes with transientEffectiveTimes
+		if (transientEffectiveTimes != null && !transientEffectiveTimes.isEmpty()) {
+			mdrsRows = rf2Service.setTransientEffectiveTimes(mdrsRows, transientEffectiveTimes);
+		}
 
         // Collect available rf2 packages
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those not specified in MDRS
-        rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows, transientSourceEffectiveTimes);
+        rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows, transientEffectiveTimes);
 
         // Group by CodeSystem
         Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);

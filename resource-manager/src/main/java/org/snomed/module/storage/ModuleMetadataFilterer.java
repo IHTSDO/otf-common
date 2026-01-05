@@ -181,7 +181,7 @@ public class ModuleMetadataFilterer {
 			}
 		}
 
-		mdrs = RF2_SERVICE.setTransientSourceEffectiveTimes(mdrs, transientSourceEffectiveTimes);
+		mdrs = RF2_SERVICE.setTransientEffectiveTimes(mdrs, transientSourceEffectiveTimes);
 		return filter(rf2Packages, mdrs, PREDICATES.get("3"));
 	}
 }
