@@ -172,7 +172,7 @@ public abstract class Script implements RF2Constants {
 	
 	public void incrementSummaryInformation(String key, int incrementAmount) {
 		summaryDetails.computeIfAbsent(key, k -> 0);
-		int newValue = (Integer) summaryDetails.get(key) + incrementAmount;
+		Integer newValue = ((int)summaryDetails.get(key) + incrementAmount);
 		summaryDetails.put(key, newValue);
 	}
 	

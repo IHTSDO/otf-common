@@ -1,9 +1,6 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.google.gson.annotations.Expose;
-import org.ihtsdo.otf.exception.TermServerScriptException;
-
-import java.util.*;
 
 public class TaskUser {
 

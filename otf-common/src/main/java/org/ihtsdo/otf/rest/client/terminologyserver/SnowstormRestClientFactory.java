@@ -1,7 +1,5 @@
 package org.ihtsdo.otf.rest.client.terminologyserver;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.ihtsdo.sso.integration.SecurityUtil;

@@ -49,8 +49,8 @@ public class Classification {
 		return status;
 	}
 
-	//TODO We can probably calculate this from the id, rather than recover it
-	transient private String location;
+	//We can probably calculate this from the id, rather than recover it
+	private String location;
 
 	public String getErrorMessage() {
 		return errorMessage;

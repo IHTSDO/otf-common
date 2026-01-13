@@ -60,16 +60,13 @@ public class Task implements Comparable<Task>, TermServerLocation {
 		uniqueTaskId = ++taskSequence;
 	}
 
-	@Override
-	public Task clone() {
-		Task clone = new Task(null, null, null);
-		clone.setProjectKey(projectKey);
-		clone.setBranchPath(branchPath);
-		clone.setSummary(summary);
-		clone.setDescription(description);
-		clone.setStatus(status);
-		clone.assignee = assignee;
-		return clone;
+	public Task(Task cloneMe) {
+		this.projectKey = cloneMe.projectKey;
+		this.branchPath = cloneMe.branchPath;
+		this.summary = cloneMe.summary;
+		this.description = cloneMe.description;
+		this.status = cloneMe.status;
+		this.assignee = cloneMe.assignee; // shallow copy, intentional
 	}
 
 	public void setDescription(String description) {

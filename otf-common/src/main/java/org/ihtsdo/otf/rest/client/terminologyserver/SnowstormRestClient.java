@@ -39,7 +39,9 @@ public class SnowstormRestClient {
 	private static final String COOKIE = "Cookie";
 	public static final String ITEMS = "items";
 	public static final String LOCK = "lock";
+	public static final String SOURCE = "source";
 	public static final String STATUS = "status";
+	public static final String TARGET = "target";
 	public static final String TRANSIENT_ET = "transientEffectiveTime";
 	public static final String URI_CURLIES = "URI {}";
 	public static final String URL_SEPARATOR = "/";
@@ -152,7 +154,10 @@ public class SnowstormRestClient {
 	}
 
 	public List<CodeSystem> getCodeSystems() {
-		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
+		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(
+				urlHelper.getCodeSystemsUrl(),
+				HttpMethod.GET, HttpEntity.EMPTY,
+				CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
 		return page.getItems();
 	}
@@ -577,8 +582,8 @@ public class SnowstormRestClient {
 
 	public String startMerge(String sourceBranchPath, String targetBranchPath, String mergeReviewId) throws RestClientException {
 		Map<String, String> request = new HashMap<>();
-		request.put("source", sourceBranchPath);
-		request.put("target", targetBranchPath);
+		request.put(SOURCE, sourceBranchPath);
+		request.put(TARGET, targetBranchPath);
 		if (!Strings.isNullOrEmpty(mergeReviewId)) {
 			request.put("reviewId", mergeReviewId);
 		}
@@ -600,8 +605,8 @@ public class SnowstormRestClient {
 
 	public String createBranchMergeReviews(String sourceBranchPath, String targetBranchPath) throws RestClientException{
 		Map<String, String> request = new HashMap<>();
-		request.put("source", sourceBranchPath);
-		request.put("target", targetBranchPath);
+		request.put(SOURCE, sourceBranchPath);
+		request.put(TARGET, targetBranchPath);
 		return createEntity(urlHelper.getMergeReviewsUri(), request);
 	}
 
@@ -909,8 +914,8 @@ public class SnowstormRestClient {
 	private void doMerge(String sourcePath, String targetPath) throws RestClientException {
 		try {
 			Map<String, String> params = new HashMap<>();
-			params.put("source", sourcePath);
-			params.put("target", targetPath);
+			params.put(SOURCE, sourcePath);
+			params.put(TARGET, targetPath);
 
 			HttpEntity<Map<String, String>> request = new HttpEntity<>(params);
 			restTemplate.put(urlHelper.getMergesUrl(), request);
