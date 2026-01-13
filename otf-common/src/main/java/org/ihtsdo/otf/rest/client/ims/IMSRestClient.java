@@ -56,7 +56,7 @@ public class IMSRestClient {
 		headers.add("Accept", "application/json, text/plain, */*");
 
 		HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(bodyMap), headers);
-		ResponseEntity<String> model = restTemplate.exchange(imsUrl + "/authenticate", HttpMethod.POST, request, String.class);
+		ResponseEntity<Void> model = restTemplate.exchange(imsUrl + "/authenticate", HttpMethod.POST, request, Void.class);
 		return getAuthenticationToken(model.getHeaders());
 	}
 

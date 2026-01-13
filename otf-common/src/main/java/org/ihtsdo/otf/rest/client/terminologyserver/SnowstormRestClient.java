@@ -43,6 +43,7 @@ public class SnowstormRestClient {
 	public static final String TRANSIENT_ET = "transientEffectiveTime";
 	public static final String URI_CURLIES = "URI {}";
 	public static final String URL_SEPARATOR = "/";
+	public static final String US_EN_LANG_REFSET = "900000000000509007";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -151,7 +152,7 @@ public class SnowstormRestClient {
 	}
 
 	public List<CodeSystem> getCodeSystems() {
-		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
+		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemsUrl(), HttpMethod.GET, new HttpEntity<>(null), CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
 		return page.getItems();
 	}
@@ -589,8 +590,23 @@ public class SnowstormRestClient {
 		return getEntity(urlHelper.getMergeUri(mergeId), Merge.class);
 	}
 
-	public ClassificationResults startClassification(String branchPath) throws RestClientException {
-		ClassificationResults results = new ClassificationResults();
+	public MergeReviewsResults getMergeReviewsResult(String mergeId) throws RestClientException {
+		return getEntity(urlHelper.getMergeReviewsUri(mergeId), MergeReviewsResults.class);
+	}
+
+	public Set getMergeReviewsDetails(String mergeId) throws RestClientException{
+		return getEntity(urlHelper.getMergeReviewsDetailsUri(mergeId), Set.class);
+	}
+
+	public String createBranchMergeReviews(String sourceBranchPath, String targetBranchPath) throws RestClientException{
+		Map<String, String> request = new HashMap<>();
+		request.put("source", sourceBranchPath);
+		request.put("target", targetBranchPath);
+		return createEntity(urlHelper.getMergeReviewsUri(), request);
+	}
+
+	public Classification startClassification(String branchPath) throws RestClientException {
+		Classification classification = new Classification();
 		try {
 			Map<String, Object> requestBody = new HashMap<>();
 			requestBody.put("reasonerId", reasonerId);
@@ -610,14 +626,13 @@ public class SnowstormRestClient {
 								+ " returned httpStatus '" + response.getStatusCode() + "'.");
 			}
 
-			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
-			results.setClassificationLocation(classificationLocation);
-
+			classification.setId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
+			classification.setLocation(classificationLocation);
 		} catch (Exception e) {
 			throw new RestClientException("Create classification failed.", e);
 		}
 
-		return results;
+		return classification;
 	}
 
 
@@ -630,56 +645,62 @@ public class SnowstormRestClient {
 	 * @throws RestClientException
 	 * @throws InterruptedException
 	 */
-	public ClassificationResults classify(String branchPath) throws RestClientException, InterruptedException {
-
-		ClassificationResults results = startClassification(branchPath);
-		results = waitForClassificationToComplete(results);
-		return results;
+	public Classification classify(String branchPath) throws RestClientException, InterruptedException {
+		Classification classification = startClassification(branchPath);
+		return waitForClassificationToComplete(classification);
 	}
-	
-	public ClassificationResults waitForClassificationToComplete(ClassificationResults results) throws RestClientException, InterruptedException {
-		String classificationLocation = results.getClassificationLocation();
+
+	public Classification waitForClassificationToComplete(Classification classification) throws RestClientException, InterruptedException {
+		String classificationLocation = classification.getLocation();
 		LOGGER.info("Classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
-		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
-		if (classifierCompleted) {
-			// Fetch classification to get result summary flags.
-			ResponseEntity<ClassificationResults> exchange = restTemplate.exchange(
-					RequestEntity.get(URI.create(classificationLocation)).header(COOKIE, singleSignOnCookie).build(), ClassificationResults.class);
-			if (!exchange.getStatusCode().is2xxSuccessful()) {
+
+		boolean classifierCompleted = waitForStatus(
+				classificationLocation,
+				getTimeoutDate(classificationTimeoutMinutes),
+				ProcessingStatus.COMPLETED,
+				"classifier"
+		);
+
+		if (!classifierCompleted) {
+			throw new RestClientException("Classification failed, see logs for details.");
+		}
+
+		try {
+			Classification completedClassification = restTemplate.getForObject(
+					URI.create(classificationLocation),
+					Classification.class
+			);
+			if (completedClassification == null) {
 				throw new RestClientException("Failed to fetch completed classification.");
 			}
-			ClassificationResults classificationResults = exchange.getBody();
-			classificationResults.setClassificationLocation(classificationLocation);
-			return classificationResults;
-		} else {
-			throw new RestClientException("Classification failed, see logs for details.");
+			return completedClassification;
+		} catch (RestClientException e) {
+			throw new RestClientException("Failed to fetch completed classification.", e);
 		}
 	}
 
-	public String getLatestClassificationOnBranch(String branchPath) throws RestClientException {
-		Map<String, Object> obj = getLatestClassificationObjectOnBranch(branchPath);
-		return (obj != null) ? gson.toJson(obj) : null;
+	public Classification getLatestClassificationOnBranch(String branchPath) throws RestClientException {
+		return getLatestClassificationObjectOnBranch(branchPath); // now returns JsonObject
 	}
 
 	public boolean isClassificationInProgressOnBranch(String branchPath) throws RestClientException {
-		Map<String, Object> classification = getLatestClassificationObjectOnBranch(branchPath);
+		Classification classification = getLatestClassificationObjectOnBranch(branchPath);
 		if (classification != null) {
-			Object statusObj = classification.get(STATUS);
-			if (statusObj instanceof String status) {
-				return "SCHEDULED".equals(status) || "RUNNING".equals(status);
-			}
+			ClassificationStatus status = classification.getStatus();
+			return ClassificationStatus.SCHEDULED.equals(status) || ClassificationStatus.RUNNING.equals(status);
 		}
 		return false;
 	}
 
-	private Map<String, Object> getLatestClassificationObjectOnBranch(String branchPath) throws RestClientException {
+
+	private Classification getLatestClassificationObjectOnBranch(String branchPath) throws RestClientException {
 		String classificationsUrl = urlHelper.getClassificationsUrl(branchPath);
 		try {
-			List<Map<String, Object>> items = getItems(classificationsUrl);
+			List<Classification> items = getItems(classificationsUrl);
 			if (items != null && !items.isEmpty()) {
 				return items.get(items.size() - 1);
 			}
-			return new HashMap<>();
+			return null;
 		} catch (Exception e) {
 			throw new RestClientException("Failed to retrieve list of classifications.", e);
 		}
@@ -711,13 +732,18 @@ public class SnowstormRestClient {
 		}
 	}
 
-	private List<Map<String, Object>> getItems(String url) throws RestClientException {
+	private List<Classification> getItems(String url) throws RestClientException {
 		try {
-			Map<String, Object> responseJson = restTemplate.getForObject(url, Map.class);
-			if (responseJson != null && responseJson.containsKey(ITEMS)) {
-				@SuppressWarnings("unchecked")
-				List<Map<String, Object>> items = (List<Map<String, Object>>) responseJson.get(ITEMS);
-				return items;
+			ResponseEntity<ItemsPage<Classification>> responseEntity = restTemplate.exchange(
+					url,
+					HttpMethod.GET,
+					null,
+					new ParameterizedTypeReference<>() {}
+			);
+
+			ItemsPage<Classification> page = responseEntity.getBody();
+			if (page != null && page.getItems() != null) {
+				return page.getItems();
 			} else {
 				LOGGER.debug("No items property of resource at '{}'", url);
 				return Collections.emptyList();
@@ -726,6 +752,7 @@ public class SnowstormRestClient {
 			throw new RestClientException("Failed to retrieve items from " + url, e);
 		}
 	}
+
 
 	public File exportTask(String projectName, String taskName, ExportType exportType) throws Exception {
 		String branchPath = urlHelper.getBranchPath(projectName, taskName);

@@ -2,35 +2,55 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import com.google.gson.annotations.Expose;
 
+import java.util.Date;
+
 public class Classification {
-	
+
 	@Expose
 	private String id;
-	
+
 	@Expose
-	private String status;
+	private String path;
+
+	@Expose
+	private ClassificationStatus status;
 
 	@Expose
 	private String errorMessage;
-	
+
 	@Expose
-	private ClassificationResults results;
-	
-	public Classification (ClassificationResults results) {
-		this.results = results;
-	}
-	
-	public Classification(String errorMsg) {
-		ClassificationResults runObj = new ClassificationResults();
-		runObj.setStatus(ClassificationStatus.FAILED);
-		results = runObj;
-		errorMessage = errorMsg;
-	}
+	private String reasonerId;
 
-	public String getStatus() {
+	@Expose
+	private String userId;
+
+	@Expose
+	private Date creationDate;
+
+	@Expose
+	private Date completionDate;
+
+	@Expose
+	private Date lastCommitDate;
+
+	@Expose
+	private Date saveDate;
+
+	@Expose
+	private Boolean inferredRelationshipChangesFound;
+
+	@Expose
+	private Boolean redundantStatedRelationshipsFound;
+
+	@Expose
+	private Boolean equivalentConceptsFound;
+
+	public ClassificationStatus getStatus() {
 		return status;
-
 	}
+
+	//TODO We can probably calculate this from the id, rather than recover it
+	transient private String location;
 
 	public String getErrorMessage() {
 		return errorMessage;
@@ -44,12 +64,12 @@ public class Classification {
 		return id;
 	}
 
-	public ClassificationResults getResults() {
-		return results;
+	public boolean hasInferredRelationshipChangesFound() {
+		return inferredRelationshipChangesFound;
 	}
 
-	public void setResults(ClassificationResults results) {
-		this.results = results;
+	public boolean hasEquivalentConceptsFound() {
+		return equivalentConceptsFound;
 	}
 	
 	@Override
@@ -65,5 +85,20 @@ public class Classification {
 		}
 		return str;
 	}
-	
+
+	public void setId(String uuid) {
+		this.id = uuid;
+	}
+
+	public void setStatus(ClassificationStatus status) {
+		this.status = status;
+	}
+
+	public String getLocation() {
+		return location;
+	}
+
+	public void setLocation(String location) {
+		this.location = location;
+	}
 }

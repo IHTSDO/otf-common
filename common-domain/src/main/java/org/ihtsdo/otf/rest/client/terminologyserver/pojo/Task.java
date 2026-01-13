@@ -1,19 +1,31 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
+import org.ihtsdo.otf.utils.StringUtils;
 
-public class Task {
-	
+public class Task implements Comparable<Task>, TermServerLocation {
+
+	private static final Pattern JIRA_KEY_PATTERN = Pattern.compile("^([A-Z0-9]+)-(\\d+)$");
+
 	private static int taskSequence = 0;
 	
 	int uniqueTaskId;
-	
+
+	public enum TaskStatus {NEW, AUTO_CONFLICT, AUTO_QUEUED, PROMOTED, IN_PROGRESS, UNKNOWN, COMPLETED, AUTO_PROMOTING, AUTO_CLASSIFYING, AUTO_REBASING, IN_REVIEW, DELETED, REVIEW_COMPLETED}
+
+	public enum TaskType { AUTHORING, CRS }
+
 	@Expose
 	String key;
+
+	@Expose
+	String projectKey;
 	
 	@Expose
 	String branchPath;
@@ -22,40 +34,68 @@ public class Task {
 	String summary;
 
 	@Expose
-	String status;
+	TaskStatus status;
 	
 	@Expose
-	Map<String, String> assignee = new HashMap<>();
+	TaskUser assignee;
+
+	@Expose
+	String description;
+
+	@Expose
+	TaskType taskType;
 
 	IBatch batch;
 	List<Component> components = new ArrayList<>();
-	String author = null;
 	String reviewer = null;
 	String taskInfo;
 
 	boolean preExistingTask = false;
 
 	/* Call IBatch.addNewTask instead of creating a Task directly */
-	public Task(IBatch batch, String author, String reviewer) {
+	public Task(IBatch batch, String authorUserName, String reviewer) {
 		this.batch = batch;
-		this.author = author;
+		this.assignee = new TaskUser(authorUserName);
 		this.reviewer = reviewer;
 		uniqueTaskId = ++taskSequence;
 	}
-	
+
+	@Override
+	public Task clone() {
+		Task clone = new Task(null, null, null);
+		clone.setProjectKey(projectKey);
+		clone.setBranchPath(branchPath);
+		clone.setSummary(summary);
+		clone.setDescription(description);
+		clone.setStatus(status);
+		clone.assignee = assignee;
+		return clone;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
 	public String getSummary() {
-		if (batch != null) {
+		if (summary == null && batch != null) {
 			return batch.getTaskName(this);
 		} else {
 			return summary;
 		}
+	}
+
+	public int getUniqueTaskId() {
+		return uniqueTaskId;
 	}
 	
 	public void setSummary(String summary) {
 		this.summary = summary;
 	}
 
-	public String getDescriptionHTML() {
+	public String getDescription() {
+		if (!StringUtils.isEmpty(description)) {
+			return description;
+		}
 		StringBuilder html = new StringBuilder();
 		if (taskInfo != null) {
 			html.append("<h3>Task grouping: ").append(taskInfo).append("</h3>\n");
@@ -92,22 +132,15 @@ public class Task {
 	}
 	public String toString() {
 		if (key != null) {
-			return key + ": " + getSummary();
+			return key + " [" + getStatus() + " for " + getAssignedAuthor() + "]: " + getSummary();
 		}
 		return getSummary();
 	}
-	public String toQuotedList() {
-		StringBuilder quotedList = new StringBuilder(components.size()*10).append("[");
-		boolean first = true;
-		for (Component c : components) {
-			if (!first) {
-				quotedList.append(", ");
-			}
-			quotedList.append("\"").append(c.getId()).append("\"");
-			first = false;
-		}
-		quotedList.append("]");
-		return quotedList.toString();
+
+	public List<String> getIds() {
+		return components.stream()
+				.map(Component::getId)
+				.toList();
 	}
 	
 	public void addAll(Collection<Component> components) {
@@ -139,11 +172,11 @@ public class Task {
 	}
 	
 	public String getAssignedAuthor() {
-		return author;
+		return assignee.getUsername();
 	}
 
 	public void setAssignedAuthor(String assignedAuthor) {
-		this.author = assignedAuthor;
+		this.assignee.setUsername(assignedAuthor);
 	}
 
 	public String getReviewer() {
@@ -183,12 +216,16 @@ public class Task {
 		return uniqueTaskId;
 	}
 
-	public Map<String, String> getAssignee() {
+	public TaskUser getAssignee() {
 		return assignee;
 	}
 
-	public void setAssignee(Map<String, String> assignee) {
-		this.assignee = assignee;
+	public void setAssignee(String username) {
+		this.assignee.setUsername(username);
+	}
+
+	public boolean hasAssignee(String username) {
+		return assignee.getUsername().equals(username);
 	}
 	
 	public boolean isPreExistingTask() {
@@ -203,11 +240,49 @@ public class Task {
 		return taskSequence + 1;
 	}
 
-	public String getStatus() {
+	public TaskStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
+	public void setStatus(TaskStatus status) {
 		this.status = status;
+	}
+
+	@Override
+	public int compareTo(Task other) {
+		if (other == null) {
+			return 1;
+		}
+
+		Matcher m1 = JIRA_KEY_PATTERN.matcher(this.key);
+		Matcher m2 = JIRA_KEY_PATTERN.matcher(other.key);
+
+		if (m1.matches() && m2.matches()) {
+			int prefixCompare = m1.group(1).compareTo(m2.group(1));
+			if (prefixCompare != 0) {
+				return prefixCompare;
+			}
+			return Integer.compare(
+					Integer.parseInt(m1.group(2)),
+					Integer.parseInt(m2.group(2))
+			);
+		}
+		return this.key.compareTo(other.key);
+	}
+
+	public String getProjectKey() {
+		return projectKey;
+	}
+
+	public void setProjectKey(String projectKey) {
+		this.projectKey = projectKey;
+	}
+
+	public TaskType getTaskType() {
+		return taskType;
+	}
+
+	public void setTaskType(TaskType taskType) {
+		this.taskType = taskType;
 	}
 }

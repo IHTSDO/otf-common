@@ -37,11 +37,12 @@ public class AuthoringServicesClient {
 	
 	protected static Gson gson;
 	static {
-		GsonBuilder gsonBuilder = new GsonBuilder();
-		gsonBuilder.setPrettyPrinting();
-		gsonBuilder.disableHtmlEscaping();
-		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
-		gson = gsonBuilder.create();
+		gson = new GsonBuilder()
+			.setPrettyPrinting()
+			.disableHtmlEscaping()
+			.excludeFieldsWithoutExposeAnnotation()
+			.registerTypeAdapter(Task.TaskStatus.class, new TaskStatusDeserializer())
+			.create();
 	}
 
 	public AuthoringServicesClient(String serverUrl, String authToken) {
@@ -67,19 +68,24 @@ public class AuthoringServicesClient {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 	}
 
-	public String createTask(String projectKey, String summary, String description) {
+	public Task createTask(String projectKey, String summary, String description) {
 		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + "/tasks";
 		JsonObject requestJson = new JsonObject();
 		requestJson.addProperty("summary", summary);
 		requestJson.addProperty("description", description);
 		HttpEntity<Object> requestEntity = new HttpEntity<>(requestJson, headers);
-		Task task = restTemplate.postForObject(endPoint, requestEntity, Task.class);
-		return task.getKey();
+		return restTemplate.postForObject(endPoint, requestEntity, Task.class);
 	}
 
-	public void setEditPanelUIState(String project, String taskKey, String quotedList) {
+	public Task createTask(Task task) {
+		String endPoint = serverUrl + API_ROOT + PROJECTS + task.getProjectKey() + "/tasks";
+		HttpEntity<Task> requestEntity = new HttpEntity<>(task, headers);
+		return restTemplate.postForObject(endPoint, requestEntity, Task.class);
+	}
+
+	public void setEditPanelUIState(String project, String taskKey, List<String> conceptIds) {
 		String endPoint = serverUrl + API_ROOT + PROJECTS + project + TASKS + taskKey + "/ui-state/edit-panel";
-		HttpEntity<String> request = new HttpEntity<>(quotedList, headers);
+		HttpEntity<List<String>> request = new HttpEntity<>(conceptIds, headers);
 		restTemplate.postForObject(endPoint, request, Void.class);
 	}
 
@@ -121,21 +127,17 @@ public class AuthoringServicesClient {
 		return taskKey;
 	}
 
-	public void updateTask(String project, Task task) {
-		String endPoint = serverUrl + API_ROOT + PROJECTS + project + TASKS + task.getKey();
-		HttpEntity<Task> requestEntity = new HttpEntity<>(task, headers);
-		restTemplate.put(endPoint, requestEntity);
+	public void updateTask(Task task) {
+		String endPoint = serverUrl + API_ROOT + PROJECTS + task.getProjectKey() + TASKS + task.getKey();
+		restTemplate.put(endPoint, new HttpEntity<>(task, headers));
 	}
 
-	public void deleteTask(String project, String taskKey, boolean optional) throws RestClientException {
-		String endPoint = serverUrl + API_ROOT + PROJECTS + project + TASKS + taskKey;
+	public void deleteTask(Task task, boolean optional) throws RestClientException {
 		try {
-			Map<String, String> body = new HashMap<>();
-			body.put("status", "DELETED");
-			HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
-			restTemplate.put(endPoint, request);
+			task.setStatus(Task.TaskStatus.DELETED);
+			updateTask(task);
 		} catch (Exception e) {
-			String errStr = "Failed to delete task - " + taskKey;
+			String errStr = "Failed to delete task - " + task.getKey();
 			if (optional) {
 				LOGGER.info("{}: {} - marked as optional so continuing...", errStr, e.getMessage());
 			} else {
@@ -173,11 +175,7 @@ public class AuthoringServicesClient {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + API_ROOT + PROJECTS + projectStr + TASKS + taskKey;
 			json = restTemplate.getForObject(endPoint, String.class);
-			Task taskObj = gson.fromJson(json, Task.class);
-			if (taskObj.getAssignedAuthor() == null && taskObj.getAssignee() != null) {
-				taskObj.setAssignedAuthor(taskObj.getAssignee().get("username"));
-			}
-			return taskObj;
+			return gson.fromJson(json, Task.class);
 		} catch (Exception e) {
 			throw new RestClientException("Unable to recover task '" + taskKey + "' instead received: " + json, e);
 		}
@@ -215,6 +213,10 @@ public class AuthoringServicesClient {
 	}
 
 	public List<Task> listTasksOnProject(String projectKey) {
+		return listTasksOnProject(projectKey, true);
+	}
+
+	public List<Task> listTasksOnProject(String projectKey, boolean sortAscending) {
 		String baseUrl = serverUrl + API_ROOT;
 		URI uri = UriComponentsBuilder
 				.fromUriString(baseUrl + "/projects/tasks/search")
@@ -226,7 +228,29 @@ public class AuthoringServicesClient {
 				.build()
 				.toUri();ParameterizedTypeReference<List<Task>> type = new ParameterizedTypeReference<>(){};
 		LOGGER.info("Recovering list of active tasks from {}", uri);
-		return restTemplate.exchange(uri, HttpMethod.GET, null, type).getBody();
+		List<Task> tasks = restTemplate
+				.exchange(uri, HttpMethod.GET, null, type)
+				.getBody();
+
+		if (tasks == null || tasks.size() < 2) {
+			return tasks;
+		}
+
+		tasks.sort(sortAscending
+				? Comparator.naturalOrder()
+				: Comparator.reverseOrder());
+
+		return tasks;
 	}
 
+	public void saveUIState(String uiPanelId, List<String> savedConceptIds) {
+		String url = serverUrl + API_ROOT + "/ui-state/" + uiPanelId;
+		HttpEntity<List<String>> request = new HttpEntity<>(savedConceptIds, headers);
+		restTemplate.exchange(
+				url,
+				HttpMethod.POST,
+				request,
+				Void.class
+		);
+	}
 }

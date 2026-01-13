@@ -12,7 +12,6 @@ public class SnowstormRestClientFactory {
 	private final String snowstormUrl;
 	private final String reasonerId;
 	private final Cache<String, SnowstormRestClient> clientCache;
-	private final ObjectMapper objectMapper;
 
 	public SnowstormRestClientFactory(String snowstormUrl, String reasonerId) {
 		this.snowstormUrl = snowstormUrl;
@@ -20,7 +19,6 @@ public class SnowstormRestClientFactory {
 		clientCache = CacheBuilder.newBuilder()
 				.expireAfterAccess(5, TimeUnit.MINUTES)
 				.build();
-		objectMapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
 	}
 
 	/**
