@@ -746,7 +746,7 @@ public class ModuleStorageCoordinator {
 
                 // Has readDirectory been overwritten by a previous readDirectory?
                 List<ModuleMetadata> moduleMetadatas = releases.getOrDefault(codeSystem, new ArrayList<>());
-                boolean overwritten = moduleMetadatas.stream().anyMatch(metadata -> Objects.equals(metadata.getEffectiveTimeString(), effectiveTime));
+                boolean overwritten = moduleMetadatas.stream().anyMatch(metadata -> Objects.equals(metadata.getEffectiveTimeString(), effectiveTime) && Objects.equals(metadata.getIdentifyingModuleId(), moduleId));
                 if (overwritten) {
                     continue;
                 }
