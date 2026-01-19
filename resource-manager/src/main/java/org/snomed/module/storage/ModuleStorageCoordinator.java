@@ -582,11 +582,11 @@ public class ModuleStorageCoordinator {
 		// Keep those with matching referencedComponentId & targetEffectiveTime
 		rf2Packages = keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime(rf2Packages, mdrsRows);
 
-        // Group by CodeSystem
-        Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
+        // Group by IdentifyingModule
+        Map<String, Set<ModuleMetadata>> byIdentifyingModule = sortByIdentifyingModule(rf2Packages);
 
         // Flatten into single collection with latest or specified version
-        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
+        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byIdentifyingModule);
 
         if (!includeFile) {
             return moduleMetadata;
@@ -623,11 +623,11 @@ public class ModuleStorageCoordinator {
         // Remove those not specified in MDRS
         rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows, transientEffectiveTimes);
 
-        // Group by CodeSystem
-        Map<String, Set<ModuleMetadata>> byCodeSystem = sortByCodeSystem(rf2Packages);
+        // Group by IdentifyingModule
+        Map<String, Set<ModuleMetadata>> byIdentifyingModule = sortByIdentifyingModule(rf2Packages);
 
         // Flatten into single collection with latest or specified version
-        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byCodeSystem);
+        Set<ModuleMetadata> moduleMetadata = flattenByLatest(byIdentifyingModule);
 
         if (!includeFile) {
             return moduleMetadata;
@@ -665,19 +665,19 @@ public class ModuleStorageCoordinator {
         return dependencies;
     }
 
-    private Map<String, Set<ModuleMetadata>> sortByCodeSystem(Set<ModuleMetadata> rf2Packages) {
-        Map<String, Set<ModuleMetadata>> versionsByCodeSystem = new HashMap<>();
+    private Map<String, Set<ModuleMetadata>> sortByIdentifyingModule(Set<ModuleMetadata> rf2Packages) {
+        Map<String, Set<ModuleMetadata>> versionsByIdentifyingModule = new HashMap<>();
         for (ModuleMetadata rf2Package : rf2Packages) {
-            String key = rf2Package.getCodeSystemShortName();
-            Set<ModuleMetadata> value = versionsByCodeSystem.get(key);
+            String key = rf2Package.getIdentifyingModuleId();
+            Set<ModuleMetadata> value = versionsByIdentifyingModule.get(key);
             if (value == null) {
                 value = new TreeSet<>((o1, o2) -> o2.getEffectiveTime().compareTo(o1.getEffectiveTime()));
             }
             value.add(rf2Package);
-            versionsByCodeSystem.put(key, value);
+            versionsByIdentifyingModule.put(key, value);
         }
 
-        return versionsByCodeSystem;
+        return versionsByIdentifyingModule;
     }
 
     private void addFile(Set<ModuleMetadata> moduleMetadata) {
