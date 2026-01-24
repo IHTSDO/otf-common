@@ -340,9 +340,9 @@ public class RefsetMember extends Component implements RF2Constants {
 		} else {
 			clone.referencedComponentId = newComponentSctId;
 		}
-		clone.isDirty = true; //New components need to be written to any delta
 		clone.released = this.released;
 		clone.setAdditionalFields(new HashMap<>(this.additionalFields));
+		//Don't set dirty here.  A clone doesn't necessarily feature changes from the original
 		return clone;
 	}
 

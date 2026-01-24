@@ -33,7 +33,7 @@ public class MdrsEntry extends RefsetMember {
 		clone.referencedComponentId = this.referencedComponentId;
 		clone.setTargetEffectiveTime(this.getEffectiveTime());
 		clone.setSourceEffectiveTime(this.getSourceEffectiveTime());
-		clone.isDirty = true; //New components need to be written to any delta
+		clone.setDirty(); //New components need to be written to any delta
 		clone.released = this.released;
 		return clone;
 	}

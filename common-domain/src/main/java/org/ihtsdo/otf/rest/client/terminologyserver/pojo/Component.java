@@ -109,7 +109,7 @@ public abstract class Component implements RF2Constants {
 	
 	public abstract String[] toRF2() throws ScriptException;
 	
-	protected boolean isDirty = false;
+	private boolean isDirty = false;
 	
 	public void addIssues(List<String> issues) {
 		for (String issue : issues) {
