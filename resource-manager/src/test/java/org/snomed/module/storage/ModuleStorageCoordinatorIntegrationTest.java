@@ -8,6 +8,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1601,13 +1603,13 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     @Test
     void getComposition_ShouldReturnExpected_WhenGivenUpperBoundary() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given
-        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip", "INT-20250101"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip", "INT-20250201"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip", "INT-20250301"));
 
-        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip", "DK-20250131"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip", "DK-20250228"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip", "DK-20250331"));
 
         Set<RF2Row> mdrs = Set.of(
                 new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250101")
@@ -1629,13 +1631,13 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     @Test
     void getComposition_ShouldReturnExpected_WhenGivenFutureVersion() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given
-        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip", "INT-20250101"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip", "INT-20250201"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip", "INT-20250301"));
 
-        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip", "DK-20250131"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip", "DK-20250228"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip", "DK-20250331"));
 
         // 20250202  has been versioned but not technically available yet as it's unpublished
         Set<RF2Row> mdrs = Set.of(
@@ -1655,13 +1657,13 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     @Test
     void getComposition_ShouldReturnExpected_WhenGivenNoUpperBoundary() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given
-        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip", "INT-20250101"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip", "INT-20250201"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip", "INT-20250301"));
 
-        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip", "DK-20250131"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip", "DK-20250228"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip", "DK-20250331"));
 
         Set<RF2Row> mdrs = Set.of(
                 new RF2Row().addRow(3, "554471000005108").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20250101")
@@ -1678,49 +1680,49 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
 
     private void givenProdReleasePackages() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // INT
-        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250401", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250501", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250601", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250701", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250801", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20250901", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20251001", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20251101", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("INT", "900000000000207008", "20251201", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250101", getLocalFile("test-rf2-edition.zip", "INT-20250101.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250201", getLocalFile("test-rf2-edition.zip", "INT-20250201.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250301", getLocalFile("test-rf2-edition.zip", "INT-20250301.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250401", getLocalFile("test-rf2-edition.zip", "INT-20250401.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250501", getLocalFile("test-rf2-edition.zip", "INT-20250501.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250601", getLocalFile("test-rf2-edition.zip", "INT-20250601.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250701", getLocalFile("test-rf2-edition.zip", "INT-20250701.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250801", getLocalFile("test-rf2-edition.zip", "INT-20250801.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20250901", getLocalFile("test-rf2-edition.zip", "INT-20250901.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251001", getLocalFile("test-rf2-edition.zip", "INT-20251001.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251101", getLocalFile("test-rf2-edition.zip", "INT-20251101.zip"));
+        givenProdReleasePackage("INT", "900000000000207008", "20251201", getLocalFile("test-rf2-edition.zip", "INT-20251201.zip"));
 
         // DK
-        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250430", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250531", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250630", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250731", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250831", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20250930", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20251031", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20251130", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("DK", "554471000005108", "20251231", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250131", getLocalFile("test-rf2-edition.zip", "DK-20250131.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250228", getLocalFile("test-rf2-edition.zip", "DK-20250228.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250331", getLocalFile("test-rf2-edition.zip", "DK-20250331.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250430", getLocalFile("test-rf2-edition.zip", "DK-20250430.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250531", getLocalFile("test-rf2-edition.zip", "DK-20250531.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250630", getLocalFile("test-rf2-edition.zip", "DK-20250630.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250731", getLocalFile("test-rf2-edition.zip", "DK-20250731.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250831", getLocalFile("test-rf2-edition.zip", "DK-20250831.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20250930", getLocalFile("test-rf2-edition.zip", "DK-20250930.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251031", getLocalFile("test-rf2-edition.zip", "DK-20251031.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251130", getLocalFile("test-rf2-edition.zip", "DK-20251130.zip"));
+        givenProdReleasePackage("DK", "554471000005108", "20251231", getLocalFile("test-rf2-edition.zip", "DK-20251231.zip"));
 
         // AU
-        givenProdReleasePackage("AU", "32506021000036107", "20250131", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250228", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250331", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250430", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250531", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250630", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250731", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250831", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20250930", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20251031", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20251130", getLocalFile("test-rf2-edition.zip"));
-        givenProdReleasePackage("AU", "32506021000036107", "20251231", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250131", getLocalFile("test-rf2-edition.zip", "AU-20250131.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250228", getLocalFile("test-rf2-edition.zip", "AU-20250228.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250331", getLocalFile("test-rf2-edition.zip", "AU-20250331.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250430", getLocalFile("test-rf2-edition.zip", "AU-20250430.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250531", getLocalFile("test-rf2-edition.zip", "AU-20250531.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250630", getLocalFile("test-rf2-edition.zip", "AU-20250630.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250731", getLocalFile("test-rf2-edition.zip", "AU-20250731.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250831", getLocalFile("test-rf2-edition.zip", "AU-20250831.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20250930", getLocalFile("test-rf2-edition.zip", "AU-20250930.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251031", getLocalFile("test-rf2-edition.zip", "AU-20251031.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251130", getLocalFile("test-rf2-edition.zip", "AU-20251130.zip"));
+        givenProdReleasePackage("AU", "32506021000036107", "20251231", getLocalFile("test-rf2-edition.zip", "AU-20251231.zip"));
 
         // SE (only published once)
-        givenProdReleasePackage("SE", "45991000052106", "20250131", getLocalFile("test-rf2-edition.zip"));
+        givenProdReleasePackage("SE", "45991000052106", "20250131", getLocalFile("test-rf2-edition.zip", "SE-20250131.zip"));
     }
 
     private Set<RF2Row> givenIntMDRS() {
@@ -1845,6 +1847,25 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
             }
         } catch (Exception e) {
             throw new RuntimeException("Cannot load file: " + fileName, e);
+        }
+    }
+
+    private File getLocalFile(String originalName, String newName) {
+        try {
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource resource = resolver.getResources("classpath*:" + originalName)[0];
+            File tempFile = File.createTempFile(
+                    newName.replace(".zip", ""),
+                    ".zip"
+            );
+
+            try (InputStream in = resource.getInputStream()) {
+                Files.copy(in, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            return tempFile;
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load file: " + originalName, e);
         }
     }
 

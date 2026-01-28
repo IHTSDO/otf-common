@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.ihtsdo.otf.RF2Constants.SCTID_CORE_MODULE;
 import static org.snomed.module.storage.ModuleMetadataFilterer.*;
@@ -637,8 +638,44 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
+    /**
+     * Retrieves dependencies and previous version of packages based on MDRS rows.
+     *
+     * @param mdrsRows          MDRS rows to process.
+     * @param includeFile       Whether to include RF2 file.
+     * @param maxEffectiveTimes Maximum effective times for filtering packages.
+     * @return Set of ModuleMetadata representing dependencies and previous versions.
+     */
+    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) {
+        if (mdrsRows == null || mdrsRows.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        // Collect available rf2 packages
+        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+
+        // Remove those versioned beyond upper boundary (prevents prod being available on dev)
+        rf2Packages = removeVersionedBeyondUpperBoundary(rf2Packages, maxEffectiveTimes);
+
+        // Find dependent packages (determined by referencedComponentId)
+        Set<ModuleMetadata> dependantPackages = getDependantPackages(rf2Packages, mdrsRows);
+
+        // Find own packages (determined by moduleId)
+        Set<ModuleMetadata> ownPackages = getOwnPackages(rf2Packages, mdrsRows, dependantPackages);
+
+        // Join
+        Set<ModuleMetadata> packages = Stream.of(dependantPackages, ownPackages).flatMap(Set::stream).collect(Collectors.toSet());
+
+        if (!includeFile) {
+            return packages;
+        }
+
+        addFile(packages);
+        return packages;
+    }
+
     private Set<ModuleMetadata> getRF2Packages() {
-        Set<ModuleMetadata> rf2Packages = new HashSet<>();
+        Map<String, ModuleMetadata> rf2PackageMap = new HashMap<>();
         for (String readDirectory : readDirectories) {
             Set<String> rf2PackagePaths = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
             if (rf2PackagePaths.isEmpty()) {
@@ -648,12 +685,14 @@ public class ModuleStorageCoordinator {
             for (String rfPackagePath : rf2PackagePaths) {
                 ModuleMetadata moduleMetadata = asModuleMetadata(asMetadataResourcePath(rfPackagePath));
                 if (moduleMetadata != null && !Objects.equals("SIMPLEX", moduleMetadata.getCodeSystemShortName())) {
-                    rf2Packages.add(moduleMetadata);
+                    // Allow dev to overwrite prod
+                    String filename = moduleMetadata.getFilename();
+                    rf2PackageMap.put(filename, moduleMetadata);
                 }
             }
         }
 
-        return rf2Packages;
+        return new HashSet<>(rf2PackageMap.values());
     }
 
     private Set<ModuleMetadata> flattenByLatest(Map<String, Set<ModuleMetadata>> byCodeSystem) {
@@ -1191,5 +1230,69 @@ public class ModuleStorageCoordinator {
         }
 
         rows.removeIf(rf2Row -> diff.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)));
+    }
+
+    private Set<ModuleMetadata> removeVersionedBeyondUpperBoundary(Set<ModuleMetadata> rf2Packages, Set<String> maxEffectiveTimes) {
+
+
+        if (maxEffectiveTimes == null || maxEffectiveTimes.isEmpty()) {
+            return rf2Packages;
+        }
+
+        int upperBoundary = maxEffectiveTimes.stream().mapToInt(Integer::parseInt).max().orElse(Integer.MAX_VALUE);
+        return rf2Packages.stream().filter(pkg -> pkg.getEffectiveTime() <= upperBoundary).collect(Collectors.toSet());
+    }
+
+    private Set<ModuleMetadata> getDependantPackages(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows) {
+        return filterByReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
+    }
+
+    private Map<String, String> getSourceEffectiveTimesByModuleId(Set<RF2Row> mdrsRows) {
+        Map<String, String> sourceEffectiveTimesByModuleId = new HashMap<>();
+        for (RF2Row mdrsRow : mdrsRows) {
+            sourceEffectiveTimesByModuleId.put(mdrsRow.getColumn(RF2Service.MODULE_ID), mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME));
+        }
+        return sourceEffectiveTimesByModuleId;
+    }
+
+    private Set<ModuleMetadata> getOwnPackages(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows, Set<ModuleMetadata> dependantPackages) {
+        // Remove those not specified in MDRS
+        Set<ModuleMetadata> modules = filterByModuleId(rf2Packages, mdrsRows);
+
+        // Remove those previously captured in dependantPackages (e.g. removes International from Edition packages)
+        List<String> dependantCodeSystemsCompositionModuleIds = dependantPackages.stream().map(ModuleMetadata::getCompositionModuleIds).flatMap(List::stream).toList();
+        modules.removeIf(moduleMetadata -> moduleMetadata.getCompositionModuleIds().equals(dependantCodeSystemsCompositionModuleIds));
+
+        // Sort by CodeSystem
+        Map<String, Set<ModuleMetadata>> byIdentifyingModule = sortByIdentifyingModule(modules);
+        // sourceEffectiveTime by moduleId
+        Map<String, String> sourceEffectiveTimesByModuleId = getSourceEffectiveTimesByModuleId(mdrsRows);
+
+        // Determine which package(s) to use
+        Set<ModuleMetadata> ownPackages = new HashSet<>();
+        for (Map.Entry<String, String> entrySet : sourceEffectiveTimesByModuleId.entrySet()) {
+            String moduleId = entrySet.getKey();
+            Set<ModuleMetadata> packages = byIdentifyingModule.get(moduleId);
+            if (packages == null || packages.isEmpty()) {
+                continue;
+            }
+
+            String sourceEffectiveTime = entrySet.getValue();
+            if (sourceEffectiveTime == null || sourceEffectiveTime.isEmpty()) {
+                // Use latest
+                ownPackages.add(packages.iterator().next());
+            } else {
+                // Use previous version (i.e. latest - 1)
+                Integer effectiveTime = Integer.parseInt(sourceEffectiveTime);
+                Set<ModuleMetadata> packagesMinusSourceEffectiveTime =
+                        packages.stream()
+                                .filter(m -> m.getEffectiveTime() < effectiveTime)
+                                .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingInt(ModuleMetadata::getEffectiveTime).reversed())));
+
+                ownPackages.add(packagesMinusSourceEffectiveTime.iterator().next());
+            }
+        }
+
+        return ownPackages;
     }
 }

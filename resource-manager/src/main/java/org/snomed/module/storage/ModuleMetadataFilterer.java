@@ -14,7 +14,8 @@ public class ModuleMetadataFilterer {
 			"1", ModuleMetadataFilterer::identifyingModuleIdEqualsReferencedComponentIdOrModuleId,
 			"2", ModuleMetadataFilterer::identifyingModuleIdEqualsReferencedComponentIdAndEffectiveTimeEqualsTargetEffectiveTime,
 			"3", ModuleMetadataFilterer::filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime,
-			"4", ModuleMetadataFilterer::compositionModulesContainReferencedComponentIdAndEffectiveTimeEqualsTargetEffectiveTime
+			"4", ModuleMetadataFilterer::compositionModulesContainReferencedComponentIdAndEffectiveTimeEqualsTargetEffectiveTime,
+			"5", ModuleMetadataFilterer::filterByModuleId
 	);
 
 	private static final RF2Service RF2_SERVICE = new RF2Service();
@@ -66,6 +67,17 @@ public class ModuleMetadataFilterer {
 	 */
 	public static Set<ModuleMetadata> filterByCompositionModulesContainReferencedComponentIdAndTargetEffectiveTime(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
 		return filter(rf2Packages, mdrs, PREDICATES.get("4"));
+	}
+
+	/**
+	 * Return a filtered collection of ModuleMetadata. Only entries whose identifyingModuleId matches the moduleId will be returned.
+	 *
+	 * @param rf2Packages Collection of ModuleMetadata to filter.
+	 * @param mdrs        Collection of RF2Row to help with filtering.
+	 * @return Filtered collection of ModuleMetadata.
+	 */
+	public static Set<ModuleMetadata> filterByModuleId(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrs) {
+		return filter(rf2Packages, mdrs, PREDICATES.get("5"));
 	}
 
 	/**
@@ -124,10 +136,9 @@ public class ModuleMetadataFilterer {
 		String effectiveTimeString = rf2Package.getEffectiveTimeString();
 		String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
 		String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
-		List<String> compositionModuleIds = rf2Package.getCompositionModuleIds();
 
-		boolean matchReferencedComponentId = Objects.equals(identifyingModuleId, referencedComponentId) || compositionModuleIds.contains(referencedComponentId);
-		boolean matchTargetEffectiveTime = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
+		boolean matchReferencedComponentId = Objects.equals(identifyingModuleId, referencedComponentId);
+		boolean matchTargetEffectiveTime = Objects.equals(effectiveTimeString, targetEffectiveTime);
 
 		return matchReferencedComponentId && matchTargetEffectiveTime;
 	}
@@ -147,6 +158,13 @@ public class ModuleMetadataFilterer {
 		boolean matchTargetEffectiveTime = targetEffectiveTime.isEmpty() || Objects.equals(effectiveTimeString, targetEffectiveTime);
 
 		return (matchModuleId && matchSourceEffectiveTime) || (matchReferencedComponentId && matchTargetEffectiveTime);
+	}
+
+	private static boolean filterByModuleId(ModuleMetadata rf2Package, RF2Row row) {
+		String identifyingModuleId = rf2Package.getIdentifyingModuleId();
+		String moduleId = row.getColumn(RF2Service.MODULE_ID);
+
+		return Objects.equals(identifyingModuleId, moduleId);
 	}
 
 	private static boolean compositionModulesContainReferencedComponentIdAndEffectiveTimeEqualsTargetEffectiveTime(ModuleMetadata rf2Package, RF2Row row) {
