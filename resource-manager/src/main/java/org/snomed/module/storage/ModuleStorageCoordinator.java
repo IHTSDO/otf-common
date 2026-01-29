@@ -655,7 +655,7 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> rf2Packages = getRF2Packages();
 
         // Remove those versioned beyond upper boundary (prevents prod being available on dev)
-        rf2Packages = removeVersionedBeyondUpperBoundary(rf2Packages, maxEffectiveTimes);
+        rf2Packages = removeVersionedBeyondUpperBoundary(mdrsRows, rf2Packages, maxEffectiveTimes);
 
         // Find dependent packages (determined by referencedComponentId)
         Set<ModuleMetadata> dependantPackages = getDependantPackages(rf2Packages, mdrsRows);
@@ -1232,10 +1232,29 @@ public class ModuleStorageCoordinator {
         rows.removeIf(rf2Row -> diff.contains(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)));
     }
 
-    private Set<ModuleMetadata> removeVersionedBeyondUpperBoundary(Set<ModuleMetadata> rf2Packages, Set<String> maxEffectiveTimes) {
+    private Set<ModuleMetadata> removeVersionedBeyondUpperBoundary(Set<RF2Row> mdrsRows, Set<ModuleMetadata> rf2Packages, Set<String> maxEffectiveTimes) {
+        if (maxEffectiveTimes == null) {
+            maxEffectiveTimes = new HashSet<>();
+        }
 
+        for (RF2Row mdrsRow : mdrsRows) {
+            String effectiveTime = mdrsRow.getColumn(RF2Service.EFFECTIVE_TIME);
+            if (effectiveTime != null) {
+                maxEffectiveTimes.add(effectiveTime);
+            }
 
-        if (maxEffectiveTimes == null || maxEffectiveTimes.isEmpty()) {
+            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+            if (sourceEffectiveTime != null) {
+                maxEffectiveTimes.add(sourceEffectiveTime);
+            }
+
+            String targetEffectiveTime = mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+            if (targetEffectiveTime != null) {
+                maxEffectiveTimes.add(targetEffectiveTime);
+            }
+        }
+
+        if (maxEffectiveTimes.isEmpty()) {
             return rf2Packages;
         }
 
