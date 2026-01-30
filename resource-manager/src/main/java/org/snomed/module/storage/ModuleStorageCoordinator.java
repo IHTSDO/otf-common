@@ -7,6 +7,7 @@ import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.utils.FileUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -1239,17 +1240,17 @@ public class ModuleStorageCoordinator {
 
         for (RF2Row mdrsRow : mdrsRows) {
             String effectiveTime = mdrsRow.getColumn(RF2Service.EFFECTIVE_TIME);
-            if (effectiveTime != null) {
+            if (StringUtils.hasLength(effectiveTime)) {
                 maxEffectiveTimes.add(effectiveTime);
             }
 
             String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-            if (sourceEffectiveTime != null) {
+            if (StringUtils.hasLength(sourceEffectiveTime)) {
                 maxEffectiveTimes.add(sourceEffectiveTime);
             }
 
             String targetEffectiveTime = mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
-            if (targetEffectiveTime != null) {
+            if (StringUtils.hasLength(targetEffectiveTime)) {
                 maxEffectiveTimes.add(targetEffectiveTime);
             }
         }
