@@ -101,4 +101,76 @@ public class Classification {
 	public void setLocation(String location) {
 		this.location = location;
 	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public Date getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(Date creationDate) {
+		this.creationDate = creationDate;
+	}
+
+	public Date getCompletionDate() {
+		return completionDate;
+	}
+
+	public void setCompletionDate(Date completionDate) {
+		this.completionDate = completionDate;
+	}
+
+	public Date getLastCommitDate() {
+		return lastCommitDate;
+	}
+
+	public void setLastCommitDate(Date lastCommitDate) {
+		this.lastCommitDate = lastCommitDate;
+	}
+
+	public Date getSaveDate() {
+		return saveDate;
+	}
+
+	public void setSaveDate(Date saveDate) {
+		this.saveDate = saveDate;
+	}
+
+	public Boolean getInferredRelationshipChangesFound() {
+		return inferredRelationshipChangesFound;
+	}
+
+	public void setInferredRelationshipChangesFound(Boolean inferredRelationshipChangesFound) {
+		this.inferredRelationshipChangesFound = inferredRelationshipChangesFound;
+	}
+
+	public Boolean getRedundantStatedRelationshipsFound() {
+		return redundantStatedRelationshipsFound;
+	}
+
+	public void setRedundantStatedRelationshipsFound(Boolean redundantStatedRelationshipsFound) {
+		this.redundantStatedRelationshipsFound = redundantStatedRelationshipsFound;
+	}
+
+	public Boolean getEquivalentConceptsFound() {
+		return equivalentConceptsFound;
+	}
+
+	public void setEquivalentConceptsFound(Boolean equivalentConceptsFound) {
+		this.equivalentConceptsFound = equivalentConceptsFound;
+	}
 }
