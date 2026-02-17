@@ -1309,7 +1309,10 @@ public class ModuleStorageCoordinator {
                                 .filter(m -> m.getEffectiveTime() < effectiveTime)
                                 .collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingInt(ModuleMetadata::getEffectiveTime).reversed())));
 
-                ownPackages.add(packagesMinusSourceEffectiveTime.iterator().next());
+                Iterator<ModuleMetadata> iterator = packagesMinusSourceEffectiveTime.iterator();
+                if (iterator.hasNext()) {
+                    ownPackages.add(iterator.next());
+                }
             }
         }
 
