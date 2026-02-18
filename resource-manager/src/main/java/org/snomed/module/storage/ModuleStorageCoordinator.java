@@ -1264,7 +1264,15 @@ public class ModuleStorageCoordinator {
     }
 
     private Set<ModuleMetadata> getDependantPackages(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows) {
-        return filterByReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
+        // Find by matching referencedComponentId and targetEffectiveTime
+        Set<ModuleMetadata> moduleMetadata = filterByReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows);
+
+        // Remove own package from dependencies
+        // For scenarios where regression testing & 'republishing' a package
+        Set<String> moduleIds = mdrsRows.stream().map(row -> row.getColumn(RF2Service.MODULE_ID)).collect(Collectors.toSet());
+        moduleMetadata.removeIf(item -> moduleIds.contains(item.getIdentifyingModuleId()));
+
+        return moduleMetadata;
     }
 
     private Map<String, String> getSourceEffectiveTimesByModuleId(Set<RF2Row> mdrsRows) {
