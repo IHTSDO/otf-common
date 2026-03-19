@@ -10,7 +10,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.ihtsdo.otf.utils.StringUtils;
 
-public class Metadata {
+public class BranchMetadata {
 
     @SerializedName("assertionGroupNames")
     @Expose

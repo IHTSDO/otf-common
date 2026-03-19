@@ -212,9 +212,7 @@ public class ReportManager extends CommonFileWriter {
 	}
 
 	public String getEnv() {
-		//If we're working against a published release, then the environment isn't relevant
-		String releaseBranch = script.detectReleaseBranch();
-		return releaseBranch == null ? script.getEnv() : releaseBranch;
+		return script.getEnv().name();
 	}
 
 	public void disableTab(int tabIdx) {

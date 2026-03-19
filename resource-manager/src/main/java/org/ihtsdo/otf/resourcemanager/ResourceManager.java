@@ -71,8 +71,6 @@ public class ResourceManager {
 	}
 
 	/**
-	 * Return concatenated bucketName and path.
-	 *
 	 * @return concatenated bucketName and path.
 	 */
 	public Optional<String> getBucketNamePath() {
@@ -162,7 +160,7 @@ public class ResourceManager {
 	}
 
 	/**
-	 * Return a list of filenames for given resource
+	 * Return a list of filenames for a given resource
 	 * @param prefix File prefix
 	 * @return Set of all relevant filenames
 	 * @throws IOException If an error occurs while trying to load the resource.
