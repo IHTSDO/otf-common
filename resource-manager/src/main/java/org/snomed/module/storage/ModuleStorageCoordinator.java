@@ -6,10 +6,12 @@ import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.Environment;
 import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
@@ -29,8 +31,8 @@ public class ModuleStorageCoordinator {
     public static final String CACHE = "cache";
     public static final String ADDITIONAL_DELIVERABLES = "deliverables";
 
-    private final ResourceManager resourceManagerStorage;
-    private final ResourceManager resourceManagerCache;
+    private final ResourceManager resourceManagerS3Storage;
+    private final ResourceManager resourceManagerLocalCache;
     private final RF2Service rf2Service;
     private final String writeDirectory;
     private final List<String> readDirectories;
@@ -39,7 +41,7 @@ public class ModuleStorageCoordinator {
     /**
      * Constructor.
      *
-     * @param resourceManagerStorage ResourceManager to use to communicate with either external or local storage system.
+     * @param resourceManagerS3Storage ResourceManager to use to communicate with either external or local storage system.
      * @param resourceManagerCache   ResourceManager to use to communicate with either external or local cache.
      * @param rf2Service             RF2Service to use to process RF2 package.
      * @param writeDirectory         Directory to write files to.
@@ -47,9 +49,9 @@ public class ModuleStorageCoordinator {
      *                               then the next read directory will be checked.
      * @param allowArchive           Control whether the archive method supported.
      */
-    public ModuleStorageCoordinator(ResourceManager resourceManagerStorage, ResourceManager resourceManagerCache, RF2Service rf2Service, String writeDirectory, List<String> readDirectories, boolean allowArchive) {
-        this.resourceManagerStorage = resourceManagerStorage;
-        this.resourceManagerCache = resourceManagerCache;
+    public ModuleStorageCoordinator(ResourceManager resourceManagerS3Storage, ResourceManager resourceManagerCache, RF2Service rf2Service, String writeDirectory, List<String> readDirectories, boolean allowArchive) {
+        this.resourceManagerS3Storage = resourceManagerS3Storage;
+        this.resourceManagerLocalCache = resourceManagerCache;
         this.rf2Service = rf2Service;
         this.writeDirectory = writeDirectory;
         this.readDirectories = readDirectories;
@@ -63,15 +65,32 @@ public class ModuleStorageCoordinator {
     /**
      * Constructor.
      *
-     * @param resourceManagerStorage ResourceManager to use to communicate with either external or local storage system.
+     * @param resourceManagerS3Storage ResourceManager to use to communicate with either external or local storage system.
      * @param rf2Service             RF2Service to use to process RF2 package.
      * @param writeDirectory         Directory to write files to.
      * @param readDirectories        Collection of directories to read files from. If a file is not found in one of the read directories,
      *                               then the next read directory will be checked.
      * @param allowArchive           Control whether the archive method supported.
      */
-    public ModuleStorageCoordinator(ResourceManager resourceManagerStorage, RF2Service rf2Service, String writeDirectory, List<String> readDirectories, boolean allowArchive) {
-        this(resourceManagerStorage, null, rf2Service, writeDirectory, readDirectories, allowArchive);
+    public ModuleStorageCoordinator(ResourceManager resourceManagerS3Storage, RF2Service rf2Service, String writeDirectory, List<String> readDirectories, boolean allowArchive) {
+        this(resourceManagerS3Storage, null, rf2Service, writeDirectory, readDirectories, allowArchive);
+    }
+
+    public ModuleStorageCoordinator(Environment env, ResourceManager resourceManagerS3Storage, ResourceManager resourceManagerCache, RF2Service rf2Service, boolean allowArchive) {
+        String writeDirectory = env.getEnvironmentName();
+        List<String> readDirectories = env.getReadFallback();
+        this(resourceManagerS3Storage, resourceManagerCache, rf2Service, writeDirectory, readDirectories, allowArchive);
+    }
+
+    /**
+     * Instantiate with environment passed in.
+     *
+     * @param resourceManagerStorage ResourceManager to use to communicate with either external or local storage system.
+     * @return Instantiated class with Dev-environment configuration.
+     */
+    public static ModuleStorageCoordinator create(Environment env, ResourceManager resourceManagerStorage) {
+        ResourceManager resourceManagerCache = new ResourceManager(new ManualResourceConfiguration(false, false, new ResourceConfiguration.Local(CACHE + SLASH + resourceManagerStorage.getBucketNamePath().orElse("")), null), null);
+        return new ModuleStorageCoordinator(env, resourceManagerStorage, resourceManagerCache, new RF2Service(), true);
     }
 
     /**
@@ -111,7 +130,7 @@ public class ModuleStorageCoordinator {
     }
 
     /**
-     * Upload RF2 package to location computed from given arguments. If no exception has been thrown, the method can be considered successful. To handle specific unsuccessful scenarios, catch exceptions that
+     * Upload RF2 package to a location computed from given arguments. If no exception has been thrown, the method can be considered successful. To handle specific unsuccessful scenarios, catch exceptions that
      * extend ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
      *
      * @param codeSystem    CodeSystem of RF2 package, e.g. INT or XX.
@@ -131,21 +150,21 @@ public class ModuleStorageCoordinator {
 
         // Check if metadata already exists
         String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        boolean existingMetadata = resourceManagerStorage.doesObjectExist(metadataResourcePath);
+        boolean existingMetadata = resourceManagerS3Storage.doesObjectExist(metadataResourcePath);
         if (existingMetadata) {
             throw new ModuleStorageCoordinatorException.DuplicateResourceException("Metadata already exists at location: " + metadataResourcePath);
         }
 
         // Check if RF2 package already exists
         String rf2PackageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, rf2Package.getName());
-        boolean existingRF2Package = resourceManagerStorage.doesObjectExist(rf2PackageResourcePath);
+        boolean existingRF2Package = resourceManagerS3Storage.doesObjectExist(rf2PackageResourcePath);
         if (existingRF2Package) {
             throw new ModuleStorageCoordinatorException.DuplicateResourceException("Package already exists at location: " + metadataResourcePath);
         }
 
         // Check if additional deliverables already exists
         String additionalResourcesPath = getAdditionalResourcesPath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        boolean existingAdditionalResources = resourceManagerStorage.doesObjectExist(additionalResourcesPath);
+        boolean existingAdditionalResources = resourceManagerS3Storage.doesObjectExist(additionalResourcesPath);
         if (existingAdditionalResources) {
             throw new ModuleStorageCoordinatorException.DuplicateResourceException("Additional deliverables already exists at location: " + metadataResourcePath);
         }
@@ -159,25 +178,25 @@ public class ModuleStorageCoordinator {
             tmpMetadataFile = FileUtils.doCreateTempFile("metadata.json");
             FileUtils.writeToFile(tmpMetadataFile, moduleMetadata);
             // Upload metadata
-            resourceManagerStorage.doWriteResource(metadataResourcePath, asFileInputStream(tmpMetadataFile));
+            resourceManagerS3Storage.doWriteResource(metadataResourcePath, asFileInputStream(tmpMetadataFile));
 
 
             // Check if metadata uploaded
-            boolean newMetadata = resourceManagerStorage.doesObjectExist(metadataResourcePath);
+            boolean newMetadata = resourceManagerS3Storage.doesObjectExist(metadataResourcePath);
             if (!newMetadata) {
                 throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload metadata to location: " + metadataResourcePath + " reason unknown - no other error reported.");
             }
 
             // Upload RF2 package
-            resourceManagerStorage.doWriteResource(rf2PackageResourcePath, asFileInputStream(rf2Package));
+            resourceManagerS3Storage.doWriteResource(rf2PackageResourcePath, asFileInputStream(rf2Package));
         } catch (IOException e) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to write metadata " + moduleMetadata + " to local temporary file " + tmpMetadataFile, e);
         }
 
         // Check if RF2 package uploaded
-        boolean newRF2Package = resourceManagerStorage.doesObjectExist(rf2PackageResourcePath);
+        boolean newRF2Package = resourceManagerS3Storage.doesObjectExist(rf2PackageResourcePath);
         if (!newRF2Package) {
-            boolean deleteResource = resourceManagerStorage.doDeleteResource(metadataResourcePath);
+            boolean deleteResource = resourceManagerS3Storage.doDeleteResource(metadataResourcePath);
             if (!deleteResource) {
                 LOGGER.debug("Cannot delete previously uploaded metadata; manual clean up required.");
             }
@@ -186,7 +205,7 @@ public class ModuleStorageCoordinator {
         }
 
         // Create blank additional resources folder
-        resourceManagerStorage.writeFolder(additionalResourcesPath);
+        resourceManagerS3Storage.writeFolder(additionalResourcesPath);
 	}
 
     /**
@@ -208,12 +227,12 @@ public class ModuleStorageCoordinator {
         if (md5File != null) {
             // Check if MD5 file already exists
             String md5ResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, md5File.getName());
-            boolean existingMD5File = resourceManagerStorage.doesObjectExist(md5ResourcePath);
+            boolean existingMD5File = resourceManagerS3Storage.doesObjectExist(md5ResourcePath);
             if (existingMD5File) {
                 throw new ModuleStorageCoordinatorException.DuplicateResourceException("MD5 file already exists at location: " + md5ResourcePath);
             }
             // Upload MD5 file
-            resourceManagerStorage.doWriteResource(md5ResourcePath, asFileInputStream(md5File));
+            resourceManagerS3Storage.doWriteResource(md5ResourcePath, asFileInputStream(md5File));
         }
     }
     
@@ -275,7 +294,7 @@ public class ModuleStorageCoordinator {
      * Download ModuleMetadata stored for given arguments. The RF2 package will be included in the response. To handle specific unsuccessful scenarios, catch exceptions that extend
      * ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all unsuccessful scenarios, catch the generic ModuleStorageCoordinatorException.
      *
-     * @param codeSystem    CodeSystem of RF2 package, e.g. INT or XX.
+     * @param codeSystem    CodeSystem of RF2 package, e.g. INT or XX.  Hopefully just there for debug
      * @param moduleId      Most important, or identifying, module id of RF2 package.
      * @param effectiveTime Effective time of RF2 package.
      * @return ModuleMetadata stored for given arguments.
@@ -325,14 +344,14 @@ public class ModuleStorageCoordinator {
         throwIfInvalid(codeSystem, moduleId, effectiveTime);
 
         String metadataResourcePath = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        if (!resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
+        if (!resourceManagerS3Storage.doesObjectExist(metadataResourcePath)) {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Metadata not found with resource path " + metadataResourcePath);
         }
 
         ModuleMetadata moduleMetadata;
         File metedataFile = null;
         try {
-            metedataFile = resourceManagerStorage.doReadResourceFile(metadataResourcePath);
+            metedataFile = resourceManagerS3Storage.doReadResourceFile(metadataResourcePath);
             moduleMetadata = FileUtils.convertToObject(metedataFile, ModuleMetadata.class);
         } catch (IOException | ScriptException e) {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Malformed Metadata found with resource path " + metadataResourcePath, e);
@@ -343,41 +362,41 @@ public class ModuleStorageCoordinator {
         }
 
         String packageResourcePath = getPackageResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime, moduleMetadata.getFilename());
-        if (!resourceManagerStorage.doesObjectExist(packageResourcePath)) {
+        if (!resourceManagerS3Storage.doesObjectExist(packageResourcePath)) {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Package not found with resource path " + packageResourcePath);
         }
 
         String epochSecond = Long.toString(Instant.now().getEpochSecond());
         String metadataArchivePath = asArchivePath(metadataResourcePath, epochSecond);
         String packageArchivePath = asArchivePath(packageResourcePath, epochSecond);
-        boolean metadataCopied = resourceManagerStorage.doCopyResource(metadataResourcePath, metadataArchivePath);
+        boolean metadataCopied = resourceManagerS3Storage.doCopyResource(metadataResourcePath, metadataArchivePath);
         if (!metadataCopied) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy metadata from " + metadataResourcePath + " to " + metadataArchivePath);
         }
 
-        boolean packageCopied = resourceManagerStorage.doCopyResource(packageResourcePath, packageArchivePath);
+        boolean packageCopied = resourceManagerS3Storage.doCopyResource(packageResourcePath, packageArchivePath);
         if (!packageCopied) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy package from " + packageResourcePath + " to " + packageArchivePath);
         }
 
         String additionalResourcesPath = getAdditionalResourcesPath(writeDirectory, codeSystem, moduleId, effectiveTime);
-        Set<String> additionalResourcesPaths = resourceManagerStorage.listFilenames(additionalResourcesPath);
+        Set<String> additionalResourcesPaths = resourceManagerS3Storage.listFilenames(additionalResourcesPath);
         for (String i : additionalResourcesPaths) {
-            resourceManagerStorage.doCopyResource(i, asArchivePath(i, epochSecond));
+            resourceManagerS3Storage.doCopyResource(i, asArchivePath(i, epochSecond));
         }
 
-        boolean metadataDeleted = resourceManagerStorage.doDeleteResource(metadataResourcePath);
+        boolean metadataDeleted = resourceManagerS3Storage.doDeleteResource(metadataResourcePath);
         if (!metadataDeleted) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to metadata package from " + metadataResourcePath);
         }
 
-        boolean packageDeleted = resourceManagerStorage.doDeleteResource(packageResourcePath);
+        boolean packageDeleted = resourceManagerS3Storage.doDeleteResource(packageResourcePath);
         if (!packageDeleted) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to delete package from " + packageResourcePath);
         }
 
         for (String string : additionalResourcesPaths) {
-            resourceManagerStorage.doDeleteResource(string);
+            resourceManagerS3Storage.doDeleteResource(string);
         }
     }
 
@@ -639,14 +658,27 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
-    /**
-     * Retrieves dependencies and previous version of packages based on MDRS rows.
-     *
-     * @param mdrsRows          MDRS rows to process.
-     * @param includeFile       Whether to include RF2 file.
-     * @param maxEffectiveTimes Maximum effective times for filtering packages.
-     * @return Set of ModuleMetadata representing dependencies and previous versions.
-     */
+    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(File delta) {
+        if (delta == null || !delta.exists() || !delta.isFile() || !delta.canRead()) {
+            return Collections.emptySet();
+        }
+        // Try Snapshot folder first (full/published packages), fall back to Delta folder (delta-only zips)
+        Set<RF2Row> mdrsRows = rf2Service.getMDRS(delta, false);
+        if (mdrsRows.isEmpty()) {
+            mdrsRows = rf2Service.getMDRS(delta, true);
+        }
+        return getDependenciesAndPreviousVersion(mdrsRows, true, null);
+    }
+
+
+        /**
+		 * Retrieves dependencies and previous version of packages based on MDRS rows.
+		 *
+		 * @param mdrsRows          MDRS rows to process.
+		 * @param includeFile       Whether to include RF2 file.
+		 * @param maxEffectiveTimes Maximum effective times for filtering packages.
+		 * @return Set of ModuleMetadata representing dependencies and previous versions.
+		 */
     public Set<ModuleMetadata> getDependenciesAndPreviousVersion(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
@@ -678,7 +710,7 @@ public class ModuleStorageCoordinator {
     private Set<ModuleMetadata> getRF2Packages() {
         Map<String, ModuleMetadata> rf2PackageMap = new HashMap<>();
         for (String readDirectory : readDirectories) {
-            Set<String> rf2PackagePaths = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
+            Set<String> rf2PackagePaths = resourceManagerS3Storage.doListFilenames(readDirectory, ".zip");
             if (rf2PackagePaths.isEmpty()) {
                 continue;
             }
@@ -727,9 +759,9 @@ public class ModuleStorageCoordinator {
                     String baseResourcePath = getBaseResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
                     String metadataResourcePath = getMetadataResourcePath(readDirectory, dependency.getCodeSystemShortName(), dependency.getIdentifyingModuleId(), dependency.getEffectiveTimeString());
 
-                    if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
+                    if (resourceManagerS3Storage.doesObjectExist(metadataResourcePath)) {
                         String rf2ResourcePath = baseResourcePath + SLASH + dependency.getFilename();
-                        boolean cacheEnabled = resourceManagerCache != null;
+                        boolean cacheEnabled = resourceManagerLocalCache != null;
                         if (cacheEnabled) {
                             doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, dependency);
                         } else {
@@ -765,7 +797,7 @@ public class ModuleStorageCoordinator {
         Map<String, List<ModuleMetadata>> releases = new HashMap<>();
         for (String readDirectory : readDirectories) {
             // List all json resource paths in readDirectory
-            Set<String> metadataResourcePaths = resourceManagerStorage.doListFilenames(readDirectory, ".json");
+            Set<String> metadataResourcePaths = resourceManagerS3Storage.doListFilenames(readDirectory, ".json");
             for (String metadataResourcePath : metadataResourcePaths) {
                 // Check resource path has expected format, i.e. rogue files are ignored
                 boolean isExpectedFormat = isExpectedFormat(metadataResourcePath);
@@ -925,7 +957,7 @@ public class ModuleStorageCoordinator {
 
         int found = 0;
         for (String readDirectory : readDirectories) {
-            Set<String> availableRF2Packages = resourceManagerStorage.doListFilenames(readDirectory, ".zip");
+            Set<String> availableRF2Packages = resourceManagerS3Storage.doListFilenames(readDirectory, ".zip");
             if (availableRF2Packages.isEmpty()) {
                 continue;
             }
@@ -952,7 +984,7 @@ public class ModuleStorageCoordinator {
                 for (String possibleRF2PackagePath : possibleRF2Packages) {
                     File possibleRF2Package = null;
                     try {
-                        possibleRF2Package = resourceManagerStorage.doReadResourceFile(possibleRF2PackagePath);
+                        possibleRF2Package = resourceManagerS3Storage.doReadResourceFile(possibleRF2PackagePath);
                         Set<RF2Row> rf2Rows = rf2Service.getUniqueModulesWithLatestEffectiveTime(possibleRF2Package, false);
                         boolean owningPackageFound = rf2Rows.stream().anyMatch(item -> item.getColumn(RF2Service.MODULE_ID).equals(rf2Row.getColumn(RF2Service.REFERENCED_COMPONENT_ID)) && item.getColumn(RF2Service.EFFECTIVE_TIME).equals(rf2Row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME)));
                         if (owningPackageFound) {
@@ -992,7 +1024,7 @@ public class ModuleStorageCoordinator {
         Set<ModuleMetadata> moduleMetadatas = new TreeSet<>(Comparator.comparingInt(ModuleMetadata::getEffectiveTime));
         for (String dep : metadataResourcePaths) {
             try {
-                File file = resourceManagerStorage.doReadResourceFile(dep);
+                File file = resourceManagerS3Storage.doReadResourceFile(dep);
                 ModuleMetadata moduleMetadata = FileUtils.convertToObject(file, ModuleMetadata.class);
                 moduleMetadatas.add(moduleMetadata);
             } catch (IOException | ScriptException e) {
@@ -1073,13 +1105,13 @@ public class ModuleStorageCoordinator {
         for (String readDirectory : this.readDirectories) {
             String baseResourcePath = getBaseResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
             String metadataResourcePath = getMetadataResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
-            if (resourceManagerStorage.doesObjectExist(metadataResourcePath)) {
+            if (resourceManagerS3Storage.doesObjectExist(metadataResourcePath)) {
                 try {
-                    ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerStorage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
+                    ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
                     String rf2ResourcePath = baseResourcePath + SLASH + moduleMetadata.getFilename();
-                    if (resourceManagerStorage.doesObjectExist(rf2ResourcePath)) {
+                    if (resourceManagerS3Storage.doesObjectExist(rf2ResourcePath)) {
                         if (includeFile) {
-                            boolean cacheEnabled = resourceManagerCache != null;
+                            boolean cacheEnabled = resourceManagerLocalCache != null;
                             if (cacheEnabled) {
                                 doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, moduleMetadata);
                             } else {
@@ -1099,9 +1131,9 @@ public class ModuleStorageCoordinator {
     }
 
 	private void doGetMetadataFromCacheWithRemoteFallBack(String rf2ResourcePath, ModuleMetadata moduleMetadata) {
-		String cachePath = resourceManagerCache.getCachePath();
+		String cachePath = resourceManagerLocalCache.getCachePath();
 		String pathName = String.format("%s/%s", cachePath, rf2ResourcePath);
-		File localRF2Package = resourceManagerCache.getNullable(pathName);
+		File localRF2Package = resourceManagerLocalCache.getNullable(pathName);
 		moduleMetadata.setFile(localRF2Package);
 
 		if (localRF2Package != null) {
@@ -1114,8 +1146,8 @@ public class ModuleStorageCoordinator {
 
 		// Remote fallback
 		if (localRF2Package == null) {
-			try (InputStream inputStream = resourceManagerStorage.readResourceStream(rf2ResourcePath)) {
-				resourceManagerCache.doWriteResource(rf2ResourcePath, inputStream);
+			try (InputStream inputStream = resourceManagerS3Storage.readResourceStream(rf2ResourcePath)) {
+				resourceManagerLocalCache.doWriteResource(rf2ResourcePath, inputStream);
 			} catch (Exception e) {
 				// ignore
 			}
@@ -1127,7 +1159,7 @@ public class ModuleStorageCoordinator {
 
     private void doGetMetadataFromRemote(String rf2ResourcePath, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException.OperationFailedException {
         try {
-            moduleMetadata.setFile(resourceManagerStorage.doReadResourceFile(rf2ResourcePath));
+            moduleMetadata.setFile(resourceManagerS3Storage.doReadResourceFile(rf2ResourcePath));
         } catch (IOException e) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to get metadata from remote " + rf2ResourcePath, e);
         }
@@ -1153,26 +1185,26 @@ public class ModuleStorageCoordinator {
         String resourcePathMetadata = getMetadataResourcePath(writeDirectory, codeSystem, moduleId, effectiveTime);
         String epochSecond = Long.toString(Instant.now().getEpochSecond());
         String metadataArchivePath = asArchivePath(resourcePathMetadata, epochSecond);
-        boolean metadataCopied = resourceManagerStorage.doCopyResource(resourcePathMetadata, metadataArchivePath);
+        boolean metadataCopied = resourceManagerS3Storage.doCopyResource(resourcePathMetadata, metadataArchivePath);
         if (!metadataCopied) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to copy metadata from " + resourcePathMetadata + " to " + metadataArchivePath);
         }
 
         // Delete old
-        boolean metadataDeleted = resourceManagerStorage.doDeleteResource(resourcePathMetadata);
+        boolean metadataDeleted = resourceManagerS3Storage.doDeleteResource(resourcePathMetadata);
         if (!metadataDeleted) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to delete metadata from " + resourcePathMetadata);
         }
 
         // Upload new
         try {
-            resourceManagerStorage.doWriteResource(resourcePathMetadata, asFileInputStream(tmpMetadataFile));
+            resourceManagerS3Storage.doWriteResource(resourcePathMetadata, asFileInputStream(tmpMetadataFile));
         } catch (IOException e) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload metadata to " + resourcePathMetadata, e);
         }
 
         // Check if new uploaded
-        boolean newMetadata = resourceManagerStorage.doesObjectExist(resourcePathMetadata);
+        boolean newMetadata = resourceManagerS3Storage.doesObjectExist(resourcePathMetadata);
         if (!newMetadata) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to upload metadata to " + resourcePathMetadata);
         }
@@ -1214,7 +1246,7 @@ public class ModuleStorageCoordinator {
 
     private ModuleMetadata asModuleMetadata(String metadataResourcePath) {
         try {
-            return FileUtils.convertToObject(resourceManagerStorage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
+            return FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
         } catch (Exception e) {
             return null;
         }
@@ -1325,5 +1357,57 @@ public class ModuleStorageCoordinator {
         }
 
         return ownPackages;
+    }
+
+    public ModuleMetadata getMetadata(URI codeSystemVersionURI) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+        if (codeSystemVersionURI == null) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("No URI specified");
+        }
+        // Parse URI path: /sct/{moduleId}/version/{effectiveTime}
+        String[] segments = codeSystemVersionURI.getPath().split("/");
+        if (segments.length < 5 || !"sct".equals(segments[1]) || !"version".equals(segments[3])) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("Unrecognised or insufficient URI format: " + codeSystemVersionURI);
+        }
+        String moduleId = segments[2];
+        String effectiveTime = segments[4];
+
+        //We won't know the codeSystem super-shortname, but it's not required.  So pass null.
+        return getMetadata(null, moduleId, effectiveTime);
+    }
+
+    public ModuleMetadata getMetadata(File archiveFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+        if (archiveFile == null) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("No archive file specified");
+        }
+        if (!archiveFile.exists() || !archiveFile.isFile() || !archiveFile.canRead()) {
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Unable to read archive file: " + archiveFile.getName());
+        }
+
+        // Check for a companion .metadata file written alongside the archive
+        File companionMetadata = new File(archiveFile.getParent(), archiveFile.getName() + ".metadata");
+        if (companionMetadata.exists() && companionMetadata.isFile()) {
+            try {
+                ModuleMetadata metadata = FileUtils.convertToObject(companionMetadata, ModuleMetadata.class);
+                metadata.setFile(archiveFile);
+                return metadata;
+            } catch (ScriptException e) {
+                LOGGER.warn("Failed to read companion metadata file {}, falling back to S3 lookup", companionMetadata.getName(), e);
+            }
+        }
+
+        // Search S3 for a package whose filename matches
+        for (String readDirectory : readDirectories) {
+            for (String rf2PackagePath : resourceManagerS3Storage.doListFilenames(readDirectory, ".zip")) {
+                if (rf2PackagePath.endsWith(SLASH + archiveFile.getName())) {
+                    ModuleMetadata metadata = asModuleMetadata(asMetadataResourcePath(rf2PackagePath));
+                    if (metadata != null) {
+                        metadata.setFile(archiveFile);
+                        return metadata;
+                    }
+                }
+            }
+        }
+
+        throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Cannot find metadata for archive file: " + archiveFile.getName());
     }
 }

@@ -5,18 +5,18 @@ import java.util.*;
 
 import com.google.gson.*;
 
-public class MetadataDeserializer implements JsonDeserializer<Metadata> {
+public class MetadataDeserializer implements JsonDeserializer<BranchMetadata> {
 
 	private static final String prefix = "requiredLanguageRefset.";
 	@Override
-	public Metadata deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+	public BranchMetadata deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 		//For countries that only use a single refset, we have elements like:
 		//"requiredLanguageRefset.sv": "46011000052107"
 		//And there's just no way to specify a Java variable like that.
 		//So we're going to have to loop through all the variable to idenitfy those
 		//and force them into the same structure as requiredLanguageRefsets.
 		Gson gson = new Gson();
-		Metadata metadata = gson.fromJson(json.getAsJsonObject(), Metadata.class);
+		BranchMetadata metadata = gson.fromJson(json.getAsJsonObject(), BranchMetadata.class);
 
 		//Let's also work this object as a map so we can find the tricky cases
 		@SuppressWarnings("unchecked")

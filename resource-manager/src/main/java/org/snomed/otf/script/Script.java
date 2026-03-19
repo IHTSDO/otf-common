@@ -10,6 +10,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.Environment;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.dao.DataBroker;
 import org.snomed.otf.script.dao.RF2Manager;
@@ -46,6 +47,8 @@ public abstract class Script implements RF2Constants {
 	protected ReportConfiguration reportConfiguration;
 	protected ApplicationContext appContext;
 
+	private Environment env;
+
 	/**
 	 * Direct access to STDOUT without LOGGER, for cmd line menus
 	 */
@@ -78,9 +81,17 @@ public abstract class Script implements RF2Constants {
 
 	public abstract String getReportName();
 
-	public abstract String detectReleaseBranch();
+	public Environment getEnv() {
+		return env;
+	}
 
-	public abstract String getEnv();
+	public void setEnv(Environment env) {
+		this.env = env;
+	}
+
+	public void setEnv(String envStr) {
+		setEnv(Environment.fromString(envStr));
+	}
 
 	public String getReportComplexName() {
 		throw new NotImplementedException("Complex name currently only required by SummaryComponentStats");

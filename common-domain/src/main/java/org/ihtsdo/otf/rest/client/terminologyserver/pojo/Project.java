@@ -40,7 +40,7 @@ public class Project implements TermServerLocation {
 	@SerializedName("metadata")
 	@Expose
 	@JsonAdapter(MetadataDeserializer.class)
-	private Metadata metadata;
+	private BranchMetadata metadata;
 	@SerializedName("codeSystem")
 	@Expose
 	private CodeSystem codeSystem;
@@ -77,7 +77,7 @@ public class Project implements TermServerLocation {
 	 * @param key
 	 * @param metadata
 	 */
-	public Project(String key, String title, ProjectLead projectLead, String branchPath, String branchState, String validationStatus, Boolean projectPromotionDisabled, Boolean projectMrcmDisabled, Boolean projectTemplatesDisabled, Boolean projectSpellCheckDisabled, Metadata metadata) {
+	public Project(String key, String title, ProjectLead projectLead, String branchPath, String branchState, String validationStatus, Boolean projectPromotionDisabled, Boolean projectMrcmDisabled, Boolean projectTemplatesDisabled, Boolean projectSpellCheckDisabled, BranchMetadata metadata) {
 		super();
 		this.key = key;
 		this.title = title;
@@ -172,11 +172,11 @@ public class Project implements TermServerLocation {
 		this.projectSpellCheckDisabled = projectSpellCheckDisabled;
 	}
 
-	public Metadata getMetadata() {
+	public BranchMetadata getMetadata() {
 		return metadata;
 	}
 
-	public void setMetadata(Metadata metadata) {
+	public void setMetadata(BranchMetadata metadata) {
 		this.metadata = metadata;
 	}
 
