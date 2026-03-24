@@ -100,7 +100,15 @@ public class RefsetMember extends Component implements RF2Constants {
 	public void setAdditionalFields(Map<String, String> additionalFields) {
 		this.additionalFields = additionalFields;
 	}
-	
+
+	public void setReferencedComponent(Object referencedComponent) {
+		this.referencedComponent = referencedComponent;
+	}
+
+	public Object getReferencedComponent() {
+		return referencedComponent;
+	}
+
 	public String getField(String key) {
 		return this.additionalFields.get(key);
 	}
