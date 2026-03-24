@@ -4,6 +4,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public class CodeSystem {
@@ -43,6 +44,10 @@ public class CodeSystem {
 	@SerializedName("latestVersion")
 	@Expose
 	private CodeSystemVersion latestVersion;
+
+	@SerializedName("languages")
+	@Expose
+	private Map<String, String> languages;
 
 	public String getShortName() {
 		return shortName;
@@ -94,5 +99,13 @@ public class CodeSystem {
 
 	public CodeSystemVersion getLatestVersion() {
 		return latestVersion;
+	}
+
+	public void setLanguages(Map<String, String> languages) {
+		this.languages = languages;
+	}
+
+	public Map<String, String> getLanguages() {
+		return languages;
 	}
 }
