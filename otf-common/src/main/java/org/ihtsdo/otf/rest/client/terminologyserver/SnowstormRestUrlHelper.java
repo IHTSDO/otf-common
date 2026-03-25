@@ -6,6 +6,10 @@ import java.net.URISyntaxException;
 public class SnowstormRestUrlHelper {
 
 	private static final String MAIN = "MAIN";
+	public static final String MEMBERS = "/members";
+	public static final String BRANCHES = "/branches/";
+	public static final String BROWSER = "/browser/";
+	public static final String CODESYSTEMS = "/codesystems/";
 
 	private final String snowstormUrl;
 
@@ -18,11 +22,11 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getBranchUrl(String branchPath) {
-		return snowstormUrl + "/branches/" + branchPath;
+		return snowstormUrl + BRANCHES + branchPath;
 	}
 
 	public URI getBranchUri(String branchPath) {
-		return getUri(snowstormUrl + "/branches/" + branchPath);
+		return getUri(snowstormUrl + BRANCHES + branchPath);
 	}
 
 	private URI getUri(String uri) {
@@ -34,11 +38,11 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public URI getMembersUrl(String branchPath, String referenceSet, int limit) {
-		return getUri (snowstormUrl + "/" + branchPath + "/members" + "?referenceSet=" + referenceSet + "&limit=" + limit);
+		return getUri (snowstormUrl + "/" + branchPath + MEMBERS + "?referenceSet=" + referenceSet + "&limit=" + limit);
 	}
 
 	public String getBranchChildrenUrl(String branchPath) {
-		return snowstormUrl + "/branches/" + branchPath + "/children";
+		return snowstormUrl + BRANCHES + branchPath + "/children";
 	}
 
 	public String getBranchUrlRelativeToMain(String pathRelativeToMain) {
@@ -138,7 +142,7 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public String getBrowserConceptsUrl(String branchPath) {
-		return snowstormUrl + "/browser/" + branchPath + "/concepts";
+		return snowstormUrl + BROWSER + branchPath + "/concepts";
 	}
 
 	public URI getBrowserConceptUri(String branchPath, String conceptId) {
@@ -154,7 +158,7 @@ public class SnowstormRestUrlHelper {
 	}
 	
 	public String getBulkConceptsUrl(String branchPath) {
-		return snowstormUrl + "/browser/" + branchPath + "/concepts/bulk-load";
+		return snowstormUrl + BROWSER + branchPath + "/concepts/bulk-load";
 	}
 	
 	public URI getBulkConceptsUri(String branchPath) {
@@ -162,7 +166,7 @@ public class SnowstormRestUrlHelper {
 	}
 
 	public URI getCodeSystemUrl(String codeSystemShortname) {
-		return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname);
+		return getUri(snowstormUrl + CODESYSTEMS + codeSystemShortname);
 	}
 
 	public String getCodeSystemsUrl() {
@@ -170,23 +174,23 @@ public class SnowstormRestUrlHelper {
 	}
 
     public URI getCodeSystemVersionsUri(String codeSystemShortname, boolean showFutureVersions, boolean showInternalReleases) {
-        return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname + "/versions?showFutureVersions=" + showFutureVersions + "&showInternalReleases=" + showInternalReleases);
+        return getUri(snowstormUrl + CODESYSTEMS + codeSystemShortname + "/versions?showFutureVersions=" + showFutureVersions + "&showInternalReleases=" + showInternalReleases);
     }
 
 	public URI getUpdateCodeSystemVersionPackageUri(String codeSystemShortname, String effectiveDate) {
-		return getUri(snowstormUrl + "/codesystems/" + codeSystemShortname + "/versions/" + effectiveDate);
+		return getUri(snowstormUrl + CODESYSTEMS + codeSystemShortname + "/versions/" + effectiveDate);
 	}
 
 	public URI getSetAuthorFlagUri(String branchPath) {
-		return getUri(snowstormUrl + "/branches/" + branchPath + "/actions/set-author-flag");
+		return getUri(snowstormUrl + BRANCHES + branchPath + "/actions/set-author-flag");
 	}
 
 	public URI getCodeSystemUpgradeUri(String shortName) {
-		return getUri(snowstormUrl + "/codesystems/" + shortName + "/upgrade");
+		return getUri(snowstormUrl + CODESYSTEMS + shortName + "/upgrade");
 	}
 
 	public URI getCodeSystemGenerateAdditionalLanguageRefsetDeltaUri(String shortName, String branchPath , String languageRefsetToCopyFrom, boolean completeCopy) {
-		return getUri(snowstormUrl + "/codesystems/" + shortName + "/additional-en-language-refset-delta?branchPath=" + branchPath
+		return getUri(snowstormUrl + CODESYSTEMS + shortName + "/additional-en-language-refset-delta?branchPath=" + branchPath
 				+ "&languageRefsetToCopyFrom=" + languageRefsetToCopyFrom + "&completeCopy=" + completeCopy);
 	}
 
@@ -203,10 +207,10 @@ public class SnowstormRestUrlHelper {
     }
 
 	public URI getRefsetsWithTypeInformationUrl(String branchPath) {
-		return getUri(snowstormUrl + "/browser/" + branchPath + "/members");
+		return getUri(snowstormUrl + BROWSER + branchPath + MEMBERS);
 	}
 
 	public URI getRefsetMembersUrl(String branchPath) {
-		return getUri(snowstormUrl + "/" + branchPath + "/members");
+		return getUri(snowstormUrl + "/" + branchPath + MEMBERS);
 	}
 }
