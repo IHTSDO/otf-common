@@ -68,6 +68,10 @@ public class SnomedUtilsBase implements RF2Constants {
 		return componentId.charAt(componentId.length()-2) == '0';
 	}
 
+	public static boolean isSctid(String str) {
+		return str != null && str.length() >= 8 && str.length() <= 20 && str.matches("\\d+");
+	}
+
 	public static String getNamespace(String sctId) {
 		//We'll reverse the string to make the calculations easier
 		String revSctId = new StringBuffer(sctId).reverse().toString();
