@@ -33,14 +33,14 @@ public class JobCategory implements Serializable {
 	@JsonIgnore
 	private long id;
 	
-	@Column(length=50)
+	@Column(length = 50)
 	String name;
 
 	@ManyToOne
 	@JsonIgnore
 	JobType type;
 	
-	@OneToMany(mappedBy = "category")
+	@OneToMany(mappedBy = "category", fetch = FetchType.EAGER)
 	Set<Job> jobs = new HashSet<>();
 	
 	public JobCategory() {}

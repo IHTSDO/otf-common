@@ -17,7 +17,7 @@ public class Job {
 	
 	String name;
 	
-	@Column(columnDefinition="TEXT")
+	@Column(columnDefinition = "TEXT")
 	String description;
 	ProductionStatus productionStatus;
 	
@@ -28,12 +28,12 @@ public class Job {
 	@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
 	JobParameters parameters;
 	
-	@OneToMany
+	@OneToMany(fetch = FetchType.EAGER)
 	List<JobSchedule> schedules;
 	
-	@ElementCollection
-	@CollectionTable(name="job_tags", joinColumns=@JoinColumn(name="job_id"))
-	@Column(name="tag")
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "job_tags", joinColumns = @JoinColumn(name = "job_id"))
+	@Column(name = "tag")
 	Set<String> tags = new HashSet<>();
 	
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -41,7 +41,7 @@ public class Job {
 	@JsonIgnore
 	Map<String, WhiteList> whiteListMap;
 
-	@Column(columnDefinition="int default 15") //Default to 15 minutes
+	@Column(columnDefinition = "int default 15") //Default to 15 minutes
 	int expectedDuration = 15;
 	
 	public int getExpectedDuration() {
