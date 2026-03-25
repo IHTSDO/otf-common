@@ -251,6 +251,9 @@ public class SnowstormRestClient {
 				.toUri();
 		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.getForEntity(uri, RefsetAggregationPage.class);
 		RefsetAggregationPage body = refsetAggregationResponse.getBody();
+		if (body == null) {
+			throw new ResourceNotFoundException("Can't find refsets from branch:" + branchPath);
+		}
         return body.getReferenceSets();
 	}
 
