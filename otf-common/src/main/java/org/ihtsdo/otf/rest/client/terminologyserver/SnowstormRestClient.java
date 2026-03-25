@@ -329,20 +329,29 @@ public class SnowstormRestClient {
 	}
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, Collection<String> conceptIds, int size) {
-		return createConceptsRequest(branchPath, null, null, conceptIds, size, false);
+		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false);
 	}
 
 	
 	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, limit, true);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true);
 		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
 		if (conceptMiniResp == null) {
 			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
 		}
 		return conceptMiniResp.getItems();
 	}
-	
+
+	public ConceptMiniResponse getConceptMinis(String branchPath, String ecl, String moduleFilter, int limit) throws RestClientException {
+
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true);
+		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
+		if (conceptMiniResp == null) {
+			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
+		}
+		return conceptMiniResp;
+	}
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit) throws RestClientException {
 		
@@ -352,7 +361,7 @@ public class SnowstormRestClient {
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit, boolean stated) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, limit, stated);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -415,7 +424,7 @@ public class SnowstormRestClient {
 	
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
-			String termPrefix, Collection<String> concepts, int limit, boolean stated) {
+			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
@@ -440,6 +449,10 @@ public class SnowstormRestClient {
 		
 		if (concepts != null && !concepts.isEmpty()) {
 			queryBuilder.queryParam(CONCEPT_IDS, concepts.toArray());
+		}
+
+		if (module != null) {
+			queryBuilder.queryParam("module", module);
 		}
 		URI uri = queryBuilder.build().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
