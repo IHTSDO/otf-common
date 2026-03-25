@@ -46,6 +46,10 @@ public class SnowstormRestClient {
 	public static final String URI_CURLIES = "URI {}";
 	public static final String URL_SEPARATOR = "/";
 	public static final String US_EN_LANG_REFSET = "900000000000509007";
+	public static final String LIMIT = "limit";
+	public static final String ACTIVE = "active";
+	public static final String OFFSET = "offset";
+	public static final String CONCEPT_IDS = "conceptIds";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -77,6 +81,9 @@ public class SnowstormRestClient {
     };
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
     };
+
+	private final ParameterizedTypeReference<Page<RefsetMember>> responseTypeRefsetPage = new ParameterizedTypeReference<>(){
+	};
 
 	private SnowstormRestClient(String snowstormUrl) {
 		urlHelper = new SnowstormRestUrlHelper(snowstormUrl);
@@ -234,6 +241,33 @@ public class SnowstormRestClient {
 	public String getFsn(String branchPath, String conceptId) throws RestClientException {
 		return getFsns(branchPath, Collections.singletonList(conceptId)).get(conceptId);
 	}
+
+	public Map<String, ConceptMiniPojo> getRefsetsWithTypeInformation(String branchPath, String defaultModule) {
+		URI uri = UriComponentsBuilder
+				.fromUriString(urlHelper.getRefsetsWithTypeInformationUrl(branchPath).toString())
+				.queryParam(LIMIT, 1)
+				.queryParam("module", defaultModule != null ? defaultModule : "")
+				.build()
+				.toUri();
+		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.getForEntity(uri, RefsetAggregationPage.class);
+		RefsetAggregationPage body = refsetAggregationResponse.getBody();
+        return body.getReferenceSets();
+	}
+
+	public Page<RefsetMember> getRefsetMembers(String refsetId, String branchPath, boolean activeOnly,
+											   int limit, String searchAfter) {
+		UriComponentsBuilder uriComponentsBuilder = UriComponentsBuilder
+				.fromUriString(urlHelper.getRefsetMembersUrl(branchPath).toString())
+				.queryParam("referenceSet", refsetId)
+				.queryParam(LIMIT, limit)
+				.queryParam("searchAfter", searchAfter);
+		if (activeOnly) {
+			uriComponentsBuilder.queryParam(ACTIVE, true);
+		}
+		ResponseEntity<Page<RefsetMember>> response = restTemplate.exchange(uriComponentsBuilder.build().toUri(),
+				HttpMethod.GET, null, responseTypeRefsetPage);
+		return response.getBody();
+	}
 	
 	public Map<String, Set<SimpleDescriptionPojo>> getDescriptions(String branchPath, Collection<String> conceptIds) throws RestClientException {
 		Map<String, Set<SimpleDescriptionPojo>> result = new HashMap<>();
@@ -268,12 +302,12 @@ public class SnowstormRestClient {
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
 				(urlHelper.getSimpleConceptsUrl(branchPath))
-				.queryParam("active", true)
-				.queryParam("offset", 0)
+				.queryParam(ACTIVE, true)
+				.queryParam(OFFSET, 0)
 				.queryParam("expand", "descriptions()")
 				.queryParam("termActive", true)
-				.queryParam("limit", limit)
-				.queryParam("conceptIds", conceptIds.toArray());
+				.queryParam(LIMIT, limit)
+				.queryParam(CONCEPT_IDS, conceptIds.toArray());
 		URI uri = queryBuilder.build().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
 		return RequestEntity.get(uri)
@@ -386,11 +420,11 @@ public class SnowstormRestClient {
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
 				(urlHelper.getSimpleConceptsUrl(branchPath))
-				.queryParam("active", true)
-				.queryParam("offset", 0)
+				.queryParam(ACTIVE, true)
+				.queryParam(OFFSET, 0)
 				.queryParam("expand", "fsn()")
 				.queryParam("termActive", true)
-				.queryParam("limit", limit);
+				.queryParam(LIMIT, limit);
 		
 		if (ecl != null) {
 			if (stated) {
@@ -405,7 +439,7 @@ public class SnowstormRestClient {
 		}
 		
 		if (concepts != null && !concepts.isEmpty()) {
-			queryBuilder.queryParam("conceptIds", concepts.toArray());
+			queryBuilder.queryParam(CONCEPT_IDS, concepts.toArray());
 		}
 		URI uri = queryBuilder.build().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
@@ -417,9 +451,9 @@ public class SnowstormRestClient {
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int offset, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString(urlHelper.getSimpleConceptsUrl(branchPath))
-				.queryParam("active", true)
-				.queryParam("offset", offset)
-				.queryParam("limit", limit);
+				.queryParam(ACTIVE, true)
+				.queryParam(OFFSET, offset)
+				.queryParam(LIMIT, limit);
 		if (stated) {
 			queryBuilder.queryParam("statedEcl", ecl);
 		} else {
@@ -1094,7 +1128,7 @@ public class SnowstormRestClient {
 			if (counter % 1000 == 0 || counter == conceptIds.size()) {
 				try {
 					Map<String,Object> request = new HashMap<>();
-					request.put("conceptIds", batchJob);			
+					request.put(CONCEPT_IDS, batchJob);
 					URI uri = urlHelper.getBulkConceptsUri(branchPath);
 					
 					RequestEntity<?> post = RequestEntity.post(uri)

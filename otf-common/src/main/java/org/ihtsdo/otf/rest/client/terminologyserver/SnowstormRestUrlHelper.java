@@ -201,4 +201,12 @@ public class SnowstormRestUrlHelper {
     public URI getPermissionUrl(String branchPath) {
 		return getUri(snowstormUrl + "/admin/permissions/" + branchPath);
     }
+
+	public URI getRefsetsWithTypeInformationUrl(String branchPath) {
+		return getUri(snowstormUrl + "/browser/" + branchPath + "/members");
+	}
+
+	public URI getRefsetMembersUrl(String branchPath) {
+		return getUri(snowstormUrl + "/" + branchPath + "/members");
+	}
 }

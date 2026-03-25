@@ -1,7 +1,9 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Map;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -20,6 +22,8 @@ public class ConceptMiniPojo implements IConcept {
 	private String moduleId;
 	
 	private String definitionStatus;
+
+	private Map<String, Object> extraFields;
 	
 	public ConceptMiniPojo() {
 	}
@@ -82,6 +86,15 @@ public class ConceptMiniPojo implements IConcept {
 
 	public void setDefinitionStatus(String definitionStatus) {
 		this.definitionStatus = definitionStatus;
+	}
+
+	@JsonAnyGetter
+	public Map<String, Object> getExtraFields() {
+		return extraFields;
+	}
+
+	public void setExtraFields(Map<String, Object> extraFields) {
+		this.extraFields = extraFields;
 	}
 
 	public String toStringFull() {
