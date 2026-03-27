@@ -173,6 +173,10 @@ public class SnowstormRestUrlHelper {
 		return snowstormUrl + "/codesystems";
 	}
 
+	public String getCodeSystemsLightweightUrl() {
+		return snowstormUrl + "/codesystems?includeContentInfo=false";
+	}
+
     public URI getCodeSystemVersionsUri(String codeSystemShortname, boolean showFutureVersions, boolean showInternalReleases) {
         return getUri(snowstormUrl + CODESYSTEMS + codeSystemShortname + "/versions?showFutureVersions=" + showFutureVersions + "&showInternalReleases=" + showInternalReleases);
     }

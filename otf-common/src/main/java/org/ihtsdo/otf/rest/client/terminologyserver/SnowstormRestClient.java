@@ -169,6 +169,15 @@ public class SnowstormRestClient {
 		return page.getItems();
 	}
 
+	public List<CodeSystem> getCodeSystemsLightweight() {
+		ResponseEntity<ItemsPage<CodeSystem>> responseEntity = restTemplate.exchange(
+				urlHelper.getCodeSystemsLightweightUrl(),
+				HttpMethod.GET, HttpEntity.EMPTY,
+				CODESYSTEM_PAGE_TYPE_REFERENCE);
+		ItemsPage<CodeSystem> page = responseEntity.getBody();
+		return page.getItems();
+	}
+
 	public List<CodeSystemVersion> getCodeSystemVersions(String shortName, Boolean showFutureVersions, Boolean showInternalReleases) {
 		if (showFutureVersions == null) {
 			showFutureVersions = false;
