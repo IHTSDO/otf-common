@@ -166,6 +166,9 @@ public class SnowstormRestClient {
 				HttpMethod.GET, HttpEntity.EMPTY,
 				CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
+		if (page == null) {
+			throw new ResourceNotFoundException("No code system entries found.");
+		}
 		return page.getItems();
 	}
 
@@ -175,6 +178,9 @@ public class SnowstormRestClient {
 				HttpMethod.GET, HttpEntity.EMPTY,
 				CODESYSTEM_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystem> page = responseEntity.getBody();
+		if (page == null) {
+			throw new ResourceNotFoundException("No code system entries found.");
+		}
 		return page.getItems();
 	}
 
