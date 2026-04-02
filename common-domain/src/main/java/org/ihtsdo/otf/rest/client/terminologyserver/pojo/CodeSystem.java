@@ -21,6 +21,10 @@ public class CodeSystem {
 	@Expose
 	private String countryCode;
 
+	@SerializedName("countryName")
+	@Expose
+	private String countryName;
+
 	@SerializedName("maintainerType")
 	@Expose
 	private String maintainerType;
@@ -59,6 +63,10 @@ public class CodeSystem {
 
 	public String getCountryCode() {
 		return countryCode;
+	}
+
+	public String getCountryName() {
+		return countryName;
 	}
 
 	public String getMaintainerType() {
