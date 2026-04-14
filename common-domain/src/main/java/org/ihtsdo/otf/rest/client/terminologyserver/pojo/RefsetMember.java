@@ -26,7 +26,7 @@ public class RefsetMember extends Component implements RF2Constants {
 	protected String referencedComponentId;
 	@SerializedName("additionalFields")
 	@Expose
-	protected Map<String, String> additionalFields = new HashMap<>();
+	protected Map<String, String> additionalFields = new LinkedHashMap<>();
 	@SerializedName("referencedComponent")
 	@Expose
 	protected Object referencedComponent;
@@ -225,7 +225,7 @@ public class RefsetMember extends Component implements RF2Constants {
 	//Note that because Java does not support polymorphism of variables, only methods,
 	//we need to call this method to pick up the field names of descendant types.
 	public String[] getAdditionalFieldNames() {
-		return new String[0];
+		return additionalFields.keySet().toArray(new String[0]);
 	}
 	
 	@Override 
@@ -358,5 +358,9 @@ public class RefsetMember extends Component implements RF2Constants {
 		for (int i=0; i < additionalValues.length; i++) {
 			setField(getAdditionalFieldNames()[i], additionalValues[i]);
 		}
+	}
+
+	public String[] getAdditionalFieldsAsArray() {
+		return additionalFields.values().toArray(new String[0]);
 	}
 }
