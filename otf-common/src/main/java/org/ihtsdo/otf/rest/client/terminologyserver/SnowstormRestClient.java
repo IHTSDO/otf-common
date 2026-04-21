@@ -257,14 +257,16 @@ public class SnowstormRestClient {
 		return getFsns(branchPath, Collections.singletonList(conceptId)).get(conceptId);
 	}
 
-	public Map<String, ConceptMiniPojo> getRefsetsWithTypeInformation(String branchPath, String defaultModule) {
-		URI uri = UriComponentsBuilder
+	public Map<String, ConceptMiniPojo> getRefsetsWithTypeInformation(String branchPath, boolean activeOnly, String defaultModule) {
+		UriComponentsBuilder builder = UriComponentsBuilder
 				.fromUriString(urlHelper.getRefsetsWithTypeInformationUrl(branchPath).toString())
 				.queryParam(LIMIT, 1)
-				.queryParam("module", defaultModule != null ? defaultModule : "")
-				.build()
-				.toUri();
-		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.getForEntity(uri, RefsetAggregationPage.class);
+				.queryParam("module", defaultModule != null ? defaultModule : "");
+		if (activeOnly) {
+			builder.queryParam(ACTIVE, true);
+		}
+
+		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.getForEntity(builder.build().toUri(), RefsetAggregationPage.class);
 		RefsetAggregationPage body = refsetAggregationResponse.getBody();
 		if (body == null) {
 			throw new ResourceNotFoundException("Can't find refsets from branch:" + branchPath);
