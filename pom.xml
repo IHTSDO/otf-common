@@ -28,6 +28,13 @@
 	</scm>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>apache-jena-libs</artifactId>
+			<version>${jena_version}</version>
+			<type>pom</type>
+		</dependency>
 		
 		<!-- Logging -->
 		<dependency>
