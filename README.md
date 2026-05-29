@@ -75,7 +75,7 @@ Package conventions:
 
 ### 4.1  Prerequisites
 
-1. **JDK 17** (aligned with the parent BOM).  
+1. **JDK 25** (aligned with the parent BOM).  
 2. **Maven 3.8+** (wrapper included).  
 3. (Optional) **Docker** if you want to run LocalStack for S3 integration tests.
 

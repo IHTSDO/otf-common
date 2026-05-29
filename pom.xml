@@ -14,6 +14,11 @@
 	<name>OTF Common Parent</name>
 	<packaging>pom</packaging>
 
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+    </properties>
+
 	<modules>
 		<module>otf-common</module>
 		<module>resource-manager</module>
