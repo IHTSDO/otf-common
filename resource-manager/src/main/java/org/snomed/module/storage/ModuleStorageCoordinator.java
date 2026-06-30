@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ManualResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
+import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.Environment;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.ihtsdo.otf.RF2Constants.SCTID_CORE_MODULE;
+import static org.ihtsdo.otf.RF2Constants.SCTID_MODEL_MODULE;
 import static org.snomed.module.storage.ModuleMetadataFilterer.*;
 
 /**
@@ -320,6 +322,93 @@ public class ModuleStorageCoordinator {
      */
     public ModuleMetadata getMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
         return doGetMetadata(codeSystem, moduleId, effectiveTime, includeFile);
+    }
+
+    /**
+     * Download ModuleMetadata for each URI in the list. Each URI must be of the form
+     * {@code http://snomed.info/sct/<moduleId>} (returns the latest version from the primary read directory)
+     * or {@code http://snomed.info/sct/<moduleId>/version/<effectiveTime>} (searches all read directories).
+     * The directory listing is performed once per read directory, not once per URI.
+     *
+     * @param uris List of SNOMED module URIs.
+     * @return List of ModuleMetadata, one per URI, in the same order.
+     * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if any URI is null or unrecognised.
+     * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if no matching package can be found for a URI.
+     * @throws ModuleStorageCoordinatorException.OperationFailedException  if de-serialisation fails.
+     */
+    public List<ModuleMetadata> getMetadata(List<URI> uris) throws ModuleStorageCoordinatorException {
+        if (uris == null || uris.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // List each read directory once upfront; use a LinkedHashMap to preserve priority order
+        Map<String, Set<String>> pathsByDirectory = new LinkedHashMap<>();
+        for (String readDirectory : readDirectories) {
+            pathsByDirectory.put(readDirectory, resourceManagerS3Storage.doListFilenames(readDirectory, "metadata.json"));
+        }
+
+        List<ModuleMetadata> results = new ArrayList<>();
+        for (URI uri : uris) {
+            results.add(resolveModuleUri(uri, pathsByDirectory));
+        }
+        return results;
+    }
+
+    private ModuleMetadata resolveModuleUri(URI uri, Map<String, Set<String>> pathsByDirectory) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+        if (uri == null) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("URI must not be null.");
+        }
+        // Accepted forms:
+        //   /sct/<moduleId>
+        //   /sct/<moduleId>/version/<effectiveTime>
+        String[] uriSegments = uri.getPath().split("/");
+        if (uriSegments.length < 3 || !"sct".equals(uriSegments[1])) {
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("Unrecognised URI format: " + uri);
+        }
+        String moduleId = uriSegments[2];
+        String effectiveTime = (uriSegments.length >= 5 && "version".equals(uriSegments[3])) ? uriSegments[4] : null;
+
+        String moduleIdSuffix = "_" + moduleId;
+        // When effectiveTime is null, restrict to the primary read directory only (no fallback)
+        List<String> directoriesToSearch = effectiveTime == null
+                ? List.of(readDirectories.get(0))
+                : new ArrayList<>(pathsByDirectory.keySet());
+
+        for (String readDirectory : directoriesToSearch) {
+            String directoryPrefix = readDirectory + SLASH;
+            Set<String> metadataPaths = pathsByDirectory.get(readDirectory);
+
+            final String resolvedEffectiveTime = effectiveTime;
+            Optional<String> match = metadataPaths.stream()
+                    .filter(path -> {
+                        if (!path.startsWith(directoryPrefix)) {
+                            return false;
+                        }
+                        String[] segments = path.substring(directoryPrefix.length()).split(SLASH);
+                        // segments: [codeSystem_moduleId, effectiveTime, metadata.json]
+                        if (segments.length < 3) {
+                            return false;
+                        }
+                        boolean moduleMatches = segments[0].endsWith(moduleIdSuffix);
+                        boolean effectiveTimeMatches = resolvedEffectiveTime == null || segments[1].equals(resolvedEffectiveTime);
+                        return moduleMatches && effectiveTimeMatches;
+                    })
+                    .max(Comparator.comparing(path -> path.substring(directoryPrefix.length()).split(SLASH)[1]));
+
+            if (match.isPresent()) {
+                String metadataPath = match.get();
+                try {
+                    return FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataPath), ModuleMetadata.class);
+                } catch (ScriptException | IOException e) {
+                    throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to de-serialize metadata.json at location " + metadataPath, e);
+                }
+            }
+        }
+
+        String message = effectiveTime == null
+                ? String.format("Cannot find package for module %s", moduleId)
+                : String.format("Cannot find package for module %s/%s", moduleId, effectiveTime);
+        throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
     }
 
     /**
@@ -658,27 +747,115 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
-    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(File delta) {
-        if (delta == null || !delta.exists() || !delta.isFile() || !delta.canRead()) {
+    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(File archive) {
+        if (archive == null || !archive.exists() || !archive.isFile() || !archive.canRead()) {
             return Collections.emptySet();
         }
+
+        return getDependenciesAndPreviousVersion(getMdrsRows(archive), true, null);
+    }
+
+    private Set<RF2Row> getMdrsRows(File archive) {
         // Try Snapshot folder first (full/published packages), fall back to Delta folder (delta-only zips)
-        Set<RF2Row> mdrsRows = rf2Service.getMDRS(delta, false);
+        Set<RF2Row> mdrsRows = rf2Service.getMDRS(archive, false);
         if (mdrsRows.isEmpty()) {
-            mdrsRows = rf2Service.getMDRS(delta, true);
+            mdrsRows = rf2Service.getMDRS(archive, true);
         }
-        return getDependenciesAndPreviousVersion(mdrsRows, true, null);
+        return mdrsRows;
+    }
+
+    public CurrentPreviousModuleMetadataPair getCurrentAndPreviousMetadata(File archive) throws ModuleStorageCoordinatorException {
+        Set<RF2Row> mdrsRows =  getMdrsRows(archive);
+        ModuleMetadata currentRelease = new ModuleMetadata();
+        ModuleMetadata previousRelease = null;
+
+        //The current package can be determined by either the empty, or most recent, target effective times
+        populateComposition(currentRelease, mdrsRows);
+        populateDependencies(currentRelease, mdrsRows);
+
+        //Find one of these modules in S3, otherwise our 'identifying' module will be random.
+        //Any other modules with blank target effective times will be part of our composition
+        List<ModuleMetadata> previousReleases = getMetadata(currentRelease.getCompositionAsURIs());
+
+        //This can be null if there are no previous releases, but we should only find one for a given composition
+        //because there will be only one publication using the identifying module
+        if (previousReleases.size() > 1) {
+            String debugModules = previousReleases.stream()
+                    .map(ModuleMetadata::getCompositionAsURIs)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            throw new ModuleStorageCoordinatorException.OperationFailedException("More than one previous release found for " + debugModules);
+        } else if (previousReleases.size() == 1) {
+            previousRelease = previousReleases.getFirst();
+            //At this point, we know what our identifying module is, and we can promote it out of the composition
+            currentRelease.setIdentifyingModuleId(previousRelease.getIdentifyingModuleId());
+            currentRelease.getCompositionModuleIds().remove(previousRelease.getIdentifyingModuleId());
+        }
+
+        return new CurrentPreviousModuleMetadataPair(currentRelease, previousRelease);
+    }
+
+    private void populateComposition(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows) {
+        //The current package can be determined by either the empty, or most recent target effective times
+
+        // Max SOURCE_EFFECTIVE_TIME across all rows identifies the current package version (null = in-progress delta)
+        String currentET = mdrsRows.stream()
+                .map(row -> row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME))
+                .filter(StringUtils::hasLength)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+        currentRelease.setEffectiveTime(currentET == null ? null : Integer.parseInt(currentET));
+
+        // Composition modules authored the rows matching the current effective time (or blank for in-progress)
+        List<String> compositionModuleIds = mdrsRows.stream()
+                .filter(row -> currentET == null
+                        ? !StringUtils.hasLength(row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME))
+                        : currentET.equals(row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME)))
+                .map(row -> row.getColumn(RF2Service.MODULE_ID))
+                .distinct()
+                .collect(Collectors.toList()); //Can't used toList() directly as we'll modify this list later
+
+        //The model module is the only one that won't appear in the MDRS because it has no dependencies
+        if (compositionModuleIds.contains(SCTID_CORE_MODULE) && !compositionModuleIds.contains(SCTID_MODEL_MODULE)) {
+            compositionModuleIds.add(SCTID_MODEL_MODULE);
+        }
+
+        currentRelease.setCompositionModuleIds(compositionModuleIds);
+    }
+
+    private void populateDependencies(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows) throws ModuleStorageCoordinatorException {
+        //Dependencies are the referenced component ids, that do NOT have the same ET as the
+        //current release.   If we can't find that target, we'll exception out.
+        List<URI> dependencyURIs = mdrsRows.stream()
+                .filter(row -> isNotCurrentRelease(row, currentRelease))
+                .map(this::targetModuleAsURI)
+                .collect(Collectors.toList());
+        List<ModuleMetadata> dependencies = getMetadata(dependencyURIs);
+        currentRelease.setDependencies(dependencies);
+    }
+
+    boolean isNotCurrentRelease(RF2Row row, ModuleMetadata currentRelease) {
+        String thisReleaseET = currentRelease.getEffectiveTimeString();
+        String targetET = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+        return StringUtils.hasLength(targetET) && !targetET.equals(thisReleaseET);
+    }
+
+    private URI targetModuleAsURI(RF2Row row) {
+        String targetModuleId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+        String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+        return MSCUtils.editionUri(targetModuleId, targetEffectiveTime);
     }
 
 
-        /**
-		 * Retrieves dependencies and previous version of packages based on MDRS rows.
-		 *
-		 * @param mdrsRows          MDRS rows to process.
-		 * @param includeFile       Whether to include RF2 file.
-		 * @param maxEffectiveTimes Maximum effective times for filtering packages.
-		 * @return Set of ModuleMetadata representing dependencies and previous versions.
-		 */
+    /**
+     * Retrieves dependencies and previous version of packages based on MDRS rows.
+     * We need to look at getCurrentAndPreviousMetadata and discuss in code conversation
+     *
+     * @param mdrsRows          MDRS rows to process.
+     * @param includeFile       Whether to include RF2 file.
+     * @param maxEffectiveTimes Maximum effective times for filtering packages.
+     * @return Set of ModuleMetadata representing dependencies and previous versions.
+     */
     public Set<ModuleMetadata> getDependenciesAndPreviousVersion(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
@@ -935,6 +1112,7 @@ public class ModuleStorageCoordinator {
         Set<RF2Row> rf2Rows = rf2Service.getMDRS(rf2Package, false);
         return getDependencies(rf2Rows, excludedModuleIds);
     }
+
     private Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> excludedModuleIds) throws ModuleStorageCoordinatorException.OperationFailedException {
         mdrsRows = filterLatestTargetEffectiveTime(mdrsRows);
         Set<String> dependentTargetEffectiveTimes = new HashSet<>();
@@ -1382,6 +1560,8 @@ public class ModuleStorageCoordinator {
         if (!archiveFile.exists() || !archiveFile.isFile() || !archiveFile.canRead()) {
             throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Unable to read archive file: " + archiveFile.getName());
         }
+
+        Set<ModuleMetadata> metadataResources = getDependencies(archiveFile, null);
 
         // Check for a companion .metadata file written alongside the archive
         File companionMetadata = new File(archiveFile.getParent(), archiveFile.getName() + ".metadata");
