@@ -3,6 +3,7 @@ package org.snomed.module.storage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.File;
+import java.net.URI;
 import java.util.*;
 
 public class ModuleMetadata {
@@ -64,6 +65,11 @@ public class ModuleMetadata {
 
 	public void setCompositionModuleIds(List<String> compositionModuleIds) {
 		this.compositionModuleIds = compositionModuleIds;
+	}
+
+	public ModuleMetadata withCompositionModuleIds(List<String> moduleIds) {
+		this.compositionModuleIds = moduleIds;
+		return this;
 	}
 
 	public Integer getEffectiveTime() {
@@ -187,5 +193,14 @@ public class ModuleMetadata {
 	public boolean isInt() {
 		return this.getCodeSystemShortName().equals(INT);
 	}
+
+	@JsonIgnore
+	public List<URI> getCompositionAsURIs() {
+		return compositionModuleIds.stream()
+				.map(id -> MSCUtils.editionUri(id, effectiveTime))
+				.toList();
+	}
+
+
 }
 
