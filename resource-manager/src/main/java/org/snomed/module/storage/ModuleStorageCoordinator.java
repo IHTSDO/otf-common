@@ -4,7 +4,6 @@ import org.ihtsdo.otf.exception.ScriptException;
 import org.ihtsdo.otf.resourcemanager.ManualResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.otf.utils.SnomedUtilsBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.Environment;
@@ -34,11 +33,15 @@ public class ModuleStorageCoordinator {
     public static final String ADDITIONAL_DELIVERABLES = "deliverables";
 
     private final ResourceManager resourceManagerS3Storage;
-    private final ResourceManager resourceManagerLocalCache;
+    private final ResourceManager resourceManagerLocalStorage;
     private final RF2Service rf2Service;
     private final String writeDirectory;
     private final List<String> readDirectories;
     private final boolean allowArchive;
+
+    public enum SearchRequirement {ALLOW_NONE_FOUND, ENSURE_ONE_FOUND, ENSURE_ALL_FOUND}
+
+    private static final List<String> ROGUE_PACKAGES = List.of("SIMPLEX_900000000000012004");
 
     /**
      * Constructor.
@@ -53,13 +56,13 @@ public class ModuleStorageCoordinator {
      */
     public ModuleStorageCoordinator(ResourceManager resourceManagerS3Storage, ResourceManager resourceManagerCache, RF2Service rf2Service, String writeDirectory, List<String> readDirectories, boolean allowArchive) {
         this.resourceManagerS3Storage = resourceManagerS3Storage;
-        this.resourceManagerLocalCache = resourceManagerCache;
+        this.resourceManagerLocalStorage = resourceManagerCache;
         this.rf2Service = rf2Service;
         this.writeDirectory = writeDirectory;
         this.readDirectories = readDirectories;
         this.allowArchive = allowArchive;
 
-        if (readDirectories.size() == 1 && readDirectories.get(0).contains(",")) {
+        if (readDirectories.size() == 1 && readDirectories.getFirst().contains(",")) {
             throw new IllegalArgumentException("Invalid read directories"); // e.g. List.of("a,b,c") instead of List.of("a", "b", "c")
         }
     }
@@ -237,18 +240,7 @@ public class ModuleStorageCoordinator {
             resourceManagerS3Storage.doWriteResource(md5ResourcePath, asFileInputStream(md5File));
         }
     }
-    
-    /**
-     * Overload for Generate ModuleMetadata for given RF2 package, allowing a MetaData object to be used as it contains
-     * all the values passed in the original method.
-     * See {@link #generateMetadata(String, String, String, File)} for more details.
-     */
-    public ModuleMetadata generateMetadata(ModuleMetadata mm) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException, ScriptException {
-    	return generateMetadata(mm.getCodeSystemShortName(),
-    							mm.getIdentifyingModuleId(),
-    							mm.getEffectiveTimeString(),
-    							mm.getFile());
-    }
+
 
     /**
      * Generate ModuleMetadata for given RF2 package. To handle specific unsuccessful scenarios, catch exceptions that extend ModuleStorageCoordinatorException, i.e. InvalidArgumentsException. To handle all unsuccessful
@@ -264,7 +256,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to generate MD5 for the given RF2 package.
      */
     public ModuleMetadata generateMetadata(String codeSystem, String moduleId, String effectiveTime, File rf2Package) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException, ScriptException {
-        LOGGER.debug("Attempting to generate metadata for location {}_{}/{}", codeSystem, moduleId, effectiveTime);
+        LOGGER.debug("Generating metadata for location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         // Validate arguments
         throwIfInvalid(codeSystem, moduleId, effectiveTime, rf2Package);
@@ -304,7 +296,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if metadata or package cannot be found for computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to de-serialise.
      */
-    public ModuleMetadata getMetadata(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public ModuleMetadata getMetadata(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException {
         return getMetadata(codeSystem, moduleId, effectiveTime, true);
     }
 
@@ -320,7 +312,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if metadata or package cannot be found for computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to de-serialise.
      */
-    public ModuleMetadata getMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public ModuleMetadata getMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException {
         return doGetMetadata(codeSystem, moduleId, effectiveTime, includeFile);
     }
 
@@ -330,14 +322,14 @@ public class ModuleStorageCoordinator {
      * or {@code http://snomed.info/sct/<moduleId>/version/<effectiveTime>} (searches all read directories).
      * The directory listing is performed once per read directory, not once per URI.
      *
-     * @param uris List of SNOMED module URIs.
+     * @param releaseURIs List of SNOMED module URIs.
      * @return List of ModuleMetadata, one per URI, in the same order.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if any URI is null or unrecognised.
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if no matching package can be found for a URI.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if de-serialisation fails.
      */
-    public List<ModuleMetadata> getMetadata(List<URI> uris) throws ModuleStorageCoordinatorException {
-        if (uris == null || uris.isEmpty()) {
+    public List<ModuleMetadata> getMetadata(List<URI> releaseURIs, SearchRequirement searchRequirement, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
+        if (releaseURIs == null || releaseURIs.isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -347,30 +339,67 @@ public class ModuleStorageCoordinator {
             pathsByDirectory.put(readDirectory, resourceManagerS3Storage.doListFilenames(readDirectory, "metadata.json"));
         }
 
+        //Let's move any Core URI to be first in the list, so we're not continually searching for model and ICD modules
+        //which are contained within the pacakge identified with the core module id
+        makeCoreURIsFirst(releaseURIs);
+
         List<ModuleMetadata> results = new ArrayList<>();
-        for (URI uri : uris) {
-            results.add(resolveModuleUri(uri, pathsByDirectory));
+        //URIs with versions specified are expected to exist.  But they might be compositions of other packages
+        //So, we can't know until we've checked all of them, if they're all accounted for
+        Set<URI> modulesAccountedFor = new HashSet<>();
+        for (URI uri : releaseURIs) {
+            if (modulesAccountedFor.contains(uri)) {
+                continue;
+            }
+            ModuleMetadata metadata = obtainPopulatedMetadata(uri, pathsByDirectory, obtainFilesLocally);
+            if (metadata != null) {
+                //Now any composition of this package is effectively found also, so we don't need
+                //to look for it separately
+                modulesAccountedFor.addAll(MSCUtils.getURIsContained(metadata));
+                results.add(metadata);
+            }
+        }
+
+        //Can't do a count here because - eg with the ICD-10 module - we might find more modules
+        //than we're looking for due to additional items in the composition
+        if (searchRequirement == SearchRequirement.ENSURE_ALL_FOUND && failedToFindAllModules(releaseURIs, modulesAccountedFor)) {
+            throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Cannot find metadata for all releases " + releaseURIs);
         }
         return results;
     }
 
-    private ModuleMetadata resolveModuleUri(URI uri, Map<String, Set<String>> pathsByDirectory) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
-        if (uri == null) {
-            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("URI must not be null.");
+    private boolean failedToFindAllModules(List<URI> releaseURIs, Set<URI> modulesAccountedFor) {
+        for (URI uri : releaseURIs) {
+            if (!modulesAccountedFor.contains(uri)) {
+                return true;
+            }
         }
-        // Accepted forms:
-        //   /sct/<moduleId>
-        //   /sct/<moduleId>/version/<effectiveTime>
-        String[] uriSegments = uri.getPath().split("/");
-        if (uriSegments.length < 3 || !"sct".equals(uriSegments[1])) {
-            throw new ModuleStorageCoordinatorException.InvalidArgumentsException("Unrecognised URI format: " + uri);
-        }
-        String moduleId = uriSegments[2];
-        String effectiveTime = (uriSegments.length >= 5 && "version".equals(uriSegments[3])) ? uriSegments[4] : null;
+        return false;
+    }
 
-        String moduleIdSuffix = "_" + moduleId;
+    /**
+     * Reorders releaseURIs in place so that any URI identifying the core module comes first.
+     * This avoids repeatedly re-scanning for model/ICD modules that are already accounted for
+     * as dependencies of the core module's package.
+     *
+     * @param releaseURIs List of SNOMED module URIs to reorder.
+     */
+    private void makeCoreURIsFirst(List<URI> releaseURIs) {
+        releaseURIs.sort(Comparator.comparing(uri -> !isCoreModuleUri(uri)));
+    }
+
+    private boolean isCoreModuleUri(URI uri) {
+        String path = uri.getPath();
+        String corePath = MSCUtils.CORE_MODULE_URI.getPath();
+        return path.equals(corePath) || path.startsWith(corePath + SLASH);
+    }
+
+    private ModuleMetadata obtainPopulatedMetadata(URI uri, Map<String, Set<String>> pathsByDirectory, boolean obtainRF2ArchiveLocally) throws ModuleStorageCoordinatorException {
+        ModuleMetadata requestedMetadata = MSCUtils.asModuleMetadata(uri);
+
+        String moduleIdSuffix = "_" + requestedMetadata.getIdentifyingModuleId();
         // When effectiveTime is null, restrict to the primary read directory only (no fallback)
-        List<String> directoriesToSearch = effectiveTime == null
+        List<String> directoriesToSearch = requestedMetadata.getEffectiveTime() == null
                 ? List.of(readDirectories.get(0))
                 : new ArrayList<>(pathsByDirectory.keySet());
 
@@ -378,7 +407,7 @@ public class ModuleStorageCoordinator {
             String directoryPrefix = readDirectory + SLASH;
             Set<String> metadataPaths = pathsByDirectory.get(readDirectory);
 
-            final String resolvedEffectiveTime = effectiveTime;
+            final String resolvedEffectiveTime = requestedMetadata.getEffectiveTimeString();
             Optional<String> match = metadataPaths.stream()
                     .filter(path -> {
                         if (!path.startsWith(directoryPrefix)) {
@@ -386,7 +415,7 @@ public class ModuleStorageCoordinator {
                         }
                         String[] segments = path.substring(directoryPrefix.length()).split(SLASH);
                         // segments: [codeSystem_moduleId, effectiveTime, metadata.json]
-                        if (segments.length < 3) {
+                        if (segments.length < 3 || ROGUE_PACKAGES.contains(segments[0])) {
                             return false;
                         }
                         boolean moduleMatches = segments[0].endsWith(moduleIdSuffix);
@@ -396,19 +425,30 @@ public class ModuleStorageCoordinator {
                     .max(Comparator.comparing(path -> path.substring(directoryPrefix.length()).split(SLASH)[1]));
 
             if (match.isPresent()) {
-                String metadataPath = match.get();
-                try {
-                    return FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataPath), ModuleMetadata.class);
-                } catch (ScriptException | IOException e) {
-                    throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to de-serialize metadata.json at location " + metadataPath, e);
-                }
+                return downloadMetadataFromPath(match.get(), obtainRF2ArchiveLocally);
             }
         }
 
-        String message = effectiveTime == null
-                ? String.format("Cannot find package for module %s", moduleId)
-                : String.format("Cannot find package for module %s/%s", moduleId, effectiveTime);
-        throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
+        return null;
+    }
+
+    private ModuleMetadata downloadMetadataFromPath(String metadataPath, boolean obtainRF2ArchiveLocally) throws ModuleStorageCoordinatorException {
+        try {
+            if (resourceManagerS3Storage.doesObjectExist(metadataPath)) {
+                ModuleMetadata obtainedMetadata = FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataPath), ModuleMetadata.class);
+                String readDirectory = metadataPath.substring(0, metadataPath.indexOf(SLASH));
+                //verifyUriMatches(requestedMetadata, obtainedMetadata);
+                if (obtainRF2ArchiveLocally) {
+                    LOGGER.debug("Ensuring {} exists locally...", obtainedMetadata.getFilename());
+                    populateFileLocally(readDirectory, obtainedMetadata);
+                }
+                return obtainedMetadata;
+            }
+        } catch (ScriptException | IOException e) {
+            throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to de-serialize metadata.json at location " + metadataPath, e);
+        }
+
+        return null;
     }
 
     /**
@@ -503,7 +543,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if given RF2 package cannot be found or if any dependencies cannot be found.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to de-serialise.
      */
-    public List<ModuleMetadata> getRelease(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public List<ModuleMetadata> getRelease(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies) throws ModuleStorageCoordinatorException {
         return doGetRelease(codeSystem, moduleId, effectiveTime, includeFile, includeDependencies);
     }
 
@@ -519,7 +559,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if given RF2 package cannot be found or if any dependencies cannot be found.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, failing to de-serialise.
      */
-    public List<ModuleMetadata> getRelease(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public List<ModuleMetadata> getRelease(String codeSystem, String moduleId, String effectiveTime) throws ModuleStorageCoordinatorException {
         return doGetRelease(codeSystem, moduleId, effectiveTime, true, true);
     }
 
@@ -535,7 +575,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, attempting to archive when flag has been disabled.
      */
-    public void setPublished(String codeSystem, String moduleId, String effectiveTime, boolean published) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException {
+    public void setPublished(String codeSystem, String moduleId, String effectiveTime, boolean published) throws ModuleStorageCoordinatorException {
         if (!allowArchive) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
         }
@@ -559,7 +599,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from computed location.
      * @throws ModuleStorageCoordinatorException.OperationFailedException  if any other operation fails, for example, attempting to archive when flag has been disabled.
      */
-    public void setEdition(String codeSystem, String moduleId, String effectiveTime, boolean edition) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException {
+    public void setEdition(String codeSystem, String moduleId, String effectiveTime, boolean edition) throws ModuleStorageCoordinatorException {
         if (!allowArchive) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Support for archiving disabled");
         }
@@ -580,7 +620,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from metadata.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if any argument in resource path is invalid.
      */
-    public Map<String, List<ModuleMetadata>> getAllReleases() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public Map<String, List<ModuleMetadata>> getAllReleases() throws ModuleStorageCoordinatorException {
         return doGetAllReleases();
     }
 
@@ -597,7 +637,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package cannot be found from metadata.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if any argument in resource path is invalid.
      */
-    public Map<String, List<ModuleMetadata>> getAllReleases(int page, int size) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public Map<String, List<ModuleMetadata>> getAllReleases(int page, int size) throws ModuleStorageCoordinatorException {
         Map<String, List<ModuleMetadata>> releases = getAllReleases();
 
         boolean paging = page >= 1 && size >= 1;
@@ -626,7 +666,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if RF2 package(s) cannot be found for given CodeSystem.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if given CodeSystem is invalid.
      */
-    public List<ModuleMetadata> getAllReleases(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public List<ModuleMetadata> getAllReleases(String codeSystem) throws ModuleStorageCoordinatorException {
         return doGetAllReleasesByCodeSystem(codeSystem);
     }
 
@@ -639,7 +679,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if an internal operation fails, for example, RF2 package cannot be found.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
      */
-    public List<String> getCodeSystems() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public List<String> getCodeSystems() throws ModuleStorageCoordinatorException {
         Map<String, List<ModuleMetadata>> releases = doGetAllReleases();
         if (releases.isEmpty()) {
             return Collections.emptyList();
@@ -660,7 +700,7 @@ public class ModuleStorageCoordinator {
      * @throws ModuleStorageCoordinatorException.ResourceNotFoundException if an internal operation fails, for example, RF2 package cannot be found.
      * @throws ModuleStorageCoordinatorException.InvalidArgumentsException if an internal operation fails, for example, CodeSystem format is invalid.
      */
-    public List<Integer> getReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public List<Integer> getReleaseDates(String codeSystem) throws ModuleStorageCoordinatorException {
         if (codeSystem == null || codeSystem.isEmpty()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
         }
@@ -676,7 +716,7 @@ public class ModuleStorageCoordinator {
      * @param includeFile Whether to include RF2 file.
      * @return Dependencies stored for given MDRS entries.
      */
-    public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> expectedModules, boolean includeFile) {
+    public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, Set<String> expectedModules, boolean includeFile) throws ModuleStorageCoordinatorException {
         if (mdrsRows == null || mdrsRows.isEmpty() || expectedModules == null || expectedModules.isEmpty()) {
             return Collections.emptySet();
         }
@@ -706,7 +746,7 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
-    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile) {
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile) throws ModuleStorageCoordinatorException {
         return getComposition(mdrsRows, includeFile, null);
     }
 
@@ -717,7 +757,7 @@ public class ModuleStorageCoordinator {
      * @param includeFile   Whether to include RF2 file.
      * @return Composition for given MDRS entries.
      */
-    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> transientEffectiveTimes) {
+    public Set<ModuleMetadata> getComposition(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> transientEffectiveTimes) throws ModuleStorageCoordinatorException {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
         }
@@ -747,14 +787,6 @@ public class ModuleStorageCoordinator {
         return moduleMetadata;
     }
 
-    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(File archive) {
-        if (archive == null || !archive.exists() || !archive.isFile() || !archive.canRead()) {
-            return Collections.emptySet();
-        }
-
-        return getDependenciesAndPreviousVersion(getMdrsRows(archive), true, null);
-    }
-
     private Set<RF2Row> getMdrsRows(File archive) {
         // Try Snapshot folder first (full/published packages), fall back to Delta folder (delta-only zips)
         Set<RF2Row> mdrsRows = rf2Service.getMDRS(archive, false);
@@ -764,18 +796,18 @@ public class ModuleStorageCoordinator {
         return mdrsRows;
     }
 
-    public CurrentPreviousModuleMetadataPair getCurrentAndPreviousMetadata(File archive) throws ModuleStorageCoordinatorException {
+    public CurrentPreviousModuleMetadataPair getCurrentAndPreviousMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
         Set<RF2Row> mdrsRows =  getMdrsRows(archive);
-        ModuleMetadata currentRelease = new ModuleMetadata();
+        ModuleMetadata currentRelease = new ModuleMetadata().withFile(archive);
         ModuleMetadata previousRelease = null;
 
         //The current package can be determined by either the empty, or most recent, target effective times
         populateComposition(currentRelease, mdrsRows);
-        populateDependencies(currentRelease, mdrsRows);
+        populateDependencies(currentRelease, mdrsRows, obtainFilesLocally);
 
         //Find one of these modules in S3, otherwise our 'identifying' module will be random.
-        //Any other modules with blank target effective times will be part of our composition
-        List<ModuleMetadata> previousReleases = getMetadata(currentRelease.getCompositionAsURIs());
+        //Any other modules with blank target effective times will remain part of our composition
+        List<ModuleMetadata> previousReleases = getMetadata(currentRelease.getCompositionAsURIs(), SearchRequirement.ENSURE_ONE_FOUND, true);
 
         //This can be null if there are no previous releases, but we should only find one for a given composition
         //because there will be only one publication using the identifying module
@@ -823,14 +855,14 @@ public class ModuleStorageCoordinator {
         currentRelease.setCompositionModuleIds(compositionModuleIds);
     }
 
-    private void populateDependencies(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows) throws ModuleStorageCoordinatorException {
+    private void populateDependencies(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
         //Dependencies are the referenced component ids, that do NOT have the same ET as the
         //current release.   If we can't find that target, we'll exception out.
         List<URI> dependencyURIs = mdrsRows.stream()
                 .filter(row -> isNotCurrentRelease(row, currentRelease))
                 .map(this::targetModuleAsURI)
                 .collect(Collectors.toList());
-        List<ModuleMetadata> dependencies = getMetadata(dependencyURIs);
+        List<ModuleMetadata> dependencies = getMetadata(dependencyURIs, SearchRequirement.ENSURE_ALL_FOUND, obtainFilesLocally);
         currentRelease.setDependencies(dependencies);
     }
 
@@ -856,7 +888,7 @@ public class ModuleStorageCoordinator {
      * @param maxEffectiveTimes Maximum effective times for filtering packages.
      * @return Set of ModuleMetadata representing dependencies and previous versions.
      */
-    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) {
+    public Set<ModuleMetadata> getDependenciesAndPreviousVersion(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) throws ModuleStorageCoordinatorException {
         if (mdrsRows == null || mdrsRows.isEmpty()) {
             return Collections.emptySet();
         }
@@ -884,7 +916,7 @@ public class ModuleStorageCoordinator {
         return packages;
     }
 
-    private Set<ModuleMetadata> getRF2Packages() {
+    private Set<ModuleMetadata> getRF2Packages() throws ModuleStorageCoordinatorException {
         Map<String, ModuleMetadata> rf2PackageMap = new HashMap<>();
         for (String readDirectory : readDirectories) {
             Set<String> rf2PackagePaths = resourceManagerS3Storage.doListFilenames(readDirectory, ".zip");
@@ -893,7 +925,7 @@ public class ModuleStorageCoordinator {
             }
 
             for (String rfPackagePath : rf2PackagePaths) {
-                ModuleMetadata moduleMetadata = asModuleMetadata(asMetadataResourcePath(rfPackagePath));
+                ModuleMetadata moduleMetadata = downloadMetadataFromPath(MSCUtils.convertArchivePathToMetadataPath(rfPackagePath), false) ;
                 if (moduleMetadata != null && !Objects.equals("SIMPLEX", moduleMetadata.getCodeSystemShortName())) {
                     // Allow dev to overwrite prod
                     String filename = moduleMetadata.getFilename();
@@ -938,12 +970,7 @@ public class ModuleStorageCoordinator {
 
                     if (resourceManagerS3Storage.doesObjectExist(metadataResourcePath)) {
                         String rf2ResourcePath = baseResourcePath + SLASH + dependency.getFilename();
-                        boolean cacheEnabled = resourceManagerLocalCache != null;
-                        if (cacheEnabled) {
-                            doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, dependency);
-                        } else {
-                            doGetMetadataFromRemote(rf2ResourcePath, dependency);
-                        }
+                        populateFileLocally(rf2ResourcePath, dependency);
                     }
                 }
             }
@@ -952,7 +979,7 @@ public class ModuleStorageCoordinator {
         }
     }
 
-    private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    private List<ModuleMetadata> doGetAllReleasesByCodeSystem(String codeSystem) throws ModuleStorageCoordinatorException {
         if (codeSystem == null || codeSystem.isEmpty()) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("CodeSystem invalid (null or empty)");
         }
@@ -970,7 +997,7 @@ public class ModuleStorageCoordinator {
         throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Cannot find any releases for CodeSystem " + codeSystem);
     }
 
-    private Map<String, List<ModuleMetadata>> doGetAllReleases() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    private Map<String, List<ModuleMetadata>> doGetAllReleases() throws ModuleStorageCoordinatorException {
         Map<String, List<ModuleMetadata>> releases = new HashMap<>();
         for (String readDirectory : readDirectories) {
             // List all json resource paths in readDirectory
@@ -1168,7 +1195,7 @@ public class ModuleStorageCoordinator {
                         if (owningPackageFound) {
                             rf2Row.setFound(true);
                             found = found + 1;
-                            rf2Row.setMetadataResourcePath(asMetadataResourcePath(possibleRF2PackagePath));
+                            rf2Row.setMetadataResourcePath(MSCUtils.convertArchivePathToMetadataPath(possibleRF2PackagePath));
                         }
                     } catch (IOException e) {
                         throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to read RF2 package " + possibleRF2PackagePath, e);
@@ -1268,39 +1295,16 @@ public class ModuleStorageCoordinator {
         }
     }
 
-    private String asMetadataResourcePath(String packageResourcePath) {
-        String[] splits = packageResourcePath.split(SLASH);
-        splits = Arrays.copyOf(splits, splits.length - 1); // Remove last segment, i.e. a/b/c/d => a/b/c
-
-        return String.join(SLASH, splits) + "/metadata.json";
-    }
-
-    private ModuleMetadata doGetMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    private ModuleMetadata doGetMetadata(String codeSystem, String moduleId, String effectiveTime, boolean includeFile) throws ModuleStorageCoordinatorException {
         LOGGER.debug("Attempting to download from location {}_{}/{}", codeSystem, moduleId, effectiveTime);
 
         throwIfInvalid(codeSystem, moduleId, effectiveTime);
 
         for (String readDirectory : this.readDirectories) {
-            String baseResourcePath = getBaseResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
             String metadataResourcePath = getMetadataResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
-            if (resourceManagerS3Storage.doesObjectExist(metadataResourcePath)) {
-                try {
-                    ModuleMetadata moduleMetadata = FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
-                    String rf2ResourcePath = baseResourcePath + SLASH + moduleMetadata.getFilename();
-                    if (resourceManagerS3Storage.doesObjectExist(rf2ResourcePath)) {
-                        if (includeFile) {
-                            boolean cacheEnabled = resourceManagerLocalCache != null;
-                            if (cacheEnabled) {
-                                doGetMetadataFromCacheWithRemoteFallBack(rf2ResourcePath, moduleMetadata);
-                            } else {
-                                doGetMetadataFromRemote(rf2ResourcePath, moduleMetadata);
-                            }
-                        }
-                        return moduleMetadata;
-                    }
-                } catch (ScriptException | IOException e) {
-                    throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to de-serialize metadata.json at location " + metadataResourcePath, e);
-                }
+            ModuleMetadata obtainedMetadata = downloadMetadataFromPath(metadataResourcePath, includeFile);
+            if (obtainedMetadata != null) {
+                return obtainedMetadata;
             }
         }
 
@@ -1308,29 +1312,44 @@ public class ModuleStorageCoordinator {
         throw new ModuleStorageCoordinatorException.ResourceNotFoundException(message);
     }
 
-	private void doGetMetadataFromCacheWithRemoteFallBack(String rf2ResourcePath, ModuleMetadata moduleMetadata) {
-		String cachePath = resourceManagerLocalCache.getCachePath();
-		String pathName = String.format("%s/%s", cachePath, rf2ResourcePath);
-		File localRF2Package = resourceManagerLocalCache.getNullable(pathName);
+    private void populateFileLocally(String readDirectory, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException {
+        boolean localStorageAvailable = resourceManagerLocalStorage != null;
+        String baseResourcePath = MSCUtils.getBaseResourcePath(readDirectory, moduleMetadata);
+        String rf2ArchiveResourcePath = baseResourcePath + SLASH + moduleMetadata.getFilename();
+        if (resourceManagerS3Storage.doesObjectExist(rf2ArchiveResourcePath)) {
+            if (localStorageAvailable) {
+                ensureRF2ArchiveAvailableLocally(rf2ArchiveResourcePath, moduleMetadata);
+            } else {
+                doGetMetadataFromRemote(rf2ArchiveResourcePath, moduleMetadata);
+            }
+        }
+    }
+
+    private void ensureRF2ArchiveAvailableLocally(String rf2ResourcePath, ModuleMetadata moduleMetadata) throws ModuleStorageCoordinatorException {
+		String localStoreRoot = resourceManagerLocalStorage.getCachePath();
+		String localPathName = String.format("%s/%s", localStoreRoot, rf2ResourcePath);
+		File localRF2Package = resourceManagerLocalStorage.getNullable(localPathName);
 		moduleMetadata.setFile(localRF2Package);
 
 		if (localRF2Package != null) {
-			boolean localMD5MatchesRemote = Objects.equals(FileUtils.getMD5Nullable(localRF2Package), moduleMetadata.getFileMD5());
+            String localPackageMD5 = FileUtils.getMD5Nullable(localRF2Package);
+			boolean localMD5MatchesRemote = Objects.equals(localPackageMD5, moduleMetadata.getFileMD5());
 			if (!localMD5MatchesRemote) {
-				// Remote fallback
+				// Local storage is invalid, ignore and re-download
 				localRF2Package = null;
 			}
 		}
 
 		// Remote fallback
 		if (localRF2Package == null) {
+            LOGGER.debug("Downloading from S3 to local storage ", localPathName);
 			try (InputStream inputStream = resourceManagerS3Storage.readResourceStream(rf2ResourcePath)) {
-				resourceManagerLocalCache.doWriteResource(rf2ResourcePath, inputStream);
+				resourceManagerLocalStorage.doWriteResource(rf2ResourcePath, inputStream);
 			} catch (Exception e) {
-				// ignore
+				throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to download RF2 archive from S3 " + rf2ResourcePath, e);
 			}
 
-			localRF2Package = new File(pathName);
+			localRF2Package = new File(localPathName);
 			moduleMetadata.setFile(localRF2Package);
 		}
 	}
@@ -1388,7 +1407,7 @@ public class ModuleStorageCoordinator {
         }
     }
 
-    private List<ModuleMetadata> doGetRelease(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    private List<ModuleMetadata> doGetRelease(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies) throws ModuleStorageCoordinatorException {
         throwIfInvalid(codeSystem, moduleId, effectiveTime);
 
         Set<ModuleMetadata> moduleMetadata = new LinkedHashSet<>();
@@ -1396,7 +1415,7 @@ public class ModuleStorageCoordinator {
         return new ArrayList<>(moduleMetadata);
     }
 
-    private void appendModuleMetadataRecursive(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies, Set<ModuleMetadata> moduleMetadatas) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    private void appendModuleMetadataRecursive(String codeSystem, String moduleId, String effectiveTime, boolean includeFile, boolean includeDependencies, Set<ModuleMetadata> moduleMetadatas) throws ModuleStorageCoordinatorException {
         ModuleMetadata moduleMetadata = getMetadata(codeSystem, moduleId, effectiveTime, includeFile);
 
         if (includeDependencies) {
@@ -1420,14 +1439,6 @@ public class ModuleStorageCoordinator {
 
         int toIndex = (fromIndex == 0 ? size : fromIndex * size);
         return list.subList(fromIndex, Math.min(toIndex, list.size()));
-    }
-
-    private ModuleMetadata asModuleMetadata(String metadataResourcePath) {
-        try {
-            return FileUtils.convertToObject(resourceManagerS3Storage.readResourceStream(metadataResourcePath), ModuleMetadata.class);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private void removeSelfDependingModules(Set<RF2Row> rows) {
@@ -1537,7 +1548,7 @@ public class ModuleStorageCoordinator {
         return ownPackages;
     }
 
-    public ModuleMetadata getMetadata(URI codeSystemVersionURI) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public ModuleMetadata getMetadata(URI codeSystemVersionURI) throws ModuleStorageCoordinatorException {
         if (codeSystemVersionURI == null) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("No URI specified");
         }
@@ -1553,7 +1564,7 @@ public class ModuleStorageCoordinator {
         return getMetadata(null, moduleId, effectiveTime);
     }
 
-    public ModuleMetadata getMetadata(File archiveFile) throws ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.OperationFailedException {
+    public ModuleMetadata getMetadata(File archiveFile) throws ModuleStorageCoordinatorException {
         if (archiveFile == null) {
             throw new ModuleStorageCoordinatorException.InvalidArgumentsException("No archive file specified");
         }
@@ -1579,7 +1590,7 @@ public class ModuleStorageCoordinator {
         for (String readDirectory : readDirectories) {
             for (String rf2PackagePath : resourceManagerS3Storage.doListFilenames(readDirectory, ".zip")) {
                 if (rf2PackagePath.endsWith(SLASH + archiveFile.getName())) {
-                    ModuleMetadata metadata = asModuleMetadata(asMetadataResourcePath(rf2PackagePath));
+                    ModuleMetadata metadata = downloadMetadataFromPath(MSCUtils.convertArchivePathToMetadataPath(rf2PackagePath), false);
                     if (metadata != null) {
                         metadata.setFile(archiveFile);
                         return metadata;

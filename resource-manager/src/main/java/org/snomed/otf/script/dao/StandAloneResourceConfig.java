@@ -3,6 +3,8 @@ package org.snomed.otf.script.dao;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -11,6 +13,9 @@ import java.util.Arrays;
  * have access to Autowired and all that goodness
  */
 public class StandAloneResourceConfig extends ResourceConfiguration {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(StandAloneResourceConfig.class);
+
 
 	private enum CONFIGURATION {
 		READ_ONLY			("readonly"),
@@ -52,7 +57,14 @@ public class StandAloneResourceConfig extends ResourceConfiguration {
 		return Arrays.stream(CONFIGURATION.values())
 				.allMatch(aConfig -> {
 					try {
-						return !StringUtils.isEmpty(properties.getProperty(aConfig.getValue()));
+						if (StringUtils.isEmpty(properties.getProperty(aConfig.getValue()))) {
+							if (aConfig == CONFIGURATION.CLOUD_PATH) {
+								LOGGER.warn("Cloud path is empty, working from root of S3 bucket");
+							} else {
+								return false;
+							}
+						}
+						return true;
 					} catch (TermServerScriptException e) {
 						return false;
 					}

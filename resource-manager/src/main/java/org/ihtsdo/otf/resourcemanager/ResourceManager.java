@@ -232,6 +232,7 @@ public class ResourceManager {
 				Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
 			}
 		}
+		LOGGER.debug("Found {}", fileNames.size());
 
 		return fileNames;
 	}
@@ -239,7 +240,6 @@ public class ResourceManager {
 	public Set<String> doListFilenames(String prefix, String suffix) {
 		Set<String> fileNames = doListFilenames(prefix);
 		fileNames.removeIf(p -> !p.endsWith(suffix));
-
 		return fileNames;
 	}
 
@@ -272,8 +272,8 @@ public class ResourceManager {
 
 	public boolean doesObjectExist(String resourcePath) {
 		try {
-			return listFilenames().contains(resourcePath);
-		} catch (IOException e) {
+			return resourceLoader.getResource(getFullPath(resourcePath)).exists();
+		} catch (S3Exception e) {
 			return false;
 		}
 	}
