@@ -1,10 +1,12 @@
 package org.snomed.module.storage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ModuleMetadata {
 
@@ -91,6 +93,13 @@ public class ModuleMetadata {
 	
 	public ModuleMetadata withEffectiveTime(Integer effectiveTime) {
 		this.effectiveTime = effectiveTime;
+		return this;
+	}
+
+	public ModuleMetadata withEffectiveTime(String effectiveTimeStr) {
+		if (StringUtils.hasLength(effectiveTimeStr)) {
+			this.effectiveTime = Integer.parseInt(effectiveTimeStr);
+		}
 		return this;
 	}
 
@@ -198,7 +207,7 @@ public class ModuleMetadata {
 	public List<URI> getCompositionAsURIs() {
 		return compositionModuleIds.stream()
 				.map(id -> MSCUtils.editionUri(id, effectiveTime))
-				.toList();
+				.collect(Collectors.toList()); //Don't use toList directly as we will sort this list
 	}
 
 

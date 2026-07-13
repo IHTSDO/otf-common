@@ -1074,7 +1074,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getAllReleases_ShouldReturnExpected_WhenNoPackages() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public void getAllReleases_ShouldReturnExpected_WhenNoPackages() throws ModuleStorageCoordinatorException {
         // when
         Map<String, List<ModuleMetadata>> result = moduleStorageCoordinatorDev.getAllReleases();
 
@@ -1304,7 +1304,7 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    public void getCodeSystems_ShouldReturnExpected_WhenNoData() throws ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException {
+    public void getCodeSystems_ShouldReturnExpected_WhenNoData() throws ModuleStorageCoordinatorException {
         // when
         List<String> codeSystems = moduleStorageCoordinatorDev.getCodeSystems();
 
