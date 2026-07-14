@@ -47,6 +47,11 @@ public class MSCUtils {
 		return directory + SLASH + m.getCodeSystemShortName() + "_" + m.getIdentifyingModuleId() + SLASH + m.getEffectiveTimeString();
 	}
 
+	public static String getBaseResourcePath(String specificResourcePath) {
+		//Assuming we have a resource path for an RF2 archive or metadata.json file, return the path name up to the last slash
+		return specificResourcePath.substring(0, specificResourcePath.lastIndexOf(SLASH));
+	}
+
 	public static String convertArchivePathToMetadataPath(String rf2ArchiveResourcePath) {
 		String[] splits = rf2ArchiveResourcePath.split(SLASH);
 		splits = Arrays.copyOf(splits, splits.length - 1); // Remove last segment, i.e. a/b/c/d => a/b/c
