@@ -802,16 +802,21 @@ public class ModuleStorageCoordinator {
         return mdrsRows;
     }
 
-    public CurrentPreviousModuleMetadataPair getCurrentAndPreviousMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
+    public ModuleMetadata getMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
         Set<RF2Row> mdrsRows =  getMdrsRows(archive);
-        ModuleMetadata currentRelease = new ModuleMetadata().withFile(archive);
-        ModuleMetadata previousRelease = null;
+        ModuleMetadata metadata = new ModuleMetadata().withFile(archive);
 
         //The current package can be determined by either the empty, or most recent, target effective times
-        populateComposition(currentRelease, mdrsRows);
-        populateDependencies(currentRelease, mdrsRows, obtainFilesLocally);
+        populateComposition(metadata, mdrsRows);
+        populateDependencies(metadata, mdrsRows, obtainFilesLocally);
+        return metadata;
+    }
 
-        //Find one of these modules in S3, otherwise our 'identifying' module will be random.
+    public CurrentPreviousModuleMetadataPair getCurrentAndPreviousMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
+        ModuleMetadata currentRelease = getMetadata(archive, obtainFilesLocally);
+        ModuleMetadata previousRelease = null;
+
+                //Find one of these modules in S3, otherwise our 'identifying' module will be random.
         //Any other modules with blank target effective times will remain part of our composition
         List<ModuleMetadata> previousReleases = getMetadata(currentRelease.getCompositionAsURIs(), SearchRequirement.ENSURE_ONE_FOUND, true);
 
@@ -1350,9 +1355,12 @@ public class ModuleStorageCoordinator {
 		moduleMetadata.setFile(localRF2Package);
 
 		if (localRF2Package != null) {
+            LOGGER.debug("Checking remote md5 against local package {}", localPathName);
             String localPackageMD5 = FileUtils.getMD5Nullable(localRF2Package);
+            LOGGER.debug("Local package md5: {}", localPackageMD5);
 			boolean localMD5MatchesRemote = Objects.equals(localPackageMD5, moduleMetadata.getFileMD5());
-			if (!localMD5MatchesRemote) {
+            LOGGER.info("Local md5 {} remote", localMD5MatchesRemote?"matches":"does not match");
+            if (!localMD5MatchesRemote) {
 				// Local storage is invalid, ignore and re-download
 				localRF2Package = null;
 			}
