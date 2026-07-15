@@ -93,7 +93,7 @@ public abstract class ResourceConfiguration {
 		}
 
 		public Local(String path) {
-			this.path = path;
+			this.path = normalisePath(path);
 		}
 
 		public String getPath() {
@@ -123,7 +123,7 @@ public abstract class ResourceConfiguration {
 		public Cloud(final String bucketName,
 					 final String path) {
 			this.bucketName = bucketName;
-			this.path = path;
+			this.path = normalisePath(path);
 		}
 
 		public String getBucketName() {
