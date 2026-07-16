@@ -441,13 +441,15 @@ public class ModuleStorageCoordinator {
         try {
             if (remoteStorageManager.doesObjectExist(metadataPath)) {
                 ModuleMetadata obtainedMetadata = FileUtils.convertToObject(remoteStorageManager.readResourceStream(metadataPath), ModuleMetadata.class);
-                String readDirectory = metadataPath.substring(0, metadataPath.indexOf(SLASH));
                 //verifyUriMatches(requestedMetadata, obtainedMetadata);
-                if (obtainRF2ArchiveLocally) {
-                    LOGGER.debug("Ensuring {} exists locally...", obtainedMetadata.getFilename());
-                    populateFileLocally(baseResourcePath, obtainedMetadata);
+                String rf2ArchiveResourcePath = baseResourcePath + SLASH + obtainedMetadata.getFilename();
+                if (remoteStorageManager.doesObjectExist(rf2ArchiveResourcePath)) {
+                    if (obtainRF2ArchiveLocally) {
+                        LOGGER.debug("Ensuring {} exists locally...", obtainedMetadata.getFilename());
+                        populateFileLocally(baseResourcePath, obtainedMetadata);
+                    }
+                    return obtainedMetadata;
                 }
-                return obtainedMetadata;
             }
         } catch (ScriptException | IOException e) {
             throw new ModuleStorageCoordinatorException.OperationFailedException("Failed to de-serialize metadata.json at location " + metadataPath, e);
@@ -936,7 +938,7 @@ public class ModuleStorageCoordinator {
             }
 
             for (String rfPackagePath : rf2PackagePaths) {
-                ModuleMetadata moduleMetadata = downloadMetadataFromPath(MSCUtils.convertArchivePathToMetadataPath(rfPackagePath), false) ;
+                ModuleMetadata moduleMetadata = downloadMetadataFromPath(MSCUtils.getBaseResourcePath(rfPackagePath), false);
                 if (moduleMetadata != null && !Objects.equals("SIMPLEX", moduleMetadata.getCodeSystemShortName())) {
                     // Allow dev to overwrite prod
                     String filename = moduleMetadata.getFilename();
@@ -1323,8 +1325,7 @@ public class ModuleStorageCoordinator {
 
         for (String readDirectory : this.readDirectories) {
             String baseResourcePath = getBaseResourcePath(readDirectory, codeSystem, moduleId, effectiveTime);
-            String metadataResourcePath = getMetadataResourcePath(baseResourcePath);
-            ModuleMetadata obtainedMetadata = downloadMetadataFromPath(metadataResourcePath, includeFile);
+            ModuleMetadata obtainedMetadata = downloadMetadataFromPath(baseResourcePath, includeFile);
             if (obtainedMetadata != null) {
                 return obtainedMetadata;
             }

@@ -272,8 +272,8 @@ public class ResourceManager {
 
 	public boolean doesObjectExist(String resourcePath) {
 		try {
-			return resourceLoader.getResource(getFullPath(resourcePath)).exists();
-		} catch (S3Exception e) {
+			return listFilenames().contains(resourcePath);
+		} catch (IOException e) {
 			return false;
 		}
 	}
@@ -337,7 +337,7 @@ public class ResourceManager {
 			String path = resourceConfiguration.getPath();
 			PutObjectRequest request = PutObjectRequest.builder()
 					.bucket(resourceConfiguration.getBucketName())
-					.key(path == null || path.isEmpty() ? resourcePath : path + "/" + resourcePath)
+					.key(configurePath(path) + resourcePath)
 					.build();
 
 			s3Client.putObject(request, RequestBody.empty());
