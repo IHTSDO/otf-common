@@ -9,6 +9,9 @@ import static org.ihtsdo.otf.RF2Constants.SCTID_CORE_MODULE;
 
 public class MSCUtils {
 
+	//No need to construct this object, just use the static methods
+	private MSCUtils() {}
+
 	public static final String SLASH = "/";
 
 	private static final String EDITION_URI_TEMPLATE =

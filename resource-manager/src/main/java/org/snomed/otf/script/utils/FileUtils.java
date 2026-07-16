@@ -107,7 +107,7 @@ public class FileUtils {
      */
     private static String getMD5Native(File file) {
         List<String> command = nativeMd5Command(file);
-        if (command == null) {
+        if (command.isEmpty()) {
             return null;
         }
         try {
@@ -141,6 +141,6 @@ public class FileUtils {
         } else if (SystemUtils.IS_OS_LINUX) {
             return List.of("md5sum", path);
         }
-        return null;
+        return List.of();
     }
 }
