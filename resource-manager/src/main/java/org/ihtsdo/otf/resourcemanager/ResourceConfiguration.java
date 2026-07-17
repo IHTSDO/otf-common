@@ -1,5 +1,8 @@
 package org.ihtsdo.otf.resourcemanager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 
 /**
@@ -16,6 +19,8 @@ import java.util.Objects;
  * TasksResourceConfiguration would be autowired into your spring configuration and then passed to the constructor of ResourceManager.
  */
 public abstract class ResourceConfiguration {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceConfiguration.class);
 
 	private boolean readonly;
 	private boolean useCloud;
@@ -72,7 +77,7 @@ public abstract class ResourceConfiguration {
 			return local.getPath();
 		}
 
-		return null;
+		throw new IllegalStateException("ResourceConfiguration configured as neither cloud nor local");
 	}
 
 	@Override
@@ -115,7 +120,7 @@ public abstract class ResourceConfiguration {
 	public static class Cloud {
 
 		private String bucketName;
-		private String path;
+		private String path = "";
 
 		public Cloud() {
 		}
