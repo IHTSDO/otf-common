@@ -20,8 +20,6 @@ import java.util.Objects;
  */
 public abstract class ResourceConfiguration {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceConfiguration.class);
-
 	private boolean readonly;
 	private boolean useCloud;
 

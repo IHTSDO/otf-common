@@ -808,6 +808,11 @@ public class ModuleStorageCoordinator {
         Set<RF2Row> mdrsRows =  getMdrsRows(archive);
         ModuleMetadata metadata = new ModuleMetadata().withFile(archive);
 
+        if (mdrsRows.isEmpty()) {
+            String msg = "No MDRS rows found for archive : %s, unable to determine dependencies.".formatted(archive.getName());
+            throw new ModuleStorageCoordinatorException.InvalidArgumentsException(msg);
+
+        }
         //The current package can be determined by either the empty, or most recent, target effective times
         populateComposition(metadata, mdrsRows);
         populateDependencies(metadata, mdrsRows, obtainFilesLocally);
