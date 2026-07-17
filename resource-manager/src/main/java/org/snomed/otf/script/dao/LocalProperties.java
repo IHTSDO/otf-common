@@ -59,6 +59,11 @@ public class LocalProperties extends ResourceConfiguration {
 		}
 		return prop.getProperty(prefix + propName);
 	}
+
+	/** The literal key this instance would look up for propName, ie with the prefix applied. */
+	public String getFullyQualifiedKey(String propName) {
+		return prefix + propName;
+	}
 	
 	public Boolean getBooleanProperty (String propName) throws TermServerScriptException {
 		if (!isInitialised) {

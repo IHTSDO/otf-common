@@ -251,6 +251,10 @@ public abstract class Component implements RF2Constants {
 		return 2;
 	}
 
+	public boolean supportsMutableFieldRetrieval() {
+		return true;
+	}
+
 	public String toStringWithId() {
 		//Override is only needed if default implemenation does not include Id eg Descriptions or Refset Members.
 		return toString();

@@ -42,8 +42,8 @@ public class StandAloneResourceConfig extends ResourceConfiguration {
 	public void init(String prefix, boolean validate) throws TermServerScriptException {
 		LocalProperties properties = new LocalProperties(prefix);
 		if (validate && !isConfigurationValid(properties)) {
-			throw new TermServerScriptException("Check application.properties for correct S3 config: "
-					+ Arrays.toString(CONFIGURATION.values()));
+			throw new TermServerScriptException("Check application-local.properties for correct S3 config. "
+					+ describeConfiguration(properties));
 		}
 
 		setReadonly(properties.getBooleanProperty(CONFIGURATION.READ_ONLY.value));
@@ -69,5 +69,22 @@ public class StandAloneResourceConfig extends ResourceConfiguration {
 						return false;
 					}
 				});
+	}
+
+	/** Lists the fully-qualified key each CONFIGURATION entry resolves to, alongside the value found for it (if any),
+	 * so a misconfiguration can be diagnosed without guessing which property name or prefix was actually used. */
+	private String describeConfiguration(LocalProperties properties) {
+		StringBuilder sb = new StringBuilder("Expected keys and values found: ");
+		for (CONFIGURATION aConfig : CONFIGURATION.values()) {
+			String fullyQualifiedKey = properties.getFullyQualifiedKey(aConfig.getValue());
+			String foundValue;
+			try {
+				foundValue = properties.getProperty(aConfig.getValue());
+			} catch (TermServerScriptException e) {
+				foundValue = null;
+			}
+			sb.append(fullyQualifiedKey).append("=").append(foundValue == null ? "<not set>" : foundValue).append(", ");
+		}
+		return sb.toString();
 	}
 }
