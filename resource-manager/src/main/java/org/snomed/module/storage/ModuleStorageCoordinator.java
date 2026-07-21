@@ -805,7 +805,7 @@ public class ModuleStorageCoordinator {
     }
 
     public ModuleMetadata getMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
-		LOGGER.debug("Attempting to get metadata for archive {}", archive.getAbsolutePath());
+		LOGGER.info("Attempting to get metadata for archive {}", archive.getAbsolutePath());
         Set<RF2Row> mdrsRows = getMdrsRows(archive);
         ModuleMetadata metadata = new ModuleMetadata().withFile(archive);
 
