@@ -805,7 +805,8 @@ public class ModuleStorageCoordinator {
     }
 
     public ModuleMetadata getMetadata(File archive, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
-        Set<RF2Row> mdrsRows =  getMdrsRows(archive);
+		LOGGER.debug("Attempting to get metadata for archive {}", archive.getAbsolutePath());
+        Set<RF2Row> mdrsRows = getMdrsRows(archive);
         ModuleMetadata metadata = new ModuleMetadata().withFile(archive);
 
         if (mdrsRows.isEmpty()) {
@@ -823,7 +824,7 @@ public class ModuleStorageCoordinator {
         ModuleMetadata currentRelease = getMetadata(archive, obtainFilesLocally);
         ModuleMetadata previousRelease = null;
 
-                //Find one of these modules in S3, otherwise our 'identifying' module will be random.
+		//Find one of these modules in S3, otherwise our 'identifying' module will be random.
         //Any other modules with blank target effective times will remain part of our composition
         List<ModuleMetadata> previousReleases = getMetadata(currentRelease.getCompositionAsURIs(), SearchRequirement.ENSURE_ONE_FOUND, true);
 
