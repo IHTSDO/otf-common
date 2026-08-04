@@ -50,6 +50,7 @@ public class SnowstormRestClient {
 	public static final String ACTIVE = "active";
 	public static final String OFFSET = "offset";
 	public static final String CONCEPT_IDS = "conceptIds";
+	private static final String CONCEPTS_QUERY_NULL_ON_BRANCH = "Concepts query returned null result on branch ";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -349,46 +350,32 @@ public class SnowstormRestClient {
 	}
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, Collection<String> conceptIds, int size) {
-		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false, null);
+		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false);
 	}
 
 	
 	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true, null);
-		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
-		if (conceptMiniResp == null) {
-			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
-		}
-		return conceptMiniResp.getItems();
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true);
+		return requireConceptMiniResponse(doExchange(countRequest, ConceptMiniResponse.class), branchPath).getItems();
 	}
 
 	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit, String acceptLanguage) throws RestClientException {
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true, acceptLanguage);
-		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
-		if (conceptMiniResp == null) {
-			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
-		}
-		return conceptMiniResp.getItems();
+		RequestEntity<Void> countRequest = withAcceptLanguage(
+				createConceptsRequest(branchPath, null, null, concepts, null, limit, true), acceptLanguage);
+		return requireConceptMiniResponse(doExchange(countRequest, ConceptMiniResponse.class), branchPath).getItems();
 	}
 
 	public ConceptMiniResponse getConceptMinis(String branchPath, String ecl, String moduleFilter, int limit) throws RestClientException {
 
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true, null);
-		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
-		if (conceptMiniResp == null) {
-			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
-		}
-		return conceptMiniResp;
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true);
+		return requireConceptMiniResponse(doExchange(countRequest, ConceptMiniResponse.class), branchPath);
 	}
 
 	public ConceptMiniResponse getConceptMinis(String branchPath, String ecl, String moduleFilter, int limit, String acceptLanguage) throws RestClientException {
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true, acceptLanguage);
-		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
-		if (conceptMiniResp == null) {
-			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
-		}
-		return conceptMiniResp;
+		RequestEntity<Void> countRequest = withAcceptLanguage(
+				createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true), acceptLanguage);
+		return requireConceptMiniResponse(doExchange(countRequest, ConceptMiniResponse.class), branchPath);
 	}
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit) throws RestClientException {
@@ -399,7 +386,7 @@ public class SnowstormRestClient {
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit, boolean stated) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated, null);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -462,7 +449,7 @@ public class SnowstormRestClient {
 	
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
-			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated, String acceptLanguage) {
+			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
@@ -494,12 +481,26 @@ public class SnowstormRestClient {
 		}
 		URI uri = queryBuilder.build().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
-		RequestEntity.HeadersBuilder<?> headersBuilder = RequestEntity.get(uri)
-				.header(COOKIE, authenticationToken);
-		if (StringUtils.hasText(acceptLanguage)) {
-			headersBuilder.header(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage);
+		return RequestEntity.get(uri)
+				.header(COOKIE, authenticationToken)
+				.build();
+	}
+
+	private RequestEntity<Void> withAcceptLanguage(RequestEntity<Void> request, String acceptLanguage) {
+		if (!StringUtils.hasText(acceptLanguage)) {
+			return request;
 		}
-		return headersBuilder.build();
+		HttpHeaders headers = new HttpHeaders();
+		headers.putAll(request.getHeaders());
+		headers.set(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage);
+		HttpMethod method = Objects.requireNonNull(request.getMethod(), "Request method is required");
+		URI url = Objects.requireNonNull(request.getUrl(), "Request URL is required");
+		return new RequestEntity<>(headers, method, url);
+	}
+
+	private ConceptMiniResponse requireConceptMiniResponse(ConceptMiniResponse conceptMiniResp, String branchPath) {
+		return Optional.ofNullable(conceptMiniResp)
+				.orElseThrow(() -> new ResourceNotFoundException(CONCEPTS_QUERY_NULL_ON_BRANCH + branchPath));
 	}
 
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int offset, int limit, boolean stated) {
@@ -1189,14 +1190,13 @@ public class SnowstormRestClient {
 							.header(COOKIE, singleSignOnCookie)
 							.accept(MediaType.APPLICATION_JSON)
 							.body(request);
-					ResponseEntity<List<ConceptPojo>> response = null;
 					ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<>() {
                     };
-					response = restTemplate.exchange(post, typeRef);
-					if (response == null) {
+					List<ConceptPojo> concepts = restTemplate.exchange(post, typeRef).getBody();
+					if (concepts == null) {
 						throw new ResourceNotFoundException("Bulk search returned null result on branch " + branchPath);
 					}
-					result.addAll(response.getBody());
+					result.addAll(concepts);
 				} catch (Exception e) {
 					throw new RestClientException("Failed to bulk search concepts on branch " + branchPath, e);
 				}
@@ -1253,10 +1253,7 @@ public class SnowstormRestClient {
 
 	public IntegrityIssueReport integrityCheck(String branch) {
 		URI uri = urlHelper.getIntegrityCheckUrl(branch);
-		RequestEntity<?> post = RequestEntity.post(uri)
-				.header(COOKIE, singleSignOnCookie)
-				.accept(MediaType.APPLICATION_JSON)
-				.body(null);
+		RequestEntity<?> post = body(uri, null);
 
 		ParameterizedTypeReference<IntegrityIssueReport> typeRef = new ParameterizedTypeReference<>() {};
 		ResponseEntity<IntegrityIssueReport> response = restTemplate.exchange(post, typeRef);
@@ -1266,12 +1263,16 @@ public class SnowstormRestClient {
 
 	public void generateAdditionalLanguageRefsetDelta(String shortName, String branchPath, String languageRefsetToCopyFrom, Boolean completeCopy) {
 		URI uri = urlHelper.getCodeSystemGenerateAdditionalLanguageRefsetDeltaUri(shortName, branchPath, languageRefsetToCopyFrom, Boolean.TRUE.equals(completeCopy));
-		RequestEntity<?> post = RequestEntity.post(uri)
-				.header(COOKIE, singleSignOnCookie)
-				.accept(MediaType.APPLICATION_JSON)
-				.body(null);
+		RequestEntity<?> post = body(uri, null);
 
 		restTemplate.exchange(post, Void.class);
+	}
+
+	private <T> RequestEntity<T> body(URI uri, @javax.annotation.Nullable T body) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(COOKIE, singleSignOnCookie);
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		return new RequestEntity<>(body, headers, HttpMethod.POST, uri);
 	}
 
 	public List<PermissionRecord> findPermissionForBranch(String branchPath) {
