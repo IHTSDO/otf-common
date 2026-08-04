@@ -349,13 +349,22 @@ public class SnowstormRestClient {
 	}
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, Collection<String> conceptIds, int size) {
-		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false);
+		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false, null);
 	}
 
 	
 	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true, null);
+		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
+		if (conceptMiniResp == null) {
+			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
+		}
+		return conceptMiniResp.getItems();
+	}
+
+	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit, String acceptLanguage) throws RestClientException {
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true, acceptLanguage);
 		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
 		if (conceptMiniResp == null) {
 			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
@@ -365,7 +374,16 @@ public class SnowstormRestClient {
 
 	public ConceptMiniResponse getConceptMinis(String branchPath, String ecl, String moduleFilter, int limit) throws RestClientException {
 
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true, null);
+		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
+		if (conceptMiniResp == null) {
+			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
+		}
+		return conceptMiniResp;
+	}
+
+	public ConceptMiniResponse getConceptMinis(String branchPath, String ecl, String moduleFilter, int limit, String acceptLanguage) throws RestClientException {
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, null, null, moduleFilter, limit, true, acceptLanguage);
 		ConceptMiniResponse conceptMiniResp = doExchange(countRequest, ConceptMiniResponse.class);
 		if (conceptMiniResp == null) {
 			throw new ResourceNotFoundException("Concepts query returned null result on branch " + branchPath);
@@ -381,7 +399,7 @@ public class SnowstormRestClient {
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit, boolean stated) throws RestClientException {
 		
-		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated);
+		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated, null);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
 			throw new ResourceNotFoundException("ECL query returned null result.");
@@ -444,7 +462,7 @@ public class SnowstormRestClient {
 	
 	
 	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
-			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated) {
+			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated, String acceptLanguage) {
 		String authenticationToken = singleSignOnCookie != null ?
 				singleSignOnCookie : SecurityUtil.getAuthenticationToken();
 		UriComponentsBuilder queryBuilder = UriComponentsBuilder.fromUriString
@@ -454,7 +472,7 @@ public class SnowstormRestClient {
 				.queryParam("expand", "fsn()")
 				.queryParam("termActive", true)
 				.queryParam(LIMIT, limit);
-		
+
 		if (ecl != null) {
 			if (stated) {
 				queryBuilder.queryParam("statedEcl", ecl);
@@ -462,11 +480,11 @@ public class SnowstormRestClient {
 				queryBuilder.queryParam("ecl", ecl);
 			}
 		}
-		
+
 		if (termPrefix != null && !termPrefix.isEmpty()) {
 			queryBuilder.queryParam("term", termPrefix);
 		}
-		
+
 		if (concepts != null && !concepts.isEmpty()) {
 			queryBuilder.queryParam(CONCEPT_IDS, concepts.toArray());
 		}
@@ -476,9 +494,12 @@ public class SnowstormRestClient {
 		}
 		URI uri = queryBuilder.build().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
-		return RequestEntity.get(uri)
-				.header(COOKIE, authenticationToken)
-				.build();
+		RequestEntity.HeadersBuilder<?> headersBuilder = RequestEntity.get(uri)
+				.header(COOKIE, authenticationToken);
+		if (StringUtils.hasText(acceptLanguage)) {
+			headersBuilder.header(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage);
+		}
+		return headersBuilder.build();
 	}
 
 	private RequestEntity<Void> createEclRequest(final String branchPath, String ecl, int offset, int limit, boolean stated) {
