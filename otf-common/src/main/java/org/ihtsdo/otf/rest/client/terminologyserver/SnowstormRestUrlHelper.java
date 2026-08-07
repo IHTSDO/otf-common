@@ -149,6 +149,14 @@ public class SnowstormRestUrlHelper {
 		return getUri(getBrowserConceptsUrl(branchPath) + "/" + conceptId);
 	}
 
+	public String getBrowserConceptsBulkUrl(String branchPath) {
+		return getBrowserConceptsUrl(branchPath) + "/bulk";
+	}
+
+	public URI getBrowserConceptsBulkUri(String branchPath) {
+		return getUri(getBrowserConceptsBulkUrl(branchPath));
+	}
+
 	public String getSimpleConceptsUrl(String branchPath) {
 		return snowstormUrl + "/" + branchPath + "/concepts";
 	}

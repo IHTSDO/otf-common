@@ -51,6 +51,7 @@ public class SnowstormRestClient {
 	public static final String OFFSET = "offset";
 	public static final String CONCEPT_IDS = "conceptIds";
 	private static final String CONCEPTS_QUERY_NULL_ON_BRANCH = "Concepts query returned null result on branch ";
+	private static final String BULK_UPDATE_CONCEPTS_FAILURE_MESSAGE = "Failed to bulk update concepts on branch %s, status code: %s";
 
 	public enum ExportType {
 		DELTA, SNAPSHOT, FULL
@@ -236,6 +237,28 @@ public class SnowstormRestClient {
 		return restTemplate.postForObject(endPoint, request, ConceptPojo.class);
 	}
 
+	/**
+	 * Bulk-create/update concepts on a branch:
+	 * POST /browser/{branch}/concepts/bulk
+	 */
+	public List<ConceptPojo> bulkUpdateConcepts(String branchPath, List<ConceptPojo> concepts) throws RestClientException {
+		URI uri = urlHelper.getBrowserConceptsBulkUri(branchPath);
+		RequestEntity<List<ConceptPojo>> post = RequestEntity.post(uri)
+				.header(COOKIE, singleSignOnCookie)
+				.accept(MediaType.APPLICATION_JSON)
+				.body(concepts);
+		ParameterizedTypeReference<List<ConceptPojo>> typeRef = new ParameterizedTypeReference<>() {
+		};
+		try {
+			ResponseEntity<List<ConceptPojo>> response = restTemplate.exchange(post, typeRef);
+			if (!response.getStatusCode().is2xxSuccessful()) {
+				throw new RestClientException(String.format(BULK_UPDATE_CONCEPTS_FAILURE_MESSAGE, branchPath, response.getStatusCode()));
+			}
+			return response.getBody() != null ? response.getBody() : Collections.emptyList();
+		} catch (HttpStatusCodeException e) {
+			throw new RestClientException(String.format(BULK_UPDATE_CONCEPTS_FAILURE_MESSAGE, branchPath, e.getStatusCode()), e);
+		}
+	}
 
 	public Branch getBranch(String branchPath) throws RestClientException {
 		Branch branch = getEntity(urlHelper.getBranchUri(branchPath), Branch.class);
