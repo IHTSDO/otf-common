@@ -206,6 +206,6 @@ public class ConceptMiniPojo implements IConcept {
 
 	@Override
 	public String getFsnTerm() {
-		return fsn.getTerm();
+		return fsn == null ? null : fsn.getTerm();
 	}
 }
