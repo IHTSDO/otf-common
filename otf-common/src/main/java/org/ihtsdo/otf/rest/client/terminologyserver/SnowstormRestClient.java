@@ -241,7 +241,7 @@ public class SnowstormRestClient {
 	 * Bulk-create/update concepts on a branch:
 	 * POST /browser/{branch}/concepts/bulk
 	 */
-	public List<ConceptPojo> bulkUpdateConcepts(String branchPath, List<ConceptPojo> concepts) throws RestClientException {
+	public void bulkUpdateConcepts(String branchPath, List<ConceptPojo> concepts) throws RestClientException {
 		URI uri = urlHelper.getBrowserConceptsBulkUri(branchPath);
 		RequestEntity<List<ConceptPojo>> post = RequestEntity.post(uri)
 				.header(COOKIE, singleSignOnCookie)
@@ -254,7 +254,6 @@ public class SnowstormRestClient {
 			if (!response.getStatusCode().is2xxSuccessful()) {
 				throw new RestClientException(String.format(BULK_UPDATE_CONCEPTS_FAILURE_MESSAGE, branchPath, response.getStatusCode()));
 			}
-			return response.getBody() != null ? response.getBody() : Collections.emptyList();
 		} catch (HttpStatusCodeException e) {
 			throw new RestClientException(String.format(BULK_UPDATE_CONCEPTS_FAILURE_MESSAGE, branchPath, e.getStatusCode()), e);
 		}
