@@ -272,8 +272,14 @@ public class ResourceManager {
 
 	public boolean doesObjectExist(String resourcePath) {
 		try {
-			return listFilenames().contains(resourcePath);
-		} catch (IOException e) {
+			// "Folder" placeholder keys (trailing slash, e.g. from writeFolder) are zero-byte objects that
+			// Resource.exists() can't reliably resolve via a HEAD-style lookup - list-and-compare still works
+			// for those. Everything else uses the cheap HEAD-equivalent check rather than listing the bucket.
+			if (resourcePath.endsWith("/")) {
+				return listFilenames().contains(resourcePath);
+			}
+			return resourceLoader.getResource(getFullPath(resourcePath)).exists();
+		} catch (IOException | S3Exception e) {
 			return false;
 		}
 	}

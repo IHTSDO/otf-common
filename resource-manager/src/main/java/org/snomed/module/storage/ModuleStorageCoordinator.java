@@ -15,6 +15,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -401,6 +402,10 @@ public class ModuleStorageCoordinator {
         ModuleMetadata requestedMetadata = MSCUtils.asModuleMetadata(uri);
 
         String moduleIdSuffix = "_" + requestedMetadata.getIdentifyingModuleId();
+        final String resolvedEffectiveTime = requestedMetadata.getEffectiveTimeString();
+        BiPredicate<String, String> matchesRequestedModule = (moduleIdSegment, effectiveTime) ->
+                moduleIdSegment.endsWith(moduleIdSuffix) && (resolvedEffectiveTime == null || effectiveTime.equals(resolvedEffectiveTime));
+
         // When effectiveTime is null, restrict to the primary read directory only (no fallback)
         List<String> directoriesToSearch = requestedMetadata.getEffectiveTime() == null
                 ? List.of(readDirectories.getFirst())
@@ -408,23 +413,9 @@ public class ModuleStorageCoordinator {
 
         for (String readDirectory : directoriesToSearch) {
             String directoryPrefix = readDirectory + SLASH;
-            Set<String> metadataPaths = pathsByDirectory.get(readDirectory);
+            List<String> candidatePaths = filterCandidatePaths(readDirectory, pathsByDirectory.get(readDirectory), matchesRequestedModule);
 
-            final String resolvedEffectiveTime = requestedMetadata.getEffectiveTimeString();
-            Optional<String> match = metadataPaths.stream()
-                    .filter(path -> {
-                        if (!path.startsWith(directoryPrefix)) {
-                            return false;
-                        }
-                        String[] segments = path.substring(directoryPrefix.length()).split(SLASH);
-                        // segments: [codeSystem_moduleId, effectiveTime, metadata.json]
-                        if (segments.length < 3 || ROGUE_PACKAGES.contains(segments[0])) {
-                            return false;
-                        }
-                        boolean moduleMatches = segments[0].endsWith(moduleIdSuffix);
-                        boolean effectiveTimeMatches = resolvedEffectiveTime == null || segments[1].equals(resolvedEffectiveTime);
-                        return moduleMatches && effectiveTimeMatches;
-                    })
+            Optional<String> match = candidatePaths.stream()
                     .max(Comparator.comparing(path -> path.substring(directoryPrefix.length()).split(SLASH)[1]));
 
             if (match.isPresent()) {
@@ -434,6 +425,65 @@ public class ModuleStorageCoordinator {
         }
 
         return null;
+    }
+
+    /**
+     * Filters a pre-listed set of metadata.json (or .zip) paths for one read directory down to those whose
+     * path-encoded (codeSystem_moduleId, effectiveTime) satisfy the given predicate — without reading any of
+     * the corresponding metadata.json content. Shared by the URI-based lookup (obtainPopulatedMetadata) and
+     * the MDRS-based lookups (getRF2Packages), both of which need to narrow "everything in this directory"
+     * down to "things that could possibly be relevant" before paying for an S3 GET.
+     *
+     * @param readDirectory Directory the given paths were listed from, e.g. "dev" or "prod".
+     * @param paths         Paths previously listed under readDirectory (metadata.json or .zip suffix).
+     * @param moduleIdAndEffectiveTimeMatch Predicate over (codeSystem_moduleId segment, effectiveTime segment).
+     * @return Matching paths, unchanged (still full paths, not base resource paths).
+     */
+    private List<String> filterCandidatePaths(String readDirectory, Set<String> paths, BiPredicate<String, String> moduleIdAndEffectiveTimeMatch) {
+        if (paths == null || paths.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String directoryPrefix = readDirectory + SLASH;
+        List<String> candidates = new ArrayList<>();
+        for (String path : paths) {
+            if (!path.startsWith(directoryPrefix)) {
+                continue;
+            }
+            String[] segments = path.substring(directoryPrefix.length()).split(SLASH);
+            // segments: [codeSystem_moduleId, effectiveTime, filename]
+            if (segments.length < 3 || ROGUE_PACKAGES.contains(segments[0])) {
+                continue;
+            }
+            if (moduleIdAndEffectiveTimeMatch.test(segments[0], segments[1])) {
+                candidates.add(path);
+            }
+        }
+
+        return candidates;
+    }
+
+    /**
+     * Builds a predicate over (codeSystem_moduleId path segment, effectiveTime path segment) satisfied when
+     * either: the moduleId is in wildcardModuleIds (any effectiveTime allowed), or the moduleId has an entry
+     * in exactModuleIdToEffectiveTimes and the effectiveTime is one of its allowed values. Used to translate
+     * "what we already know from the MDRS rows" into a cheap pre-filter over path strings, before any
+     * metadata.json is read.
+     */
+    private BiPredicate<String, String> moduleIdAndEffectiveTimeCandidateMatcher(Map<String, Set<String>> exactModuleIdToEffectiveTimes, Set<String> wildcardModuleIds) {
+        return (moduleIdSegment, effectiveTime) -> {
+            for (String moduleId : wildcardModuleIds) {
+                if (moduleIdSegment.endsWith("_" + moduleId)) {
+                    return true;
+                }
+            }
+            for (Map.Entry<String, Set<String>> entry : exactModuleIdToEffectiveTimes.entrySet()) {
+                if (entry.getValue().contains(effectiveTime) && moduleIdSegment.endsWith("_" + entry.getKey())) {
+                    return true;
+                }
+            }
+            return false;
+        };
     }
 
     private ModuleMetadata downloadMetadataFromPath(String baseResourcePath, boolean obtainRF2ArchiveLocally) throws ModuleStorageCoordinatorException {
@@ -456,6 +506,21 @@ public class ModuleStorageCoordinator {
         }
 
         return null;
+    }
+
+    /**
+     * Read metadata.json at the given base resource path with a single S3 call, treating any failure
+     * (not found, malformed, etc.) as "no metadata here" rather than a hard error. Used by bulk enumeration
+     * (getRF2Packages) where most candidate paths are irrelevant to the caller and doesn't need the
+     * existence checks or archive-locality handling that downloadMetadataFromPath performs.
+     */
+    private ModuleMetadata quickReadMetadata(String baseResourcePath) {
+        String metadataPath = getMetadataResourcePath(baseResourcePath);
+        try {
+            return FileUtils.convertToObject(remoteStorageManager.readResourceStream(metadataPath), ModuleMetadata.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -734,8 +799,10 @@ public class ModuleStorageCoordinator {
         // Self-depending modules have no unknown, external dependencies
         removeSelfDependingModules(mdrsRows);
 
-        // Collect available rf2 packages
-        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+        // Collect available rf2 packages whose (identifyingModuleId, effectiveTime) could match some row's
+        // (referencedComponentId, targetEffectiveTime) - the exact condition kept below, just applied to path
+        // strings before any metadata.json is read.
+        Set<ModuleMetadata> rf2Packages = getRF2Packages(moduleIdAndEffectiveTimeCandidateMatcher(referencedComponentIdToTargetEffectiveTimes(mdrsRows), Collections.emptySet()));
 
 		// Keep those with matching referencedComponentId & targetEffectiveTime
 		rf2Packages = keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime(rf2Packages, mdrsRows);
@@ -775,8 +842,9 @@ public class ModuleStorageCoordinator {
 			mdrsRows = rf2Service.setTransientEffectiveTimes(mdrsRows, transientEffectiveTimes);
 		}
 
-        // Collect available rf2 packages
-        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+        // Collect available rf2 packages matching moduleId+sourceEffectiveTime or referencedComponentId+targetEffectiveTime
+        // (blank effectiveTime on either side is treated as "any effectiveTime", same as the exact filter kept below)
+        Set<ModuleMetadata> rf2Packages = getRF2Packages(compositionCandidateMatcher(mdrsRows, transientEffectiveTimes));
 
         // Remove those not specified in MDRS
         rf2Packages = filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime(rf2Packages, mdrsRows, transientEffectiveTimes);
@@ -912,8 +980,14 @@ public class ModuleStorageCoordinator {
             return Collections.emptySet();
         }
 
-        // Collect available rf2 packages
-        Set<ModuleMetadata> rf2Packages = getRF2Packages();
+        // Collect available rf2 packages matching either "own" (moduleId, any effectiveTime) or "dependant"
+        // (referencedComponentId, targetEffectiveTime) - the exact conditions getDependantPackages/getOwnPackages
+        // apply below, plus the same upper effective time boundary removeVersionedBeyondUpperBoundary applies -
+        // all evaluated against path strings, before any metadata.json is read.
+        Set<String> ownModuleIds = mdrsRows.stream().map(row -> row.getColumn(RF2Service.MODULE_ID)).collect(Collectors.toSet());
+        BiPredicate<String, String> candidateMatch = moduleIdAndEffectiveTimeCandidateMatcher(referencedComponentIdToTargetEffectiveTimes(mdrsRows), ownModuleIds);
+        candidateMatch = withinUpperBoundary(candidateMatch, computeUpperBoundaryEffectiveTime(mdrsRows, maxEffectiveTimes));
+        Set<ModuleMetadata> rf2Packages = getRF2Packages(candidateMatch);
 
         // Remove those versioned beyond upper boundary (prevents prod being available on dev)
         rf2Packages = removeVersionedBeyondUpperBoundary(mdrsRows, rf2Packages, maxEffectiveTimes);
@@ -935,16 +1009,30 @@ public class ModuleStorageCoordinator {
         return packages;
     }
 
-    private Set<ModuleMetadata> getRF2Packages() throws ModuleStorageCoordinatorException {
+    /**
+     * Resolve ModuleMetadata for packages that could be relevant, given a predicate built from what the
+     * caller already knows (MDRS rows, upper effective time boundary, etc). Only candidates whose path-encoded
+     * (codeSystem_moduleId, effectiveTime) satisfy the predicate are ever read from S3 — this is deliberately
+     * not "list everything and filter after"; the whole point of working with MDRS/moduleId-keyed storage is
+     * that the caller knows what it's looking for before a single S3 GET happens.
+     */
+    private Set<ModuleMetadata> getRF2Packages(BiPredicate<String, String> moduleIdAndEffectiveTimeMatch) {
+        LOGGER.info("Obtaining RF2 Package info from S3 {}", readDirectories);
         Map<String, ModuleMetadata> rf2PackageMap = new HashMap<>();
         for (String readDirectory : readDirectories) {
-            Set<String> rf2PackagePaths = remoteStorageManager.doListFilenames(readDirectory, ".zip");
-            if (rf2PackagePaths.isEmpty()) {
+            Set<String> metadataPaths = remoteStorageManager.doListFilenames(readDirectory, "metadata.json");
+            List<String> candidatePaths = filterCandidatePaths(readDirectory, metadataPaths, moduleIdAndEffectiveTimeMatch);
+            LOGGER.info("Obtained list of {} metadata.json files from S3 {}, {} are relevant candidates", metadataPaths.size(), readDirectory, candidatePaths.size());
+            if (candidatePaths.isEmpty()) {
                 continue;
             }
 
-            for (String rfPackagePath : rf2PackagePaths) {
-                ModuleMetadata moduleMetadata = downloadMetadataFromPath(MSCUtils.getBaseResourcePath(rfPackagePath), false);
+            for (String candidatePath : candidatePaths) {
+                // Deliberately avoid downloadMetadataFromPath here: it does two doesObjectExist checks
+                // plus the GET, and this now only runs once per candidate that survived the path-based
+                // filter above, not once per package in the bucket. quickReadMetadata is a single GET,
+                // treating "not found" as null.
+                ModuleMetadata moduleMetadata = quickReadMetadata(MSCUtils.getBaseResourcePath(candidatePath));
                 if (moduleMetadata != null && !Objects.equals("SIMPLEX", moduleMetadata.getCodeSystemShortName())) {
                     // Allow dev to overwrite prod
                     String filename = moduleMetadata.getFilename();
@@ -953,6 +1041,7 @@ public class ModuleStorageCoordinator {
             }
         }
 
+        LOGGER.info("Populated RF2 package map with {} entries", rf2PackageMap.size());
         return new HashSet<>(rf2PackageMap.values());
     }
 
@@ -1489,33 +1578,121 @@ public class ModuleStorageCoordinator {
     }
 
     private Set<ModuleMetadata> removeVersionedBeyondUpperBoundary(Set<RF2Row> mdrsRows, Set<ModuleMetadata> rf2Packages, Set<String> maxEffectiveTimes) {
-        if (maxEffectiveTimes == null) {
-            maxEffectiveTimes = new HashSet<>();
-        }
-
-        for (RF2Row mdrsRow : mdrsRows) {
-            String effectiveTime = mdrsRow.getColumn(RF2Service.EFFECTIVE_TIME);
-            if (StringUtils.hasLength(effectiveTime)) {
-                maxEffectiveTimes.add(effectiveTime);
-            }
-
-            String sourceEffectiveTime = mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
-            if (StringUtils.hasLength(sourceEffectiveTime)) {
-                maxEffectiveTimes.add(sourceEffectiveTime);
-            }
-
-            String targetEffectiveTime = mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
-            if (StringUtils.hasLength(targetEffectiveTime)) {
-                maxEffectiveTimes.add(targetEffectiveTime);
-            }
-        }
-
-        if (maxEffectiveTimes.isEmpty()) {
+        OptionalInt upperBoundary = computeUpperBoundaryEffectiveTime(mdrsRows, maxEffectiveTimes);
+        if (upperBoundary.isEmpty()) {
             return rf2Packages;
         }
 
-        int upperBoundary = maxEffectiveTimes.stream().mapToInt(Integer::parseInt).max().orElse(Integer.MAX_VALUE);
-        return rf2Packages.stream().filter(pkg -> pkg.getEffectiveTime() <= upperBoundary).collect(Collectors.toSet());
+        return rf2Packages.stream().filter(pkg -> pkg.getEffectiveTime() <= upperBoundary.getAsInt()).collect(Collectors.toSet());
+    }
+
+    /**
+     * Highest effective time across mdrsRows' effectiveTime/sourceEffectiveTime/targetEffectiveTime columns and
+     * the given maxEffectiveTimes, or empty if none are present. Shared by removeVersionedBeyondUpperBoundary
+     * (applied to already-fetched ModuleMetadata) and getDependenciesAndPreviousVersion's candidate predicate
+     * (applied to path strings, before any metadata.json is read) so the two can't drift apart.
+     */
+    private OptionalInt computeUpperBoundaryEffectiveTime(Set<RF2Row> mdrsRows, Set<String> maxEffectiveTimes) {
+        Set<String> allMaxEffectiveTimes = maxEffectiveTimes == null ? new HashSet<>() : new HashSet<>(maxEffectiveTimes);
+
+        for (RF2Row mdrsRow : mdrsRows) {
+            addIfPresent(allMaxEffectiveTimes, mdrsRow.getColumn(RF2Service.EFFECTIVE_TIME));
+            addIfPresent(allMaxEffectiveTimes, mdrsRow.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME));
+            addIfPresent(allMaxEffectiveTimes, mdrsRow.getColumn(RF2Service.TARGET_EFFECTIVE_TIME));
+        }
+
+        if (allMaxEffectiveTimes.isEmpty()) {
+            return OptionalInt.empty();
+        }
+
+        return OptionalInt.of(allMaxEffectiveTimes.stream().mapToInt(Integer::parseInt).max().orElseThrow());
+    }
+
+    private void addIfPresent(Set<String> effectiveTimes, String effectiveTime) {
+        if (StringUtils.hasLength(effectiveTime)) {
+            effectiveTimes.add(effectiveTime);
+        }
+    }
+
+    /**
+     * Narrows a candidate matcher with an upper effective time boundary, mirroring removeVersionedBeyondUpperBoundary
+     * but applied to the path-encoded effectiveTime segment. If that segment isn't a plain 8-digit date (e.g. an
+     * archived package's path has "archive" in that position) the boundary can't be evaluated from the path alone,
+     * so it's left for removeVersionedBeyondUpperBoundary to decide from the real metadata once fetched - this must
+     * only ever narrow candidates, never wrongly exclude one the unfiltered lookup would have included.
+     */
+    private BiPredicate<String, String> withinUpperBoundary(BiPredicate<String, String> candidateMatch, OptionalInt upperBoundary) {
+        if (upperBoundary.isEmpty()) {
+            return candidateMatch;
+        }
+
+        return (moduleIdSegment, effectiveTime) -> {
+            if (!candidateMatch.test(moduleIdSegment, effectiveTime)) {
+                return false;
+            }
+            try {
+                return Integer.parseInt(effectiveTime) <= upperBoundary.getAsInt();
+            } catch (NumberFormatException e) {
+                return true;
+            }
+        };
+    }
+
+    /**
+     * Groups mdrsRows by referencedComponentId -> the set of targetEffectiveTimes seen for it. Used to build an
+     * exact-match candidate predicate mirroring keepReferencedComponentIdMatchingIdentifyingModuleIdAndTargetEffectiveTimeMatchingEffectiveTime
+     * and filterByReferencedComponentIdAndTargetEffectiveTime, but evaluated against path strings.
+     */
+    private Map<String, Set<String>> referencedComponentIdToTargetEffectiveTimes(Set<RF2Row> mdrsRows) {
+        Map<String, Set<String>> referencedComponentIdToTargetEffectiveTimes = new HashMap<>();
+        for (RF2Row row : mdrsRows) {
+            String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+            String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+            referencedComponentIdToTargetEffectiveTimes.computeIfAbsent(referencedComponentId, k -> new HashSet<>()).add(targetEffectiveTime);
+        }
+        return referencedComponentIdToTargetEffectiveTimes;
+    }
+
+    /**
+     * Candidate predicate mirroring filterByModuleIdAndSourceEffectiveTimeOrReferencedComponentIdAndTargetEffectiveTime:
+     * a path matches if its moduleId+effectiveTime satisfies moduleId==row.moduleId&&effectiveTime==row.sourceEffectiveTime,
+     * or identifyingModuleId==row.referencedComponentId&&effectiveTime==row.targetEffectiveTime, for any row. A blank
+     * sourceEffectiveTime/targetEffectiveTime on a row means "any effectiveTime" there too, exactly as the real filter
+     * (applied afterward, unchanged) treats it.
+     * <p>
+     * Also covers ModuleMetadataFilterer's tryAgain fallback: when a row's declared sourceEffectiveTime doesn't match
+     * any real package, the real filter retries with sourceEffectiveTime blanked out and replaced by one of
+     * transientEffectiveTimes - since we can't know in advance whether that fallback will be needed, every row's
+     * moduleId is broadened to also accept any of transientEffectiveTimes. This is a safe over-approximation - it
+     * can only add extra candidates for the real filter to discard, never exclude one it would have kept.
+     */
+    private BiPredicate<String, String> compositionCandidateMatcher(Set<RF2Row> mdrsRows, Set<String> transientEffectiveTimes) {
+        Set<String> wildcardModuleIds = new HashSet<>();
+        Map<String, Set<String>> exactModuleIdToEffectiveTimes = new HashMap<>();
+        Set<String> fallbackEffectiveTimes = transientEffectiveTimes == null ? Collections.emptySet() : transientEffectiveTimes;
+
+        for (RF2Row row : mdrsRows) {
+            String moduleId = row.getColumn(RF2Service.MODULE_ID);
+            String sourceEffectiveTime = row.getColumn(RF2Service.SOURCE_EFFECTIVE_TIME);
+            if (StringUtils.hasLength(sourceEffectiveTime)) {
+                exactModuleIdToEffectiveTimes.computeIfAbsent(moduleId, k -> new HashSet<>()).add(sourceEffectiveTime);
+            } else {
+                wildcardModuleIds.add(moduleId);
+            }
+            if (!fallbackEffectiveTimes.isEmpty()) {
+                exactModuleIdToEffectiveTimes.computeIfAbsent(moduleId, k -> new HashSet<>()).addAll(fallbackEffectiveTimes);
+            }
+
+            String referencedComponentId = row.getColumn(RF2Service.REFERENCED_COMPONENT_ID);
+            String targetEffectiveTime = row.getColumn(RF2Service.TARGET_EFFECTIVE_TIME);
+            if (StringUtils.hasLength(targetEffectiveTime)) {
+                exactModuleIdToEffectiveTimes.computeIfAbsent(referencedComponentId, k -> new HashSet<>()).add(targetEffectiveTime);
+            } else {
+                wildcardModuleIds.add(referencedComponentId);
+            }
+        }
+
+        return moduleIdAndEffectiveTimeCandidateMatcher(exactModuleIdToEffectiveTimes, wildcardModuleIds);
     }
 
     private Set<ModuleMetadata> getDependantPackages(Set<ModuleMetadata> rf2Packages, Set<RF2Row> mdrsRows) {
