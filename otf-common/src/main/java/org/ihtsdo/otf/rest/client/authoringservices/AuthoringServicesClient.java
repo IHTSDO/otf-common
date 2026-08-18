@@ -212,6 +212,16 @@ public class AuthoringServicesClient {
 		return restTemplate.exchange(endPoint, HttpMethod.GET, null, type).getBody();
 	}
 
+	public ReviewedConceptsList getReviewedConcepts(String taskKey) throws RestClientException {
+		try {
+			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
+			String endPoint = serverUrl + API_ROOT + PROJECTS + projectStr + TASKS + taskKey + "/shared-ui-state/reviewed-list";
+			return restTemplate.getForObject(endPoint, ReviewedConceptsList.class);
+		} catch (Exception e) {
+			throw new RestClientException("Unable to recover reviewed concept list for task " + taskKey, e);
+		}
+	}
+
 	public List<Task> listTasksOnProject(String projectKey) {
 		return listTasksOnProject(projectKey, true);
 	}
