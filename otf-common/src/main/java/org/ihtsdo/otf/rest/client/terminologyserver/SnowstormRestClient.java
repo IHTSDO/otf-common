@@ -281,6 +281,10 @@ public class SnowstormRestClient {
 	}
 
 	public Map<String, ConceptMiniPojo> getRefsetsWithTypeInformation(String branchPath, boolean activeOnly, String defaultModule) {
+		return getRefsetsWithTypeInformation(branchPath, activeOnly, defaultModule, null, null);
+	}
+
+	public Map<String, ConceptMiniPojo> getRefsetsWithTypeInformation(String branchPath, boolean activeOnly, String defaultModule, String refsetType, String acceptLanguage) {
 		UriComponentsBuilder builder = UriComponentsBuilder
 				.fromUriString(urlHelper.getRefsetsWithTypeInformationUrl(branchPath).toString())
 				.queryParam(LIMIT, 1)
@@ -288,13 +292,19 @@ public class SnowstormRestClient {
 		if (activeOnly) {
 			builder.queryParam(ACTIVE, true);
 		}
+		if (StringUtils.hasText(refsetType)) {
+			builder.queryParam("refsetType", refsetType);
+		}
 
-		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.getForEntity(builder.build().toUri(), RefsetAggregationPage.class);
+		RequestEntity<Void> request = withAcceptLanguage(
+				RequestEntity.get(builder.build().encode().toUri()).build(),
+				acceptLanguage);
+		ResponseEntity<RefsetAggregationPage> refsetAggregationResponse = restTemplate.exchange(request, RefsetAggregationPage.class);
 		RefsetAggregationPage body = refsetAggregationResponse.getBody();
 		if (body == null) {
 			throw new ResourceNotFoundException("Can't find refsets from branch:" + branchPath);
 		}
-        return body.getReferenceSets();
+		return body.getReferenceSets();
 	}
 
 	public Page<RefsetMember> getRefsetMembers(String refsetId, String branchPath, boolean activeOnly,
