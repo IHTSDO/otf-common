@@ -161,6 +161,10 @@ public class SnowstormRestUrlHelper {
 		return snowstormUrl + "/" + branchPath + "/concepts";
 	}
 
+	public String getCopyConceptsUrl(String destinationBranch) {
+		return getSimpleConceptsUrl(destinationBranch) + "/copy";
+	}
+
 	public URI getSimpleConceptUri(String branchPath, String conceptId) {
 		return getUri(getSimpleConceptsUrl(branchPath) + "/" + conceptId);
 	}
