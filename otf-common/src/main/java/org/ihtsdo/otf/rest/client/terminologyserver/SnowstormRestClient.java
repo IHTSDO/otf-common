@@ -1259,6 +1259,34 @@ public class SnowstormRestClient {
 		}
 	}
 
+	/**
+	 * Copy concepts from a version branch onto a destination branch:
+	 * POST /{destinationBranch}/concepts/copy?sourceBranch=&ecl=&includeDependencies=
+	 */
+	public List<ConceptMiniPojo> copyConcepts(String destinationBranch, String sourceBranch, String ecl, boolean includeDependencies) throws RestClientException {
+		String authenticationToken = singleSignOnCookie != null ? singleSignOnCookie : SecurityUtil.getAuthenticationToken();
+		URI uri = UriComponentsBuilder.fromUriString(urlHelper.getCopyConceptsUrl(destinationBranch))
+				.queryParam("sourceBranch", sourceBranch)
+				.queryParam("ecl", ecl)
+				.queryParam("includeDependencies", includeDependencies)
+				.build()
+				.encode()
+				.toUri();
+		LOGGER.debug(URI_CURLIES, uri);
+		RequestEntity<Void> request = RequestEntity.post(uri)
+				.header(COOKIE, authenticationToken)
+				.accept(MediaType.APPLICATION_JSON)
+				.build();
+		try {
+			ParameterizedTypeReference<List<ConceptMiniPojo>> typeRef = new ParameterizedTypeReference<>() {
+			};
+			List<ConceptMiniPojo> copied = restTemplate.exchange(request, typeRef).getBody();
+			return copied != null ? copied : Collections.emptyList();
+		} catch (HttpClientErrorException | HttpServerErrorException e) {
+			throw new RestClientException("Failed to copy concepts onto branch " + destinationBranch, e);
+		}
+	}
+
 	public String upgradeCodeSystem(String shortName, Integer newDependantVersion, Boolean contentAutomations) throws BusinessServiceException {
 		Map<String,Object> request = new HashMap<>();
 		request.put("newDependantVersion", newDependantVersion);
