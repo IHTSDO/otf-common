@@ -148,7 +148,12 @@ public abstract class Script implements RF2Constants {
 	
 	public void addSummaryInformation(String item, Object detail) {
 		LOGGER.info("{}: {}", item, detail);
-		summaryDetails.put(item, detail);
+		String combinedDetail = detail == null ? "" : detail.toString();
+		//Have we already seen this item?  Append the detail if so
+		if (summaryDetails.containsKey(item) && !summaryDetails.get(item).toString().isEmpty()) {
+			combinedDetail = summaryDetails.get(item) + ",\n" + combinedDetail;
+		}
+		summaryDetails.put(item, combinedDetail);
 	}
 	
 	public void incrementSummaryInformation(String key) {
