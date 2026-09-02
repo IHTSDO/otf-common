@@ -1,5 +1,7 @@
 package org.snomed.otf.traceability.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +21,10 @@ public class Activity {
 	public Activity() {
 	}
 
+	// Convenience constructor only. Jackson 3 infers property-based creators from constructor
+	// parameter names (this project compiles with -parameters), which would bypass the no-arg
+	// constructor and fail on absent primitives. DISABLED keeps Jackson on setter-based binding.
+	@JsonCreator(mode = JsonCreator.Mode.DISABLED)
 	public Activity(String id, String username, String branch, int branchDepth, String sourceBranch,
 					String highestPromotedBranch, Date commitDate, Date promotionDate, ActivityType activityType, List<ConceptChange> conceptChanges) {
 		this.id = id;

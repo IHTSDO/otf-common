@@ -1,8 +1,9 @@
 package org.snomed.module.storage;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.JsonNode;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Date;
@@ -11,7 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ModuleMetadataTest {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().build();
 
     @Test
     void moduleMetadata_ShouldSerializeExpectedProperties() throws IOException {
@@ -46,7 +47,7 @@ class ModuleMetadataTest {
 
         // then
         // Update assertExpectedFieldName or exclude new field names from de/serialisation
-        jsonNode.fieldNames().forEachRemaining(this::assertExpectedFieldName);
+        jsonNode.propertyNames().forEach(this::assertExpectedFieldName);
     }
 
     @Test

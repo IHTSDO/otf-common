@@ -1,7 +1,9 @@
 package org.snomed.otf.script.utils;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.apache.commons.lang3.SystemUtils;
 import org.ihtsdo.otf.exception.ScriptException;
 import org.springframework.util.DigestUtils;
@@ -18,11 +20,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FileUtils {
-    private static ObjectMapper OBJECT_MAPPER;
-    static {
-        OBJECT_MAPPER = new ObjectMapper();
-        OBJECT_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-    }
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static File doCreateTempFile(String fileName) throws IOException {
         try {
@@ -49,7 +49,7 @@ public class FileUtils {
     public static <T> T convertToObject(File file, Class<T> t) throws ScriptException {
         try {
             return OBJECT_MAPPER.readValue(file, t);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new ScriptException("Failed to deserialize file: " + file + " into a " + t.getSimpleName() , e);
         }
     }
@@ -57,7 +57,7 @@ public class FileUtils {
     public static <T> T convertToObject(InputStream inputStream, Class<T> t) throws ScriptException {
         try {
             return OBJECT_MAPPER.readValue(inputStream, t);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new ScriptException("Failed to deserialize InputStream into a " + t.getSimpleName() , e);
         }
     }
@@ -65,7 +65,7 @@ public class FileUtils {
     public static <T> void writeToFile(File file, Object t) throws ScriptException {
         try {
             OBJECT_MAPPER.writeValue(file, t);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new ScriptException("Failed to write " + t + " to file: " + file, e);
         }
     }

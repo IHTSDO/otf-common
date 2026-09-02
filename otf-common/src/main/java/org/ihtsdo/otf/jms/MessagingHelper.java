@@ -1,7 +1,7 @@
 package org.ihtsdo.otf.jms;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
 import org.slf4j.Logger;
@@ -39,23 +39,23 @@ public class MessagingHelper {
 	@Autowired
 	private ConnectionFactory connectionFactory;
 
-	public void send(String destinationQueueName, Object payload, String responseQueueName) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload, String responseQueueName) throws JacksonException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, null, new ActiveMQQueue(responseQueueName), 0);
 	}
 
-	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties) throws JacksonException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, null, 0);
 	}
 
-	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties, String responseQueueName) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload, final Map<String, Object> messageProperties, String responseQueueName) throws JacksonException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload, messageProperties, new ActiveMQQueue(responseQueueName), 0);
 	}
 
-	public void send(String destinationQueueName, Object payload) throws JsonProcessingException, JMSException {
+	public void send(String destinationQueueName, Object payload) throws JacksonException, JMSException {
 		send(new ActiveMQQueue(destinationQueueName), payload);
 	}
 	
-	public void publish(String destinationTopicName, Object payload, final Map<String, Object> messageProperties, int timeToLive) throws JsonProcessingException, JMSException {
+	public void publish(String destinationTopicName, Object payload, final Map<String, Object> messageProperties, int timeToLive) throws JacksonException, JMSException {
 		send(new ActiveMQTopic(destinationTopicName), payload, messageProperties, null, timeToLive);
 	}
 
@@ -80,7 +80,7 @@ public class MessagingHelper {
 		}
 	}
 
-	public void send(Destination destination, Object payload) throws JsonProcessingException, JMSException {
+	public void send(Destination destination, Object payload) throws JacksonException, JMSException {
 		send(destination, payload, null, null, 0);
 	}
 
@@ -88,7 +88,7 @@ public class MessagingHelper {
 			Map<String, Object> messageProperties,
 			final Destination responseDestination,
 			final int timeToLive
-			) throws JsonProcessingException, JMSException {
+			) throws JacksonException, JMSException {
 		logger.info("Sending message - destination {}, payload {}, properties {}, responseDestination {}", 
 				getDestinationLabel(destination), limitSize(payload), messageProperties, getDestinationLabel(responseDestination));
 
@@ -145,7 +145,7 @@ public class MessagingHelper {
 			} else {
 				getJmsTemplate().convertAndSend(destination, message, messagePostProcessor);
 			}
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			sendError(destination, e);
 		}
 	}
@@ -166,7 +166,7 @@ public class MessagingHelper {
 		String errorMessageString = null;
 		try {
 			errorMessageString = objectMapper.writeValueAsString(e);
-		} catch (JsonProcessingException e1) {
+		} catch (JacksonException e1) {
 			logger.error("Failed to serialize error {}", e, e1);
 			errorMessageString = "Failed to serialize error, see originating application logs for details.";
 		}

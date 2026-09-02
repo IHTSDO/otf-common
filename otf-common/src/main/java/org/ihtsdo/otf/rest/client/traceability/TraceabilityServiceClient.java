@@ -1,8 +1,10 @@
 package org.ihtsdo.otf.rest.client.traceability;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
 import com.google.common.collect.Lists;
 import com.google.gson.internal.LinkedTreeMap;
 import org.apache.commons.lang.StringUtils;
@@ -13,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestClientResponseException;
@@ -39,7 +41,10 @@ public class TraceabilityServiceClient {
 	private final HttpHeaders headers;
 	private final RestTemplate restTemplate;
 	private final String serverUrl;
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final ObjectMapper mapper = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.enable(EnumFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
+			.build();
 
 	public TraceabilityServiceClient(String serverUrl, String cookie) {
 		headers = new HttpHeaders();
@@ -60,8 +65,6 @@ public class TraceabilityServiceClient {
              return execution.execute(request, body);
          });
 
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true);
 	}
 
 	public static int getBatchSize() {

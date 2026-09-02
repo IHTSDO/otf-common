@@ -1,8 +1,9 @@
 package org.ihtsdo.otf.rest.client.terminologyserver;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -78,7 +79,9 @@ public class SnowstormRestClient {
 
 	private static final int BATCH_SIZE = 200;
 	private static final int MAX_PAGE_SIZE = 10_000;
-	private static final ObjectMapper mapper = new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+	private static final ObjectMapper mapper = JsonMapper.builder()
+			.changeDefaultPropertyInclusion(inclusion -> JsonInclude.Value.ALL_NON_NULL)
+			.build();
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystem>> CODESYSTEM_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
     };
 	private static final ParameterizedTypeReference<ItemsPage<CodeSystemVersion>> CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE = new ParameterizedTypeReference<>() {
@@ -193,7 +196,7 @@ public class SnowstormRestClient {
 		if (showInternalReleases == null) {
 			showInternalReleases = false;
 		}
-		ResponseEntity<ItemsPage<CodeSystemVersion>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemVersionsUri(shortName, showFutureVersions, showInternalReleases), HttpMethod.GET, new org.springframework.http.HttpEntity<>(null), CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE);
+		ResponseEntity<ItemsPage<CodeSystemVersion>> responseEntity = restTemplate.exchange(urlHelper.getCodeSystemVersionsUri(shortName, showFutureVersions, showInternalReleases), HttpMethod.GET, HttpEntity.EMPTY, CODESYSTEM_VERSION_PAGE_TYPE_REFERENCE);
 		ItemsPage<CodeSystemVersion> page = responseEntity.getBody();
 		return page.getItems();
 	}
@@ -223,9 +226,9 @@ public class SnowstormRestClient {
 	}
 
 	/**
-	 * Note: This APi uses browser endpoint  and returns the full information about the concept 
+	 * Note: This APi uses browser endpoint  and returns the full information about the concept
 	 * However it is very slow.
-	 * 
+	 *
 	 */
 	public ConceptPojo getConcept(String branchPath, String conceptId) throws RestClientException {
 		return getEntity(urlHelper.getBrowserConceptUri(branchPath, conceptId), ConceptPojo.class);
@@ -275,7 +278,7 @@ public class SnowstormRestClient {
 		}
 		return entries;
 	}
-	
+
 	public String getFsn(String branchPath, String conceptId) throws RestClientException {
 		return getFsns(branchPath, Collections.singletonList(conceptId)).get(conceptId);
 	}
@@ -321,7 +324,7 @@ public class SnowstormRestClient {
 				HttpMethod.GET, null, responseTypeRefsetPage);
 		return response.getBody();
 	}
-	
+
 	public Map<String, Set<SimpleDescriptionPojo>> getDescriptions(String branchPath, Collection<String> conceptIds) throws RestClientException {
 		Map<String, Set<SimpleDescriptionPojo>> result = new HashMap<>();
 		List<String> batchJob = null;
@@ -346,7 +349,7 @@ public class SnowstormRestClient {
 		}
 		return result;
 	}
-	
+
 	private RequestEntity<Void> createDescriptionsByConceptsSearchRequest(String branchPath, Collection<String> conceptIds, int limit) {
 		if (conceptIds == null || conceptIds.isEmpty()) {
 			throw new IllegalArgumentException("Concept ids must be specified");
@@ -380,14 +383,14 @@ public class SnowstormRestClient {
 		}
 		return result;
 	}
-	
+
 	private RequestEntity<Void> createConceptsRequest(String branchPath, Collection<String> conceptIds, int size) {
 		return createConceptsRequest(branchPath, null, null, conceptIds, null, size, false);
 	}
 
-	
+
 	public Set<ConceptMiniPojo> getConceptMinis(String branchPath, List<String> concepts, int limit) throws RestClientException {
-		
+
 		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, null, null, concepts, null, limit, true);
 		return requireConceptMiniResponse(doExchange(countRequest, ConceptMiniResponse.class), branchPath).getItems();
 	}
@@ -411,13 +414,13 @@ public class SnowstormRestClient {
 	}
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit) throws RestClientException {
-		
+
 		return getConcepts(branchPath, ecl, termPrefix, concepts, limit, false);
 	}
-	
+
 	public Set<SimpleConceptPojo> getConcepts(String branchPath, String ecl,
 			String termPrefix, List<String> concepts, int limit, boolean stated) throws RestClientException {
-		
+
 		RequestEntity<Void> countRequest = createConceptsRequest(branchPath, ecl, termPrefix, concepts, null, limit, stated);
 		SimpleConceptResponse simpleConceptResp = doExchange(countRequest, SimpleConceptResponse.class);
 		if (simpleConceptResp == null) {
@@ -429,8 +432,8 @@ public class SnowstormRestClient {
 	public Set<String> eclQuery(String branchPath, String ecl, int limit) throws RestClientException {
 		return eclQuery(branchPath, ecl, limit, false);
 	}
-	
-	
+
+
 	public Set<String> eclQuery(String branchPath, String ecl, int totalLimit, boolean stated) throws RestClientException {
 		if (totalLimit > MAX_PAGE_SIZE) {
 			Set<String> all = new HashSet<>();
@@ -469,7 +472,7 @@ public class SnowstormRestClient {
 	public boolean eclQueryHasAnyMatches(String branchPath, String ecl) throws RestClientException {
 		return eclQueryHasAnyMatches(branchPath, ecl, false);
 	}
-	
+
 	public boolean eclQueryHasAnyMatches(String branchPath, String ecl, boolean stated) throws RestClientException {
 		RequestEntity<Void> countRequest = createEclRequest(branchPath, ecl, 0, 1, stated);
 		ConceptIdsResponse conceptIdsResponse = doExchange(countRequest, ConceptIdsResponse.class);
@@ -478,8 +481,8 @@ public class SnowstormRestClient {
 		}
 		return conceptIdsResponse.getTotal() > 0;
 	}
-	
-	
+
+
 	private RequestEntity<Void> createConceptsRequest(String branchPath, String ecl,
 			String termPrefix, Collection<String> concepts, String module, int limit, boolean stated) {
 		String authenticationToken = singleSignOnCookie != null ?
@@ -546,7 +549,7 @@ public class SnowstormRestClient {
 		} else {
 			queryBuilder.queryParam("ecl", ecl);
 		}
-		
+
 		URI uri = queryBuilder.build().encode().toUri();
 		LOGGER.debug(URI_CURLIES, uri);
 		return RequestEntity.get(uri)
@@ -582,8 +585,8 @@ public class SnowstormRestClient {
 		if (statusCode.value() == 404) {
 			return null;
 		} else if (!statusCode.is2xxSuccessful()) {
-			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() + 
-					", status code: " + statusCode + 
+			String errorMessage = "Failed to retrieve " + responseType.getSimpleName() +
+					", status code: " + statusCode +
 					" URI: " + request.getUrl().toString();
 			throw new RestClientException(errorMessage);
 		}
@@ -895,7 +898,7 @@ public class SnowstormRestClient {
 		String exportConfigString = null;
 		try {
 			exportConfigString = mapper.writeValueAsString(exportConfigurationBuilder);
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			throw new BusinessServiceException("Failed to create export configuration.", e);
 		}
 		String exportUrl = initiateExport(exportConfigString);
@@ -1084,7 +1087,7 @@ public class SnowstormRestClient {
 			GregorianCalendar timeoutCalendar = new GregorianCalendar();
 			timeoutCalendar.add(Calendar.MINUTE, importTimeoutMinutes);
 			return timeoutCalendar.getTime();
-		} 
+		}
 
 		return null;
 	}
@@ -1217,7 +1220,7 @@ public class SnowstormRestClient {
 					Map<String,Object> request = new HashMap<>();
 					request.put(CONCEPT_IDS, batchJob);
 					URI uri = urlHelper.getBulkConceptsUri(branchPath);
-					
+
 					RequestEntity<?> post = RequestEntity.post(uri)
 							.header(COOKIE, singleSignOnCookie)
 							.accept(MediaType.APPLICATION_JSON)

@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>otf-common-parent</artifactId>
 		<groupId>org.ihtsdo.otf.common</groupId>
-		<version>8.1.0-SNAPSHOT</version>
+		<version>9.0.0-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -24,6 +24,17 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
+		</dependency>
+		<!-- Jackson 3 (tools.jackson), the JSON stack Spring Boot 4 auto-configures.
+			 Annotations still live in com.fasterxml.jackson.annotation, which Jackson 3
+			 depends on, so @JsonIgnore/@JsonProperty etc. need no separate declaration. -->
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>tools.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-csv</artifactId>
 		</dependency>
 		
 		<!-- Google Sheet API -->
