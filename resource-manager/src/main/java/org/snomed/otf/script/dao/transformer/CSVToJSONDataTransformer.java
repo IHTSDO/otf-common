@@ -11,7 +11,6 @@ import tools.jackson.dataformat.csv.CsvReadFeature;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.ihtsdo.otf.utils.StringUtils;
@@ -19,6 +18,11 @@ import org.ihtsdo.otf.utils.StringUtils;
 public class CSVToJSONDataTransformer implements DataTransformer {
 
     public static final String FILE_EXTENSION = ".json";
+
+    // Jackson 3 mappers are immutable and thread safe, so this is built once and shared.
+    private static final ObjectMapper JSON_MAPPER = JsonMapper.builder()
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .build();
 
     protected CsvMapper csvMapper;
 
@@ -37,61 +41,80 @@ public class CSVToJSONDataTransformer implements DataTransformer {
 
     @Override
     public void transform(File input, File output) throws Exception {
-        JsonGenerator jsonGenerator = null;
-        try (BufferedWriter outputStream  = new BufferedWriter(new FileWriter(output, false))) {
-            // create the Json mapper
-            ObjectMapper mapper = JsonMapper.builder()
-                    .enable(SerializationFeature.INDENT_OUTPUT)
-                    .build();
-            jsonGenerator = mapper.createGenerator(outputStream);
+        // The resources are declared in this order so that the generator flushes and closes before
+        // the writer beneath it, and the CSV reader is always closed. The previous version closed
+        // the writer first and then closed the generator from a finally block, where it failed with
+        // "Stream closed" and discarded whatever exception had actually caused the failure.
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(output, false));
+             JsonGenerator jsonGenerator = JSON_MAPPER.createGenerator(writer);
+             MappingIterator<String[]> rows = csvMapper.readerFor(String[].class).readValues(input)) {
 
-            // start of the report array
             jsonGenerator.writeStartArray();
 
-            // process all rows
-            MappingIterator<String[]> mappingIterator = csvMapper.readerFor(String[].class).readValues(input);
-            int rows = 1;
             String[] headings = null;
-            while (mappingIterator.hasNextValue()) {
-                String[] rowOLD = mappingIterator.nextValue();
-                String[] row = cleanRow(rowOLD); // clean row
+            // Each row is held back until the next one is read, so excludeLastRow can drop the
+            // final row of data without peeking at the iterator - a peek that reported the wrong
+            // row whenever the file ended with blank lines.
+            String[] heldRow = null;
+            int heldRowLine = 0;
+            int line = 0;
 
-                // simply ignore empty rows
-                if (row == null) {
+            while (rows.hasNextValue()) {
+                line++;
+                String[] row = cleanRow(rows.nextValue());
+
+                // Simply ignore empty rows.
+                if (isBlank(row)) {
                     continue;
                 }
-                // The headings (simply store them for use later)
-                if (rows == 1) {
+
+                if (headings == null) {
+                    // The headings (simply store them for use later)
                     headings = row;
-                    rows++;
-                    continue;
-                }
-
-                boolean excludeRow = !mappingIterator.hasNextValue() && excludeLastRow;
-                if (!excludeRow) {
-                    jsonGenerator.writeStartObject();
-                    for (int index = 0; index < row.length; index++) {
-                        jsonGenerator.writeStringProperty(headings[index], row[index]);
+                } else {
+                    if (heldRow != null) {
+                        writeRow(jsonGenerator, headings, heldRow, heldRowLine);
                     }
-                    jsonGenerator.writeEndObject();
+                    heldRow = row;
+                    heldRowLine = line;
                 }
             }
-            // end of the report array
-            jsonGenerator.writeEndArray();
-            jsonGenerator.close();
-        } catch (IOException e) {
-            throw e;
-        } finally {
-            // close the generator if we need to
-            if ( jsonGenerator != null && !jsonGenerator.isClosed()) {
-                jsonGenerator.close();
+
+            if (heldRow != null && !excludeLastRow) {
+                writeRow(jsonGenerator, headings, heldRow, heldRowLine);
             }
+
+            jsonGenerator.writeEndArray();
         }
     }
 
     @Override
     public String getFileExtension() {
         return FILE_EXTENSION;
+    }
+
+    private void writeRow(JsonGenerator jsonGenerator, String[] headings, String[] row, int line) {
+        // Guarded explicitly: indexing headings past its length threw an ArrayIndexOutOfBounds that
+        // said nothing about which line of which file was malformed.
+        if (row.length > headings.length) {
+            throw new IllegalStateException("CSV line " + line + " has " + row.length
+                    + " values but the header row only names " + headings.length
+                    + ", so the surplus values cannot be mapped to a property.");
+        }
+        jsonGenerator.writeStartObject();
+        for (int index = 0; index < row.length; index++) {
+            jsonGenerator.writeStringProperty(headings[index], row[index]);
+        }
+        jsonGenerator.writeEndObject();
+    }
+
+    /**
+     * A row holding nothing but blank values carries no data. The previous {@code row == null}
+     * check never fired, because {@link #cleanRow(String[])} returns an array for every non-null
+     * input, so a blank line was emitted as an object with one empty property.
+     */
+    private static boolean isBlank(String[] row) {
+        return StringUtils.isEmpty(row) || Arrays.stream(row).allMatch(StringUtils::isEmpty);
     }
 
     private String[] cleanRow(String[] row) {
