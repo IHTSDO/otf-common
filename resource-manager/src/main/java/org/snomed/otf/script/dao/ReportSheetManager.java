@@ -81,6 +81,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	@Override
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		tabLineCount = new HashMap<>();
+		String[] allTabsColumnWidths = owner.getScript().getColumnWidths();
 		init();
 		try {
 			List<Request> requests = new ArrayList<>();
@@ -145,38 +146,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 								.setFields("userEnteredFormat(textFormat,backgroundColor)")));
 
 				// Format fixed width columns
-				String[] columnWidths = owner.getScript().getColumnWidths();
-				if (columnWidths != null) {
-
-					String[] widths = columnWidths[tabIdx].split(COMMA);
-
-					for (int i = 0; i < maxColumns; i++) {
-						Integer columnWidth = Integer.valueOf(widths[i].trim());
-						if (columnWidth > 0) {
-							requests.add(new Request()
-									.setRepeatCell(new RepeatCellRequest()
-											.setRange(new GridRange()
-													.setSheetId(tabIdx)
-													.setStartRowIndex(0)
-													.setEndRowIndex(1)
-													.setStartColumnIndex(i)
-													.setEndColumnIndex(i + 1))
-											.setCell(new CellData()
-													.setUserEnteredFormat(new CellFormat()
-															.setWrapStrategy("WRAP")))
-											.setFields("userEnteredFormat(wrapStrategy)")));
-							requests.add(new Request()
-									.setUpdateDimensionProperties(new UpdateDimensionPropertiesRequest()
-											.setRange(new DimensionRange()
-													.setSheetId(tabIdx)
-													.setDimension("COLUMNS")
-													.setStartIndex(i)
-													.setEndIndex(i + 1))
-											.setProperties(new DimensionProperties()
-													.setPixelSize(columnWidth))
-											.setFields("pixelSize")));
-						}
-					}
+				if (allTabsColumnWidths != null && tabIdx < allTabsColumnWidths.length) {
+					formatFixedWidthColumns(requests, allTabsColumnWidths, tabIdx, maxColumns);
 				}
 
 				writeToReportFile(tabIdx, header, true);
@@ -191,6 +162,38 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			Thread.currentThread().interrupt();
 		} catch (IOException e) {
 			throw new TermServerScriptException ("Unable to initialise Google Sheet headers", e);
+		}
+	}
+
+	private void formatFixedWidthColumns(List<Request> requests, String[] allTabsColumnWidths, int tabIdx, int maxColumns) {
+		String[] columnWidths = allTabsColumnWidths[tabIdx].split(COMMA);
+
+		for (int i = 0; i < maxColumns; i++) {
+			int columnWidth = Integer.parseInt(columnWidths[i].trim());
+			if (columnWidth > 0) {
+				requests.add(new Request()
+						.setRepeatCell(new RepeatCellRequest()
+								.setRange(new GridRange()
+										.setSheetId(tabIdx)
+										.setStartRowIndex(0)
+										.setEndRowIndex(1)
+										.setStartColumnIndex(i)
+										.setEndColumnIndex(i + 1))
+								.setCell(new CellData()
+										.setUserEnteredFormat(new CellFormat()
+												.setWrapStrategy("WRAP")))
+								.setFields("userEnteredFormat(wrapStrategy)")));
+				requests.add(new Request()
+						.setUpdateDimensionProperties(new UpdateDimensionPropertiesRequest()
+								.setRange(new DimensionRange()
+										.setSheetId(tabIdx)
+										.setDimension("COLUMNS")
+										.setStartIndex(i)
+										.setEndIndex(i + 1))
+								.setProperties(new DimensionProperties()
+										.setPixelSize(columnWidth))
+								.setFields("pixelSize")));
+			}
 		}
 	}
 
@@ -349,15 +352,19 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	public void formatSpreadSheetColumns() {
 		List<Request> requests = new ArrayList<>();
-		String[] columnWidths = owner.getScript().getColumnWidths();
+		String[] allTabsColumnWidths = owner.getScript().getColumnWidths();
 
 		for (int tabIdx = 0; tabIdx < numberOfSheets; tabIdx++) {
 			int maxColumn = maxTabColumns.get(tabIdx);
-			String[] widths = (columnWidths != null ? columnWidths[tabIdx].split(COMMA) : null);
+			String[] columnWidths = null;
+
+			if (allTabsColumnWidths != null && tabIdx < allTabsColumnWidths.length) {
+				columnWidths = allTabsColumnWidths[tabIdx].split(COMMA);
+			}
 
 			for (int columnIdx = 0; columnIdx < maxColumn; columnIdx++) {
-				// Set the columns without fixed width to be auto sized
-				if (widths == null || Integer.parseInt(widths[columnIdx].trim()) <= 0) {
+				// Set the columns where fixed width is not specified to be auto-sized
+				if (columnWidths == null || Integer.parseInt(columnWidths[columnIdx].trim()) == 0) {
 					DimensionRange dimensionRange = new DimensionRange();
 					dimensionRange.setDimension("COLUMNS");
 					dimensionRange.setSheetId(tabIdx);
