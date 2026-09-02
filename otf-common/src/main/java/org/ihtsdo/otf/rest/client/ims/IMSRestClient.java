@@ -5,8 +5,6 @@ import org.springframework.http.*;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -39,14 +37,14 @@ public class IMSRestClient {
 
 	/**
 	 * A REST endpoint to login and get token for an user.
-	 * @param username
-	 * @param password
-	 * @return Token - The token of login user
-	 * @throws URISyntaxException
-	 * @throws MalformedURLException
-	 * @throws IOException
+	 *
+	 * @param username the user to authenticate
+	 * @param password the user's password
+	 * @return the {@code ims-ihtsdo} cookie issued for the configured IMS environment, or an empty
+	 *         string if the response carried no cookie matching that environment
+	 * @throws URISyntaxException if the configured IMS URL cannot be parsed
 	 */
-	public String login(String username, String password) throws URISyntaxException, IOException {
+	public String login(String username, String password) throws URISyntaxException {
 		Map<String, String> bodyMap = new HashMap<>();
 		bodyMap.put("login", username);
 		bodyMap.put("password", password);
@@ -60,7 +58,7 @@ public class IMSRestClient {
 		return getAuthenticationToken(model.getHeaders());
 	}
 
-	public String loginForceNewSession(String username, String password) throws IOException, URISyntaxException {
+	public String loginForceNewSession(String username, String password) throws URISyntaxException {
 		String token = login(username, password);
 		logout(token);
 		return login(username, password);
@@ -74,7 +72,16 @@ public class IMSRestClient {
 	}
 
 	private String getAuthenticationToken(HttpHeaders responseHeader) throws URISyntaxException {
-		String cookies = responseHeader.get(SET_COOKIE).toString();
+		List<String> setCookieHeaders = responseHeader.get(SET_COOKIE);
+		if (setCookieHeaders == null || setCookieHeaders.isEmpty()) {
+			// HttpHeaders.get returns null when the header is absent, so calling toString on it
+			// threw a NullPointerException. No Set-Cookie means no session cookie was issued and
+			// so there is no token to extract, which is the same empty result this method already
+			// returns below when a cookie is present but none matches the IMS environment.
+			return "";
+		}
+
+		String cookies = setCookieHeaders.toString();
 		String[] strArr = cookies.substring(1, cookies.length() - 1).split(SEMICOLON_SEPARATOR);
 		Pattern r = Pattern.compile(IMS_PATTERN);
 		List<String> tokens = new ArrayList<>();
@@ -84,17 +91,35 @@ public class IMSRestClient {
 				tokens.add(str);
 			}
 		}
-		
+
 		// find corresponding token with IMS environment
-		URI uri = new URI(imsUrl);
-		String imsHost = uri.getHost();
-		String imsEnvironment = imsHost.substring(0, imsHost.indexOf(DOT_SEPARATOR));
+		String imsEnvironment = getImsEnvironment();
 		for (String token : tokens) {
 			if (token.contains(imsEnvironment)) {
 				return token;
 			}
 		}
 		return "";
+	}
+
+	/**
+	 * The environment name is the first label of the IMS host, so "dev" in "dev.ihtsdotools.org".
+	 * A host carrying no dot is itself the environment name - "localhost" in a local setup - where
+	 * {@link String#indexOf(String)} returned -1 and the substring threw
+	 * StringIndexOutOfBoundsException.
+	 */
+	private String getImsEnvironment() throws URISyntaxException {
+		String imsHost = new URI(imsUrl).getHost();
+		if (imsHost == null || imsHost.isBlank()) {
+			// A URI with no host - a missing scheme leaves the whole value parsed as a path - gave
+			// a NullPointerException here. That is a configuration error rather than a cookie that
+			// does not match, so it is reported instead of being reduced to an empty token.
+			throw new IllegalStateException("Cannot determine the IMS environment because no host "
+					+ "could be parsed from imsUrl '" + imsUrl + "'.");
+		}
+
+		int dotIndex = imsHost.indexOf(DOT_SEPARATOR);
+		return dotIndex < 0 ? imsHost : imsHost.substring(0, dotIndex);
 	}
 
 }
