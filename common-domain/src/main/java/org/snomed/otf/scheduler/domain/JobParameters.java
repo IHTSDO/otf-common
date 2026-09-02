@@ -1,17 +1,21 @@
 package org.snomed.otf.scheduler.domain;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 import jakarta.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @JsonSerialize(using = JobParameters.Serialize.class)
@@ -185,32 +189,30 @@ public class JobParameters implements Serializable {
 		this.id = id;
 	}
 	
-	public static class Serialize extends JsonSerializer<JobParameters> {
+	public static class Serialize extends ValueSerializer<JobParameters> {
 		public Serialize() {
 			super();
 		}
 		
 		@Override
-		public void serialize(JobParameters value, JsonGenerator gen, SerializerProvider serializers)
-				throws IOException {
-			gen.writeObject(value.getParameterMap());
+		public void serialize(JobParameters value, JsonGenerator gen, SerializationContext ctxt)
+				throws JacksonException {
+			gen.writePOJO(value.getParameterMap());
 		}
 	}
 	
-	public static class Deserialize extends JsonDeserializer<JobParameters>{
+	public static class Deserialize extends ValueDeserializer<JobParameters>{
 		public Deserialize() {
 			super();
 		}
 
 		@Override
 		public JobParameters deserialize(JsonParser p, DeserializationContext ctxt)
-				throws IOException {
+				throws JacksonException {
 			JobParameters jobParameters = new JobParameters();
-			ObjectMapper mapper = (ObjectMapper) p.getCodec();
-			JsonNode node = mapper.readTree(p);
 			TypeReference<HashMap<String, JobParameter>> typeRef = new TypeReference<>() {
             };
-			Map<String,JobParameter> map = mapper.readValue(node.toString(), typeRef);
+			Map<String,JobParameter> map = ctxt.readValue(p, typeRef);
 			jobParameters.setParameterMap(map);
 			return jobParameters;
 		}

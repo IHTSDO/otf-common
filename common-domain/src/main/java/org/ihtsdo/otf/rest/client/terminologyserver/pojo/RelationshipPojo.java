@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -33,6 +34,10 @@ public class RelationshipPojo implements SnomedComponent {
 		active = true;
 	}
 
+	// Convenience constructor only. Jackson 3 infers property-based creators from constructor
+	// parameter names (this project compiles with -parameters), which would bypass the no-arg
+	// constructor and fail on absent primitives. DISABLED keeps Jackson on setter-based binding.
+	@JsonCreator(mode = JsonCreator.Mode.DISABLED)
 	public RelationshipPojo(int groupId, String typeId, String targetId, String characteristicType) {
 		this();
 		this.groupId = groupId;

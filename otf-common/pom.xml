@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.ihtsdo.otf.common</groupId>
 		<artifactId>otf-common-parent</artifactId>
-		<version>8.1.0-SNAPSHOT</version>
+		<version>9.0.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -40,6 +40,14 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<!-- Spring Boot 4 moved RestTemplateBuilder out of spring-boot (org.springframework.boot.web.client)
+				 into this per-feature module (org.springframework.boot.restclient). Unlike spring-boot itself,
+				 this module is not a transitive of spring-boot-starter-web, so it must be left at compile
+				 scope (not provided) for consuming applications to resolve RestTemplateBuilder at runtime. -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-orm</artifactId>
 			<scope>provided</scope>
@@ -54,6 +62,14 @@
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>activemq-client</artifactId>
+		</dependency>
+
+		<!-- Jackson 3 (tools.jackson), the JSON stack Spring Boot 4 auto-configures.
+			 Annotations still live in com.fasterxml.jackson.annotation, which Jackson 3
+			 depends on, so @JsonIgnore/@JsonProperty etc. need no separate declaration. -->
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<!-- Commons -->

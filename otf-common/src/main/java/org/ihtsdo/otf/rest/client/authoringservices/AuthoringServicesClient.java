@@ -9,7 +9,7 @@ import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
@@ -50,7 +50,7 @@ public class AuthoringServicesClient {
 		updateAuthToken(authToken);
 		
 		restTemplate = new RestTemplateBuilder()
-				.rootUri(this.serverUrl)
+				.baseUri(this.serverUrl)
 				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
