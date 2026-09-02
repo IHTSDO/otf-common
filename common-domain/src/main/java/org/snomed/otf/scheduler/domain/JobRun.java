@@ -276,11 +276,11 @@ public class JobRun {
 		this.project = project;
 	}
 
-	public String getcodeSystemShortname() {
+	public String getCodeSystemShortname() {
 		return codeSystemShortname;
 	}
 
-	public void setcodeSystemShortname(String codeSystemShortname) {
+	public void setCodeSystemShortname(String codeSystemShortname) {
 		this.codeSystemShortname = codeSystemShortname;
 	}
 

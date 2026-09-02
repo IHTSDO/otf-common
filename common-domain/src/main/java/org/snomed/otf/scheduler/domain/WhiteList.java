@@ -45,11 +45,11 @@ public class WhiteList {
 		this.concepts = concepts;
 	}
 
-	public String getcodeSystemShortname() {
+	public String getCodeSystemShortname() {
 		return codeSystemShortname;
 	}
 
-	public void setcodeSystemShortname(String codeSystemShortname) {
+	public void setCodeSystemShortname(String codeSystemShortname) {
 		this.codeSystemShortname = codeSystemShortname;
 	}
 }
