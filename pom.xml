@@ -10,7 +10,7 @@
 
 	<groupId>org.ihtsdo.otf.common</groupId>
 	<artifactId>otf-common-parent</artifactId>
-	<version>8.0.1</version>
+	<version>8.0.3</version>
 	<name>OTF Common Parent</name>
 	<packaging>pom</packaging>
 
