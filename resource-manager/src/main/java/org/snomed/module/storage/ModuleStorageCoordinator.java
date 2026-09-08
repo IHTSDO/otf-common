@@ -942,15 +942,10 @@ public class ModuleStorageCoordinator {
         currentRelease.setCompositionModuleIds(compositionModuleIds);
     }
 
-    private void populateDependencies(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows, boolean obtainFilesLocally) throws ModuleStorageCoordinatorException {
-        //Dependencies are the referenced component ids, that do NOT have the same ET as the
-        //current release.   If we can't find that target, we'll exception out.
-        List<URI> dependencyURIs = mdrsRows.stream()
-                .filter(row -> isNotCurrentRelease(row, currentRelease))
-                .map(this::targetModuleAsURI)
-                .collect(Collectors.toList());
-        List<ModuleMetadata> dependencies = getMetadata(dependencyURIs, SearchRequirement.ENSURE_ALL_FOUND, obtainFilesLocally);
-        currentRelease.setDependencies(dependencies);
+    private void populateDependencies(ModuleMetadata currentRelease, Set<RF2Row> mdrsRows, boolean obtainFilesLocally) {
+		Set<String> maxEffectiveTimes = currentRelease.getEffectiveTime() != null ? Set.of(currentRelease.getEffectiveTime().toString()) : null;
+		Set<ModuleMetadata> dependencies = getDependencies(mdrsRows, obtainFilesLocally, maxEffectiveTimes);
+        currentRelease.setDependencies(List.copyOf(dependencies));
     }
 
     boolean isNotCurrentRelease(RF2Row row, ModuleMetadata currentRelease) {
@@ -1008,6 +1003,29 @@ public class ModuleStorageCoordinator {
         addFilesLocally(packages);
         return packages;
     }
+
+	public Set<ModuleMetadata> getDependencies(Set<RF2Row> mdrsRows, boolean includeFile, Set<String> maxEffectiveTimes) {
+		if (mdrsRows == null || mdrsRows.isEmpty()) {
+			return Collections.emptySet();
+		}
+
+		BiPredicate<String, String> candidateMatch = moduleIdAndEffectiveTimeCandidateMatcher(referencedComponentIdToTargetEffectiveTimes(mdrsRows), Collections.emptySet());
+		candidateMatch = withinUpperBoundary(candidateMatch, computeUpperBoundaryEffectiveTime(mdrsRows, maxEffectiveTimes));
+		Set<ModuleMetadata> rf2Packages = getRF2Packages(candidateMatch);
+
+		// Remove those versioned beyond upper boundary (prevents prod being available on dev)
+		rf2Packages = removeVersionedBeyondUpperBoundary(mdrsRows, rf2Packages, maxEffectiveTimes);
+
+		// Find dependent packages (determined by referencedComponentId)
+		Set<ModuleMetadata> dependantPackages = getDependantPackages(rf2Packages, mdrsRows);
+
+		if (!includeFile) {
+			return dependantPackages;
+		}
+
+		addFilesLocally(dependantPackages);
+		return dependantPackages;
+	}
 
     /**
      * Resolve ModuleMetadata for packages that could be relevant, given a predicate built from what the
