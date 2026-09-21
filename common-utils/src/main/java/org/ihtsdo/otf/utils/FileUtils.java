@@ -107,4 +107,25 @@ public class FileUtils {
 	    return hasExtension(fileName, MD5_EXTENSION);
 	}
 
+	/**
+	 * Finds a directory name based on proposedDir, incrementing a numeric suffix (_1, _2, ...)
+	 * until a name is found that doesn't already exist, creates it, and returns it.  Useful for
+	 * repeat runs that shouldn't overwrite a previous run's output.
+	 *
+	 * @param proposedDir the directory we'd like to create
+	 * @return the directory actually created, which may have an incremented name
+	 * @throws IOException if no free directory name could be created on disk
+	 */
+	public static File createDirectoryOrIncrement(final File proposedDir) throws IOException {
+		File dir = proposedDir;
+		int increment = 0;
+		while (dir.exists()) {
+			dir = new File(proposedDir.getParentFile(), proposedDir.getName() + "_" + (++increment));
+		}
+		if (!dir.mkdirs()) {
+			throw new IOException("Failed to create directory " + dir);
+		}
+		return dir;
+	}
+
 }
