@@ -137,8 +137,12 @@ public class RefsetMember extends Component implements RF2Constants {
 			return ComponentType.COMPONENT_ANNOTATION;
 		} else if (additionalFields.containsKey("valueId")) {
 			return ComponentType.ATTRIBUTE_VALUE;
+		} else if (additionalFields.containsKey("mapTarget")) {
+			return ComponentType.SIMPLE_MAP;
 		} else if (additionalFields.isEmpty()) {
 			return ComponentType.SIMPLE_REFSET_MEMBER;
+		} else if (refsetId.equals(SCTID_REFSET_DESCRIPTOR_REFSETID)) {
+			return ComponentType.REFSET_DESCRIPTOR;
 		}
 		return ComponentType.UNKNOWN;
 	}
