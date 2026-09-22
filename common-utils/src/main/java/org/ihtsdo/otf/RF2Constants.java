@@ -173,6 +173,8 @@ public interface RF2Constants {
 	String SCTID_ASSOC_ALTERNATIVE_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
 	String SCTID_ASSOC_REFERS_TO_REFSETID = "900000000000531004";  //REFERS TO association reference set (foundation metadata concept)
 
+	String SCTID_REFSET_DESCRIPTOR_REFSETID = "900000000000456007";
+
 	String SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID = "734138000";  //Anatomy structure and entire association reference set (foundation metadata concept)
 	String SCTID_ASSOC_ANATOMY_STRUC_PART_REFSETID = "734139008";  //Anatomy structure and part association reference set (foundation metadata concept)
 
