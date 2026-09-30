@@ -117,15 +117,37 @@ public class FileUtils {
 	 * @throws IOException if no free directory name could be created on disk
 	 */
 	public static File createDirectoryOrIncrement(final File proposedDir) throws IOException {
-		File dir = proposedDir;
-		int increment = 0;
-		while (dir.exists()) {
-			dir = new File(proposedDir.getParentFile(), proposedDir.getName() + "_" + (++increment));
-		}
+		File dir = incrementUntilUnused(proposedDir, false);
 		if (!dir.mkdirs()) {
 			throw new IOException("Failed to create directory " + dir);
 		}
 		return dir;
+	}
+
+	/**
+	 * Finds a file name based on proposedFile that doesn't already exist, inserting a numeric
+	 * suffix (_1, _2, ...) before the extension if needed, eg LE-184.zip -> LE-184_1.zip.
+	 * Nothing is created on disk.
+	 *
+	 * @param proposedFile the file name we'd like to use
+	 * @return proposedFile if it's free, otherwise the first free incremented name
+	 */
+	public static File findUnusedFileOrIncrement(final File proposedFile) {
+		return incrementUntilUnused(proposedFile, true);
+	}
+
+	//Directories get the suffix at the end of the name; files keep their extension last
+	private static File incrementUntilUnused(final File proposed, boolean keepExtension) {
+		String name = proposed.getName();
+		int extIdx = keepExtension ? name.lastIndexOf('.') : -1;
+		String stem = extIdx > 0 ? name.substring(0, extIdx) : name;
+		String extension = extIdx > 0 ? name.substring(extIdx) : "";
+		File candidate = proposed;
+		int increment = 0;
+		while (candidate.exists()) {
+			candidate = new File(proposed.getParentFile(), stem + "_" + (++increment) + extension);
+		}
+		return candidate;
 	}
 
 }
