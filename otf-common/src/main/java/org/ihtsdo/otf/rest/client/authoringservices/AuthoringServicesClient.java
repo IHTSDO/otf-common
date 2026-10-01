@@ -253,6 +253,22 @@ public class AuthoringServicesClient {
 		return tasks;
 	}
 
+	/**
+	 * Every task on the project, whatever its status - unlike listTasksOnProject, this includes
+	 * Promoted and Completed tasks.
+	 */
+	public List<Task> listAllTasksOnProject(String projectKey) throws RestClientException {
+		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + "/tasks";
+		try {
+			LOGGER.info("Recovering list of all tasks from {}", endPoint);
+			ParameterizedTypeReference<List<Task>> type = new ParameterizedTypeReference<>() {};
+			List<Task> tasks = restTemplate.exchange(endPoint, HttpMethod.GET, null, type).getBody();
+			return tasks == null ? new ArrayList<>() : tasks;
+		} catch (Exception e) {
+			throw new RestClientException("Unable to recover tasks for project " + projectKey, e);
+		}
+	}
+
 	public void saveUIState(String uiPanelId, List<String> savedConceptIds) {
 		String url = serverUrl + API_ROOT + "/ui-state/" + uiPanelId;
 		HttpEntity<List<String>> request = new HttpEntity<>(savedConceptIds, headers);
