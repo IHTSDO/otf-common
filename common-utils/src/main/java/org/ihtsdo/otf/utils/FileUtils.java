@@ -147,6 +147,9 @@ public class FileUtils {
 		while (candidate.exists()) {
 			candidate = new File(proposed.getParentFile(), stem + "_" + (++increment) + extension);
 		}
+		if (increment > 0) {
+			LOGGER.warn("{} already exists, so using {} instead", name, candidate.getName());
+		}
 		return candidate;
 	}
 

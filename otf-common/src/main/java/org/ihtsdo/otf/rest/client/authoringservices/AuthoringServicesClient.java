@@ -28,6 +28,7 @@ public class AuthoringServicesClient {
 
 	private static final String STATUS_PARAM = "statuses";
 	private static final String TASKS = "/tasks/";
+	private static final String TASKS_COLLECTION = "/tasks";
 	private static final String PROJECTS = "projects/";
 	
 	private final RestTemplate restTemplate;
@@ -69,7 +70,7 @@ public class AuthoringServicesClient {
 	}
 
 	public Task createTask(String projectKey, String summary, String description) {
-		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + "/tasks";
+		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + TASKS_COLLECTION;
 		JsonObject requestJson = new JsonObject();
 		requestJson.addProperty("summary", summary);
 		requestJson.addProperty("description", description);
@@ -78,7 +79,7 @@ public class AuthoringServicesClient {
 	}
 
 	public Task createTask(Task task) {
-		String endPoint = serverUrl + API_ROOT + PROJECTS + task.getProjectKey() + "/tasks";
+		String endPoint = serverUrl + API_ROOT + PROJECTS + task.getProjectKey() + TASKS_COLLECTION;
 		HttpEntity<Task> requestEntity = new HttpEntity<>(task, headers);
 		return restTemplate.postForObject(endPoint, requestEntity, Task.class);
 	}
@@ -258,7 +259,7 @@ public class AuthoringServicesClient {
 	 * Promoted and Completed tasks.
 	 */
 	public List<Task> listAllTasksOnProject(String projectKey) throws RestClientException {
-		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + "/tasks";
+		String endPoint = serverUrl + API_ROOT + PROJECTS + projectKey + TASKS_COLLECTION;
 		try {
 			LOGGER.info("Recovering list of all tasks from {}", endPoint);
 			ParameterizedTypeReference<List<Task>> type = new ParameterizedTypeReference<>() {};
