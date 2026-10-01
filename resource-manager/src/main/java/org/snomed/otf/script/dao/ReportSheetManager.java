@@ -308,6 +308,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	}
 
 	private synchronized void flush(boolean optional, boolean withWait) throws TermServerScriptException {
+		//Nothing waiting to be written, so nothing to do - and no need to wait or log about it
+		if (dataToBeWritten.isEmpty()) {
+			return;
+		}
+
 		//Are we ready to flush?
 		//How long is it since we last wrote to the file?  Write every 5 seconds
 		if (lastWriteTime != null) {
