@@ -45,6 +45,49 @@ public class Task implements Comparable<Task>, TermServerLocation {
 	@Expose
 	TaskType taskType;
 
+	//Read-only state as reported by authoring-services - never sent back on an update (eg Dates would serialize in a format authoring-services rejects)
+	@Expose(serialize = false)
+	String maintainerType;
+
+	@Expose(serialize = false)
+	String branchState;
+
+	@Expose(serialize = false)
+	Long branchHeadTimestamp;
+
+	@Expose(serialize = false)
+	Long branchBaseTimestamp;
+
+	@Expose(serialize = false)
+	Long latestCodeSystemVersionBaseTimestamp;
+
+	@Expose(serialize = false)
+	TaskUser reporter;
+
+	@Expose(serialize = false)
+	List<TaskUser> reviewers;
+
+	@Expose(serialize = false)
+	String created;
+
+	@Expose(serialize = false)
+	String updated;
+
+	@Expose(serialize = false)
+	String latestValidationStatus;
+
+	@Expose(serialize = false)
+	String feedbackMessagesStatus;
+
+	@Expose(serialize = false)
+	String feedbackMessageDate;
+
+	@Expose(serialize = false)
+	Boolean internalAuthoringTask;
+
+	@Expose(serialize = false)
+	Classification latestClassificationJson;
+
 	IBatch batch;
 	List<Component> components = new ArrayList<>();
 	String reviewer = null;
@@ -281,5 +324,61 @@ public class Task implements Comparable<Task>, TermServerLocation {
 
 	public void setTaskType(TaskType taskType) {
 		this.taskType = taskType;
+	}
+
+	public String getMaintainerType() {
+		return maintainerType;
+	}
+
+	public String getBranchState() {
+		return branchState;
+	}
+
+	public Long getBranchHeadTimestamp() {
+		return branchHeadTimestamp;
+	}
+
+	public Long getBranchBaseTimestamp() {
+		return branchBaseTimestamp;
+	}
+
+	public Long getLatestCodeSystemVersionBaseTimestamp() {
+		return latestCodeSystemVersionBaseTimestamp;
+	}
+
+	public TaskUser getReporter() {
+		return reporter;
+	}
+
+	public List<TaskUser> getReviewers() {
+		return reviewers;
+	}
+
+	public String getCreated() {
+		return created;
+	}
+
+	public String getUpdated() {
+		return updated;
+	}
+
+	public String getLatestValidationStatus() {
+		return latestValidationStatus;
+	}
+
+	public String getFeedbackMessagesStatus() {
+		return feedbackMessagesStatus;
+	}
+
+	public String getFeedbackMessageDate() {
+		return feedbackMessageDate;
+	}
+
+	public Boolean getInternalAuthoringTask() {
+		return internalAuthoringTask;
+	}
+
+	public Classification getLatestClassificationJson() {
+		return latestClassificationJson;
 	}
 }
