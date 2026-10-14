@@ -1820,16 +1820,21 @@ public class ModuleStorageCoordinator {
 
 
     public ModuleMetadata findPackageOrThrow(String packageName, boolean includeFile) throws ModuleStorageCoordinatorException {
-        // Search S3 for a package whose filename matches
+		// Match any path ending with /YYYYMMDD/packageName
+		String regex = ".*/\\d{8}/" + packageName + "$";
+
+		// Search S3 for a package whose filename matches
         for (String readDirectory : readDirectories) {
             for (String rf2PackagePath : remoteStorageManager.doListFilenames(readDirectory, ".zip")) {
-                if (rf2PackagePath.endsWith(SLASH + packageName)) {
+                if (rf2PackagePath.matches(regex)) {
                     String baseResourcePath = MSCUtils.getBaseResourcePath(rf2PackagePath);
                     ModuleMetadata metadata = downloadMetadataFromPath(baseResourcePath, false);
-                    if (includeFile) {
-                        populateFileLocally(baseResourcePath, metadata);
-                    }
-                    return metadata;
+					if (metadata != null) {
+						if (includeFile) {
+							populateFileLocally(baseResourcePath, metadata);
+						}
+						return metadata;
+					}
                 }
             }
         }
