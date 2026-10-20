@@ -28,7 +28,11 @@ public class JobRunParameters extends JobParameters {
 	public JobRunParameters(Map<String, JobParameter> parameterMap) {
 		super(parameterMap);
 	}
-	
+
+	public JobRunParameters(JobParameters clone) {
+		super(clone);
+	}
+
 	public static class Serialize extends ValueSerializer<JobRunParameters> {
 		
 		public Serialize() {

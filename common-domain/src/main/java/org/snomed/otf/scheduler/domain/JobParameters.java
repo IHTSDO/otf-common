@@ -34,11 +34,12 @@ public class JobParameters implements Serializable {
 	@JsonIgnore
 	private Map<String, JobParameter> parameterMap;
 
-	public JobParameters (JobParameters clone) {
-		this(clone.getParameterMap());
+	public JobParameters(JobParameters clone) {
+		this();
+		clone.getParameterMap().forEach((key, value) -> add(key).setValue(new JobParameter(value, this)));
 	}
 	
-	public JobParameters (Map<String, JobParameter> parameterMap) {
+	public JobParameters(Map<String, JobParameter> parameterMap) {
 		this();
 		setParameterMap(parameterMap);
 	}

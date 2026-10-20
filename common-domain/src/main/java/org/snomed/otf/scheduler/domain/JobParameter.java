@@ -1,6 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,7 +50,20 @@ public class JobParameter implements Serializable {
 	Integer displayOrder;
 
 	public JobParameter () {}
-	
+
+	public JobParameter(JobParameter clone, JobParameters parentParams) {
+		this.parentParams = parentParams;
+		this.displayOrder = clone.getDisplayOrder();
+		this.paramKey = clone.getParamKey();
+		this.type = clone.getType();
+		this.description = clone.getDescription();
+		this.validationRule = clone.getValidationRule();
+		this.mandatory = clone.getMandatory();
+		this.value = clone.getValue();
+		this.values = new ArrayList<>(clone.getValues());
+		this.options = new ArrayList<>(clone.getOptions());
+	}
+
 	/* Parameters must always know their owning object, otherwise database
 	 * saves will fail.
 	 */
@@ -128,6 +142,11 @@ public class JobParameter implements Serializable {
 		return this;
 	}
 
+	public JobParameter withMandatory() {
+		this.mandatory = true;
+		return this;
+	}
+
 	public JobParameters build() {
 		return parentParams;
 	}
@@ -182,11 +201,6 @@ public class JobParameter implements Serializable {
 
 	public void setValue(String value) {
 		this.value = value;
-	}
-
-	public JobParameter withMandatory() {
-		this.mandatory = true;
-		return this;
 	}
 	
 	public String toString() {

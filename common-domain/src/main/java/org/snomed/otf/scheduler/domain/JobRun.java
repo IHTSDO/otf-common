@@ -3,7 +3,6 @@ package org.snomed.otf.scheduler.domain;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import org.ihtsdo.otf.utils.StringUtils;
@@ -70,21 +69,18 @@ public class JobRun {
 		parameters = new JobRunParameters();
 	}
 
-	public static JobRun create(String jobName, String user) {
+	public static JobRun create(String jobName) {
 		JobRun j = new JobRun();
-		j.id = UUID.randomUUID();
 		j.jobName = jobName;
-		j.user = user;
 		j.requestTime = new Date();
 		return j;
 	}
 	
 	public static JobRun create(JobSchedule jobSchedule) {
 		JobRun j = new JobRun();
-		j.id = UUID.randomUUID();
 		j.jobName = jobSchedule.getJobName();
 		j.user = jobSchedule.getUser();
-		j.setParameters(new JobRunParameters(jobSchedule.getParameters().getParameterMap()));
+		j.setParameters(new JobRunParameters(jobSchedule.getParameters()));
 		j.requestTime = new Date();
 		return j;
 	}
@@ -190,12 +186,10 @@ public class JobRun {
 
 	public JobRun cloneForRerun() {
 		JobRun clone = new JobRun();
-		clone.setId(UUID.randomUUID());
 		clone.setJobName(getJobName());
 		clone.setProject(getProject());
-		clone.setParameters(getParameters());
+		clone.setParameters(new JobRunParameters(getParameters()));
 		clone.setRequestTime(new Date());
-		clone.setTerminologyServerUrl(getTerminologyServerUrl());
 		return clone;
 	}
 
