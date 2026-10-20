@@ -36,7 +36,8 @@ public class JobParameters implements Serializable {
 
 	public JobParameters(JobParameters clone) {
 		this();
-		clone.getParameterMap().forEach((key, value) -> add(key).setValue(new JobParameter(value, this)));
+		clone.getParameterMap()
+				.forEach((key, value) -> this.parameterMap.put(key, new JobParameter(value, this)));
 	}
 	
 	public JobParameters(Map<String, JobParameter> parameterMap) {
