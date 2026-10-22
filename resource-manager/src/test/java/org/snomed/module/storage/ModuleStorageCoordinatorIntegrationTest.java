@@ -1552,6 +1552,46 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     @Test
+    void getComposition_ShouldReturnExpected_WhenGivenMalformedMetadata() throws ScriptException, ModuleStorageCoordinatorException, IOException {
+        // AA
+        givenMetadata("prod/AA_12345/20260101", "SnomedCT_ManagedServiceAA_PRODUCTION_AA12345_20260101T120000Z.zip");
+        givenArchive("prod/AA_12345/20260101",  "SnomedCT_ManagedServiceAA_PRODUCTION_AA12345_20260101T120000Z.zip");
+        Set<RF2Row> aaMdrs = new HashSet<>(Arrays.asList(
+                new RF2Row().addRow(3, "12345").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20260101"),
+                new RF2Row().addRow(3, "12345").addRow(5, "900000000000012004").addRow(6, "").addRow(7, "20260101")
+        ));
+        ModuleMetadata aa = moduleStorageCoordinatorProd.getComposition(aaMdrs, true).iterator().next();
+        assertNotNull(aa.getFile());
+
+        // BB
+        givenMetadata("prod/BB_678910/20260101", "SnomedCT_ManagedServiceBB_PRODUCTION_BB678910_20260101T120000Z.zip");
+        givenArchive("prod/BB_678910/20260101",  "SnomedCT_ManagedServiceBB_PRODUCTION_BB678910_20260101T120000Z.zip");
+        Set<RF2Row> bbMdrs = new HashSet<>(Arrays.asList(
+                new RF2Row().addRow(3, "678910").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20260101"),
+                new RF2Row().addRow(3, "678910").addRow(5, "900000000000012004").addRow(6, "").addRow(7, "20260101")
+        ));
+        ModuleMetadata bb = moduleStorageCoordinatorProd.getComposition(bbMdrs, true).iterator().next();
+        assertNotNull(bb.getFile());
+
+        // CC (incorrect shortName)
+        givenMetadata("prod/CC_1112131415/20260101", "prod-eps_MAIN_SNOMEDCT-CC_2026-01-01-20260101.zip", "SNOMEDCT-CC");
+        givenArchive("prod/CC_1112131415/20260101",  "prod-eps_MAIN_SNOMEDCT-CC_2026-01-01-20260101.zip");
+        Set<RF2Row> ccMdrs = new HashSet<>(Arrays.asList(
+                new RF2Row().addRow(3, "1112131415").addRow(5, "900000000000207008").addRow(6, "").addRow(7, "20260101"),
+                new RF2Row().addRow(3, "1112131415").addRow(5, "900000000000012004").addRow(6, "").addRow(7, "20260101")
+        ));
+        ModuleMetadata cc = moduleStorageCoordinatorProd.getComposition(ccMdrs, true).iterator().next();
+        assertNull(cc.getFile());
+        assertEquals("SNOMEDCT-CC", cc.getCodeSystemShortName());
+
+        // Correct shortName
+        givenMetadata("prod/CC_1112131415/20260101", "prod-eps_MAIN_SNOMEDCT-CC_2026-01-01-20260101.zip", "CC");
+        cc = moduleStorageCoordinatorProd.getComposition(ccMdrs, true).iterator().next();
+        assertNotNull(cc.getFile());
+        assertEquals("CC", cc.getCodeSystemShortName());
+    }
+
+    @Test
     void getComposition_ShouldReturnBlank_WhenGivenIntMDRS() throws ScriptException, ModuleStorageCoordinatorException, IOException {
         // given
         givenProdReleasePackages();
@@ -1790,8 +1830,15 @@ class ModuleStorageCoordinatorIntegrationTest extends IntegrationTest {
     }
 
     private void givenMetadata(String resourcePath, String rf2PackageName) throws ScriptException, IOException, ModuleStorageCoordinatorException {
+        givenMetadata(resourcePath, rf2PackageName, null);
+    }
+
+    private void givenMetadata(String resourcePath, String rf2PackageName, String codeSystemShortName) throws ScriptException, IOException, ModuleStorageCoordinatorException {
         ModuleMetadata moduleMetadata = getMetadataFromPath(resourcePath);
         moduleMetadata.setFilename(rf2PackageName);
+        if (codeSystemShortName != null) {
+            moduleMetadata.setCodeSystemShortName(codeSystemShortName);
+        }
 
         File file = FileUtils.doCreateTempFile("metadata.json");
         FileUtils.writeToFile(file, moduleMetadata);
