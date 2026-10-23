@@ -1,5 +1,7 @@
 package org.snomed.otf.scheduler.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -19,6 +21,10 @@ public class JobRunBatch {
     public JobRunBatch() {
     }
 
+    // Convenience constructor only. Jackson 3 infers property-based creators from constructor
+    // parameter names (this project compiles with -parameters), which would bypass the no-arg
+    // constructor and fail on absent primitives. DISABLED keeps Jackson on setter-based binding.
+    @JsonCreator(mode = JsonCreator.Mode.DISABLED)
     public JobRunBatch(boolean international, boolean managedService, String projectName, String user) {
         this.batchRequestTime = new Date();
         this.international = international;

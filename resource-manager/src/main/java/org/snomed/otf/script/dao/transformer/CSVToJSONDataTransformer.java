@@ -1,10 +1,12 @@
 package org.snomed.otf.script.dao.transformer;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvParser;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.csv.CsvMapper;
+import tools.jackson.dataformat.csv.CsvReadFeature;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,8 +25,9 @@ public class CSVToJSONDataTransformer implements DataTransformer {
     protected boolean excludeLastRow = false;
 
     public CSVToJSONDataTransformer() {
-        csvMapper = new CsvMapper();
-        csvMapper.enable(CsvParser.Feature.WRAP_AS_ARRAY);
+        csvMapper = CsvMapper.builder()
+                .enable(CsvReadFeature.WRAP_AS_ARRAY)
+                .build();
     }
 
     public CSVToJSONDataTransformer(boolean excludeLastRow) {
@@ -37,9 +40,10 @@ public class CSVToJSONDataTransformer implements DataTransformer {
         JsonGenerator jsonGenerator = null;
         try (BufferedWriter outputStream  = new BufferedWriter(new FileWriter(output, false))) {
             // create the Json mapper
-            ObjectMapper mapper = new ObjectMapper();
-            jsonGenerator = mapper.getFactory().createGenerator(outputStream);
-            jsonGenerator.useDefaultPrettyPrinter();
+            ObjectMapper mapper = JsonMapper.builder()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .build();
+            jsonGenerator = mapper.createGenerator(outputStream);
 
             // start of the report array
             jsonGenerator.writeStartArray();
@@ -67,7 +71,7 @@ public class CSVToJSONDataTransformer implements DataTransformer {
                 if (!excludeRow) {
                     jsonGenerator.writeStartObject();
                     for (int index = 0; index < row.length; index++) {
-                        jsonGenerator.writeStringField(headings[index], row[index]);
+                        jsonGenerator.writeStringProperty(headings[index], row[index]);
                     }
                     jsonGenerator.writeEndObject();
                 }
