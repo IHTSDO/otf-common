@@ -336,47 +336,59 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			return;
 		}
 
-		//Are we ready to flush?
-		//How long is it since we last wrote to the file?  Write every 5 seconds
-		if (lastWriteTime != null) {
-			long secondsSinceLastWrite = (System.currentTimeMillis() - lastWriteTime.getTime()) / 1000;
-			long remaining = MAX_REQUEST_RATE - secondsSinceLastWrite;
-			if (remaining > 0) {
-				if (withWait) {
-					try {
-						Thread.sleep(remaining * 1000); // convert to ms if MAX_REQUEST_RATE is in seconds
-					} catch (InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
-				} else if (optional) {
-					return;
-				}
-			}
+		if (!isReadyToFlush(optional, withWait)) {
+			return;
 		}
-		
-		//Execute update of data values
+
 		if (sheet != null) {
-			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
-				.setValueInputOption(RAW)
-				.setData(dataToBeWritten);
+			writeDataToSheet();
+		}
+	}
+
+	private boolean isReadyToFlush(boolean optional, boolean withWait) {
+		//How long is it since we last wrote to the file?  Write every 5 seconds
+		if (lastWriteTime == null) {
+			return true;
+		}
+		long secondsSinceLastWrite = (System.currentTimeMillis() - lastWriteTime.getTime()) / 1000;
+		long remaining = MAX_REQUEST_RATE - secondsSinceLastWrite;
+		if (remaining <= 0) {
+			return true;
+		}
+
+		if (withWait) {
 			try {
-				LOGGER.info("{} flushing to sheets", new Date());
-				googleClient.writeToSheet(sheet, body);
-				if (!highlightsToBeApplied.isEmpty()) {
-					googleClient.executeRequests(sheet, highlightsToBeApplied, true);
-				}
+				Thread.sleep(remaining * 1000); // convert to ms if MAX_REQUEST_RATE is in seconds
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-			} catch (IOException e) {
-				//Output some sample of the data so get an idea of where it's coming from.
-				int dataCutPoint = Math.min(dataToBeWritten.size(), 1000);
-				LOGGER.info("Last data attempted: {}", dataToBeWritten.toString().substring(0, dataCutPoint));
-				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
-			} finally {
-				lastWriteTime = new Date();
-				dataToBeWritten.clear();
-				highlightsToBeApplied.clear();
 			}
+			return true;
+		}
+		//Too soon to write again, so an optional flush can wait for the next one
+		return !optional;
+	}
+
+	private void writeDataToSheet() throws TermServerScriptException {
+		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
+			.setValueInputOption(RAW)
+			.setData(dataToBeWritten);
+		try {
+			LOGGER.info("{} flushing to sheets", new Date());
+			googleClient.writeToSheet(sheet, body);
+			if (!highlightsToBeApplied.isEmpty()) {
+				googleClient.executeRequests(sheet, highlightsToBeApplied, true);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		} catch (IOException e) {
+			//Output some sample of the data so get an idea of where it's coming from.
+			int dataCutPoint = Math.min(dataToBeWritten.size(), 1000);
+			LOGGER.info("Last data attempted: {}", dataToBeWritten.toString().substring(0, dataCutPoint));
+			throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
+		} finally {
+			lastWriteTime = new Date();
+			dataToBeWritten.clear();
+			highlightsToBeApplied.clear();
 		}
 	}
 
