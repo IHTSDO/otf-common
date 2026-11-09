@@ -71,6 +71,10 @@ public class ReportManager extends CommonFileWriter {
 	}
 	
 	public boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		return writeToReportFile(reportIdx, line, null);
+	}
+
+	public boolean writeToReportFile(int reportIdx, String line, Highlight highlight) throws TermServerScriptException {
 		if (disabledTabs.contains(reportIdx)) {
 			if (!disableTabAdvised.contains(reportIdx)) {
 				reportSheetManager.writeToReportFile(reportIdx, "Tab disabled programmatically.  See 'getReportManager().disableTab'", false);
@@ -85,7 +89,7 @@ public class ReportManager extends CommonFileWriter {
 		}
 		
 		if (writeToSheet) {
-			writeSuccess = reportSheetManager.writeToReportFile(reportIdx, line, false);
+			writeSuccess = reportSheetManager.writeToReportFile(reportIdx, line, false, highlight);
 		}
 
 		if (writeToS3) {

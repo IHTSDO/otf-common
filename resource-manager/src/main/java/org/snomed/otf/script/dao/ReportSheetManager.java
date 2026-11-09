@@ -33,6 +33,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	public static String targetFolderId = GFOLDER_FALLBACK;
 	private Date lastWriteTime;
 	private final List<ValueRange> dataToBeWritten = new ArrayList<>();
+	private final List<Request> highlightsToBeApplied = new ArrayList<>();
 	private final SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	private Map<Integer, Integer> tabLineCount;
 	private final Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
@@ -207,6 +208,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	@Override
 	public boolean writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
+		return writeToReportFile(tabIdx, line, delayWrite, null);
+	}
+
+	public boolean writeToReportFile(int tabIdx, String line, boolean delayWrite, Highlight highlight) throws TermServerScriptException {
 		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx) >= tabRowsCount.get(tabIdx)) {
 			//We're already hit the max and will have reported failure
 			//Do not attempt to add any more data.
@@ -218,6 +223,9 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		}
 		
 		addDataToBWritten(tabIdx, line);
+		if (highlight != null) {
+			addHighlightToBeApplied(tabIdx, highlight);
+		}
 		
 		//Are we getting close to the limits of what can be written?
 		if (dataToBeWritten.size() > 2000) {
@@ -295,6 +303,21 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		
 	}
 
+	private void addHighlightToBeApplied(int tabIdx, Highlight highlight) {
+		//tabLineCount holds the 1-based row just positioned, GridRange wants 0-based and end exclusive
+		int row = tabLineCount.get(tabIdx);
+		highlightsToBeApplied.add(new Request()
+				.setRepeatCell(new RepeatCellRequest()
+						.setRange(new GridRange()
+								.setSheetId(tabIdx)
+								.setStartRowIndex(row - 1)
+								.setEndRowIndex(row))
+						.setCell(new CellData()
+								.setUserEnteredFormat(new CellFormat()
+										.setBackgroundColor(highlight.toColor())))
+						.setFields("userEnteredFormat.backgroundColor")));
+	}
+
 	public void flushWithWait() throws TermServerScriptException {
 		flush(false, true);  //Not optional, also wait
 	}
@@ -339,6 +362,11 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			try {
 				LOGGER.info("{} flushing to sheets", new Date());
 				googleClient.writeToSheet(sheet, body);
+				if (!highlightsToBeApplied.isEmpty()) {
+					googleClient.executeRequests(sheet, highlightsToBeApplied, true);
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			} catch (IOException e) {
 				//Output some sample of the data so get an idea of where it's coming from.
 				int dataCutPoint = Math.min(dataToBeWritten.size(), 1000);
@@ -347,6 +375,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			} finally {
 				lastWriteTime = new Date();
 				dataToBeWritten.clear();
+				highlightsToBeApplied.clear();
 			}
 		}
 	}

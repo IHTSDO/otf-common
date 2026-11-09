@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.Environment;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.script.dao.DataBroker;
+import org.snomed.otf.script.dao.Highlight;
 import org.snomed.otf.script.dao.RF2Manager;
 import org.snomed.otf.script.dao.ReportConfiguration;
 import org.snomed.otf.script.dao.ReportManager;
@@ -123,8 +124,12 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	protected void reportSafely (int reportIdx, Object... details) {
+		reportSafely(reportIdx, (Highlight) null, details);
+	}
+
+	protected void reportSafely (int reportIdx, Highlight highlight, Object... details) {
 		try {
-			report (reportIdx, details);
+			report (reportIdx, highlight, details);
 		} catch (TermServerScriptException e) {
 			throw new IllegalStateException("Failed to write to report", e);
 		}
@@ -214,7 +219,11 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	public boolean report (int reportIdx, Object...details) throws TermServerScriptException {
-		boolean writeSuccess = writeToReportFile(reportIdx, writeToString(details));
+		return report(reportIdx, (Highlight) null, details);
+	}
+
+	public boolean report (int reportIdx, Highlight highlight, Object...details) throws TermServerScriptException {
+		boolean writeSuccess = writeToReportFile(reportIdx, writeToString(details), highlight);
 		if (writeSuccess) {
 			incrementSummaryInformation("Report lines written");
 		}
@@ -222,6 +231,10 @@ public abstract class Script implements RF2Constants {
 	}
 	
 	protected boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		return writeToReportFile(reportIdx, line, null);
+	}
+
+	protected boolean writeToReportFile(int reportIdx, String line, Highlight highlight) throws TermServerScriptException {
 		if (getReportManager() == null) {
 			throw new TermServerScriptException("Attempted to write to report before Report Manager is available. Check postInit() has been called.\n Message was " + line);
 		}
@@ -230,7 +243,7 @@ public abstract class Script implements RF2Constants {
 			LOGGER.debug("Tab NOT_SET to report: {}", line);
 			return false;
 		}
-		return getReportManager().writeToReportFile(reportIdx, line);
+		return getReportManager().writeToReportFile(reportIdx, line, highlight);
 	}
 	
 	protected boolean writeToReportFile(String line) throws TermServerScriptException {
