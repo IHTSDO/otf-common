@@ -2,6 +2,7 @@ package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.ScriptException;
@@ -207,10 +208,9 @@ public abstract class Component implements RF2Constants {
 			differences.add("Id different in " + name + ": " + this.getId() + " vs " + other.getId());
 		}
 		
+		//An unpublished component may hold either null or an empty string, depending on how it was loaded
 		if (!ignoreEffectiveTime
-			&& ((this.getEffectiveTime() == null && other.getEffectiveTime() != null)
-			|| 	(this.getEffectiveTime() != null && other.getEffectiveTime() == null)
-			||	!this.getEffectiveTime().equals(other.getEffectiveTime()))) {
+			&& !Objects.equals(emptyIfNull(this.getEffectiveTime()), emptyIfNull(other.getEffectiveTime()))) {
 			differences.add("EffectiveTime different in " + name + ": " + this.getEffectiveTime() + " vs " + other.getEffectiveTime());
 		}
 		
@@ -221,6 +221,10 @@ public abstract class Component implements RF2Constants {
 		if (!this.getModuleId().equals(other.getModuleId())) {
 			differences.add("ModuleId different in " + name + ": " + this.getModuleId() + " vs " + other.getModuleId());
 		}
+	}
+
+	private static String emptyIfNull(String str) {
+		return str == null ? "" : str;
 	}
 
 	public void setDirty() {

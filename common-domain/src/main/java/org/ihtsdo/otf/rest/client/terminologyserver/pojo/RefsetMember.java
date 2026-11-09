@@ -148,10 +148,31 @@ public class RefsetMember extends Component implements RF2Constants {
 	}
 
 	@Override
-	public List<String>
-	fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
-		//TODO Add generic field comparison based off field names
-		throw new NotImplementedException();
+	public List<String> fieldComparison(Component other, boolean ignoreEffectiveTime) throws TermServerScriptException {
+		if (!(other instanceof RefsetMember otherRM)) {
+			throw new IllegalArgumentException("Unable to compare refset member to " + other);
+		}
+		List<String> differences = new ArrayList<>();
+		commonFieldComparison(otherRM, differences, ignoreEffectiveTime);
+		String name = this.getClass().getSimpleName();
+
+		if (!Objects.equals(refsetId, otherRM.getRefsetId())) {
+			differences.add("RefsetId different in " + name + ": " + refsetId + " vs " + otherRM.getRefsetId());
+		}
+
+		if (!Objects.equals(referencedComponentId, otherRM.getReferencedComponentId())) {
+			differences.add("ReferencedComponentId different in " + name + ": " + referencedComponentId + " vs " + otherRM.getReferencedComponentId());
+		}
+
+		//Either side may hold a field the other lacks
+		Set<String> fieldNames = new LinkedHashSet<>(additionalFields.keySet());
+		fieldNames.addAll(otherRM.getAdditionalFields().keySet());
+		for (String fieldName : fieldNames) {
+			if (!Objects.equals(getField(fieldName), otherRM.getField(fieldName))) {
+				differences.add(fieldName + " different in " + name + ": " + getField(fieldName) + " vs " + otherRM.getField(fieldName));
+			}
+		}
+		return differences;
 	}
 	
 	public void delete (String deletionEffectiveTime) {
