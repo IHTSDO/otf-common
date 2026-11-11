@@ -223,6 +223,10 @@ public abstract class Script implements RF2Constants {
 	}
 
 	public boolean report (int reportIdx, Highlight highlight, Object...details) throws TermServerScriptException {
+		//Rows reported with a severity are highlighted to match, unless the caller chose a highlight
+		if (highlight == null) {
+			highlight = Highlight.forDetails(details);
+		}
 		boolean writeSuccess = writeToReportFile(reportIdx, writeToString(details), highlight);
 		if (writeSuccess) {
 			incrementSummaryInformation("Report lines written");

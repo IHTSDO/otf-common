@@ -34,6 +34,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private Date lastWriteTime;
 	private final List<ValueRange> dataToBeWritten = new ArrayList<>();
 	private final List<Request> highlightsToBeApplied = new ArrayList<>();
+	private Highlight lastHighlight;
 	private final SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	private Map<Integer, Integer> tabLineCount;
 	private final Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
@@ -306,6 +307,15 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private void addHighlightToBeApplied(int tabIdx, Highlight highlight) {
 		//tabLineCount holds the 1-based row just positioned, GridRange wants 0-based and end exclusive
 		int row = tabLineCount.get(tabIdx);
+		//Extend the previous highlight where this row follows on from it in the same colour
+		if (highlight == lastHighlight && !highlightsToBeApplied.isEmpty()) {
+			GridRange previous = highlightsToBeApplied.get(highlightsToBeApplied.size() - 1).getRepeatCell().getRange();
+			if (previous.getSheetId() == tabIdx && previous.getEndRowIndex() == row - 1) {
+				previous.setEndRowIndex(row);
+				return;
+			}
+		}
+		lastHighlight = highlight;
 		highlightsToBeApplied.add(new Request()
 				.setRepeatCell(new RepeatCellRequest()
 						.setRange(new GridRange()
