@@ -25,6 +25,10 @@ public class SnowstormRestUrlHelper {
 		return snowstormUrl + BRANCHES + branchPath;
 	}
 
+	public URI getBranchMetadataUpsertUri(String branchPath) {
+		return getUri(snowstormUrl + BRANCHES + branchPath + "/metadata-upsert");
+	}
+
 	public URI getBranchUri(String branchPath) {
 		return getUri(snowstormUrl + BRANCHES + branchPath);
 	}
@@ -229,4 +233,5 @@ public class SnowstormRestUrlHelper {
 	public URI getRefsetMembersUrl(String branchPath) {
 		return getUri(snowstormUrl + "/" + branchPath + MEMBERS);
 	}
+
 }

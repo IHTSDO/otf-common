@@ -638,6 +638,15 @@ public class SnowstormRestClient {
 		createBranch(PathHelper.getParentPath(branchPath), PathHelper.getName(branchPath));
 	}
 
+	public void upsertBranchMetadata(String branchPath, Map<String, Object> metadata) throws RestClientException {
+		try {
+			HttpEntity<Map<String, Object>> request = new HttpEntity<>(metadata);
+			restTemplate.put(urlHelper.getBranchMetadataUpsertUri(branchPath), request);
+		} catch (Exception e) {
+			throw new RestClientException("Failed to upsert branch metadata for " + branchPath, e);
+		}
+	}
+
 	private void createBranch(String parentBranch, String newBranchName) throws RestClientException {
 		try {
 			Map<String, String> body = new HashMap<>();
