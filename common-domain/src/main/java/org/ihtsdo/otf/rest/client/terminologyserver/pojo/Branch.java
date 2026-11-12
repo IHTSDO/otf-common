@@ -1,7 +1,7 @@
 package org.ihtsdo.otf.rest.client.terminologyserver.pojo;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Branch {
 
@@ -72,6 +72,30 @@ public class Branch {
 
 	public void setMetadata(Map<String, Object> metadata) {
 		this.metadata = metadata;
+	}
+
+	public List<String> getMetadataAsList(String key) {
+		if (key == null || key.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		if (metadata == null || metadata.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		Object value = metadata.get(key);
+		if (value == null) {
+			return new ArrayList<>();
+		}
+
+		if (value instanceof List<?> list) {
+			return list.stream()
+					.filter(String.class::isInstance)
+					.map(String.class::cast)
+					.collect(Collectors.toCollection(ArrayList::new));
+		}
+
+		return new ArrayList<>();
 	}
 
 	public Set <String> getUserRoles() {
