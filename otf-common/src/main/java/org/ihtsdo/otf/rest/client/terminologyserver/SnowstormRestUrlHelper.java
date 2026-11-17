@@ -29,6 +29,10 @@ public class SnowstormRestUrlHelper {
 		return getUri(snowstormUrl + BRANCHES + branchPath + "/metadata-upsert");
 	}
 
+	public URI getBranchLabelledEventUri(String branchPath) {
+		return getUri(snowstormUrl + BRANCHES + branchPath + "/actions/labelled-event");
+	}
+
 	public URI getBranchUri(String branchPath) {
 		return getUri(snowstormUrl + BRANCHES + branchPath);
 	}

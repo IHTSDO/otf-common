@@ -638,6 +638,17 @@ public class SnowstormRestClient {
 		createBranch(PathHelper.getParentPath(branchPath), PathHelper.getName(branchPath));
 	}
 
+	public void fireBranchLabelledEvent(String branchPath, String eventType) throws RestClientException {
+		try {
+			Map<String, String> body = new HashMap<>();
+			body.put("event", eventType);
+			HttpEntity<Map<String, String>> request = new HttpEntity<>(body);
+			restTemplate.postForObject(urlHelper.getBranchLabelledEventUri(branchPath), request, Void.class);
+		} catch (Exception e) {
+			throw new RestClientException("Failed to fire labelled event " + eventType + " for branch " + branchPath, e);
+		}
+	}
+
 	public void upsertBranchMetadata(String branchPath, Map<String, Object> metadata) throws RestClientException {
 		try {
 			HttpEntity<Map<String, Object>> request = new HttpEntity<>(metadata);
