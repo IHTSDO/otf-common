@@ -129,6 +129,41 @@ xx.cloud.bucketName=my-build-bucket
 xx.cloud.path=store/builds
 ```
 
+### 4.5  Release Package and File Naming Conventions
+
+`org.ihtsdo.otf.naming.NamingConventions` (common-utils) is the single place to parse and validate SNOMED CT release
+package names and RF2 file names. It replaces the per-service regexes in SRS, RVF, Snowstorm and Package-Manager.
+
+Two conventions are supported, selected **per code system** with its legacy naming flag. International moves to the
+new convention first and extensions follow over time.
+
+| Convention | Package example | File example |
+|---|---|---|
+| `LEGACY` | `SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip`, `SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20250521T120000Z.zip` | `der2_cRefset_AssociationReferenceSnapshot_US1000124_20250301.txt` |
+| `CURRENT` | `SnomedCT_International_PRODUCTION_20270701T120000Z.zip`, `SnomedCT_IEExtension-11000220105_PRODUCTION_20271021T120000Z.zip` | `der2_cRefset_AssociationSnapshot_INTEdition_20270701.txt` |
+
+```java
+Optional<PackageName> pkg = namingConventions.parsePackageName(name, codeSystem.isLegacyNaming());
+List<String> errors       = namingConventions.validateFileName(fileName, codeSystem.isLegacyNaming());
+Optional<NamingConvention> c = namingConventions.detectPackageConvention(previousPublishedPackage);
+String subType = NamingConventions.convertContentSubTypeSummary("AssociationReference", NamingConvention.CURRENT); // "Association"
+```
+
+In Spring services, add `@Import(NamingConventionConfiguration.class)` (otf-common) to get a `NamingConventions` bean.
+Patterns default to the built-in ones and can be overridden from the **shared** Consul section `config/application/`,
+so every service uses the same values:
+
+```properties
+naming-convention.legacy.package-pattern=...
+naming-convention.legacy.file-pattern=...
+naming-convention.current.package-pattern=...
+naming-convention.current.file-pattern=...
+```
+
+Overridden patterns must keep the required named groups. Packages need `product`, `releaseStatus`, `releaseDate` and
+`releaseTime`. Files need `fileType`, `contentType`, `contentSubType`, `countryNamespace` and `versionDate`. Every
+pattern is compiled and checked when the bean is created, so a bad override fails application startup.
+
 ---
 
 ## 5  Storage & Messaging Details
