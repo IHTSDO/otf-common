@@ -86,7 +86,7 @@ class ModuleMetadataTest {
     }
 
     private void assertExpectedFieldName(String fieldName) {
-        List<String> expected = List.of("filename", "codeSystemShortName", "identifyingModuleId", "compositionModuleIds", "effectiveTime", "fileTimeStamp", "fileMD5", "published", "edition", "dependencies");
+        List<String> expected = List.of("filename", "codeSystemShortName", "identifyingModuleId", "compositionModuleIds", "effectiveTime", "fileTimeStamp", "fileMD5", "published", "edition", "dependencies", "channels");
         boolean contains = expected.contains(fieldName);
         if (!contains) {
             fail(fieldName + " is not recognised.");

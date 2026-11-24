@@ -1,7 +1,5 @@
 package org.ihtsdo.otf.resourcemanager;
 
-import org.apache.commons.io.IOCase;
-import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration.Cloud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +7,6 @@ import org.snomed.otf.script.utils.FileUtils;
 import org.springframework.core.io.*;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ResourceUtils;
 import org.springframework.util.StreamUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
@@ -122,6 +119,10 @@ public class ResourceManager {
 	public InputStream readResourceStream(final String resourcePath) throws IOException {
 		final String fullPath = getFullPath(resourcePath);
 		try {
+			if (!resourceConfiguration.isUseCloud() && !fullPath.startsWith("classpath:")) {
+				return new FileInputStream(fullPath);
+			}
+
 			return resourceLoader.getResource(fullPath).getInputStream();
 		} catch (FileNotFoundException e) {
 			//We'll just allow a file not found exception to bubble up.  Anything else we'll annotate further.
@@ -223,13 +224,15 @@ public class ResourceManager {
 						.filter(Objects::nonNull)
 						.collect(Collectors.toSet()));
 			} else {
-				File[] files;
-				if (prefix == null) {
-					files = ResourceUtils.getFile(localPath).listFiles();
-				} else {
-					files = ResourceUtils.getFile(localPath).listFiles((FileFilter) new PrefixFileFilter(prefix, IOCase.INSENSITIVE));
+				java.nio.file.Path base = new File(resourceConfiguration.getLocal().getRawPath()).toPath();
+				if (base.toFile().exists()) {
+					try (java.util.stream.Stream<java.nio.file.Path> stream = Files.walk(base)) {
+						stream.filter(Files::isRegularFile)
+								.map(p -> base.relativize(p).toString().replace(File.separatorChar, '/'))
+								.filter(p -> prefix == null || p.startsWith(prefix))
+								.forEach(fileNames::add);
+					}
 				}
-				Arrays.stream(files).forEach(file -> fileNames.add(file.getName()));
 			}
 		}
 		LOGGER.debug("Found {}", fileNames.size());
@@ -277,6 +280,9 @@ public class ResourceManager {
 			// for those. Everything else uses the cheap HEAD-equivalent check rather than listing the bucket.
 			if (resourcePath.endsWith("/")) {
 				return listFilenames().contains(resourcePath);
+			}
+			if (!resourceConfiguration.isUseCloud()) {
+				return new File(getFullPath(resourcePath)).exists();
 			}
 			return resourceLoader.getResource(getFullPath(resourcePath)).exists();
 		} catch (IOException | S3Exception e) {
@@ -569,7 +575,7 @@ public class ResourceManager {
 	private String getFullPath(final String relativePath) {
 		return resourceConfiguration.isUseCloud() ?
 				getCloudPath(relativePath) :
-				getPathAndRelative(resourceConfiguration.getLocal().getPath(), relativePath);
+				getPathAndRelative(resourceConfiguration.getLocal().getRawPath(), relativePath);
 	}
 
 	/**

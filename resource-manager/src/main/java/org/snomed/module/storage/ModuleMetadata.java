@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.*;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ModuleMetadata {
@@ -23,6 +24,7 @@ public class ModuleMetadata {
 	private Boolean published;
 	private Boolean edition;
 	private List<ModuleMetadata> dependencies;
+	private List<Channel> channels;
 
 	@JsonIgnore
 	private transient File file;
@@ -143,6 +145,30 @@ public class ModuleMetadata {
 		this.dependencies = dependencies;
 	}
 
+	public List<Channel> getChannels() {
+		return channels;
+	}
+
+	public void setChannels(List<Channel> channels) {
+		this.channels = channels;
+	}
+
+	public boolean hasChannel(String channelName) {
+		return getChannel(channelName).isPresent();
+	}
+
+	public Channel getChannelNullable(String channelName) {
+		return getChannel(channelName).orElse(null);
+	}
+
+	public Optional<Channel> getChannel(String channelName) {
+		if (channelName == null || channels == null || channels.isEmpty()) {
+			return Optional.empty();
+		}
+
+		return channels.stream().filter(c -> channelName.equalsIgnoreCase(c.getChannel())).findFirst();
+	}
+
 	public File getFile() {
 		return file;
 	}
@@ -161,12 +187,12 @@ public class ModuleMetadata {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		ModuleMetadata that = (ModuleMetadata) o;
-		return Objects.equals(filename, that.filename) && Objects.equals(codeSystemShortName, that.codeSystemShortName) && Objects.equals(identifyingModuleId, that.identifyingModuleId) && Objects.equals(compositionModuleIds, that.compositionModuleIds) && Objects.equals(effectiveTime, that.effectiveTime) && Objects.equals(fileTimeStamp, that.fileTimeStamp) && Objects.equals(fileMD5, that.fileMD5) && Objects.equals(published, that.published) && Objects.equals(edition, that.edition) && Objects.equals(dependencies, that.dependencies);
+		return Objects.equals(filename, that.filename) && Objects.equals(codeSystemShortName, that.codeSystemShortName) && Objects.equals(identifyingModuleId, that.identifyingModuleId) && Objects.equals(compositionModuleIds, that.compositionModuleIds) && Objects.equals(effectiveTime, that.effectiveTime) && Objects.equals(fileTimeStamp, that.fileTimeStamp) && Objects.equals(fileMD5, that.fileMD5) && Objects.equals(published, that.published) && Objects.equals(edition, that.edition) && Objects.equals(dependencies, that.dependencies) && Objects.equals(channels, that.channels);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, published, edition, dependencies);
+		return Objects.hash(filename, codeSystemShortName, identifyingModuleId, compositionModuleIds, effectiveTime, fileTimeStamp, fileMD5, published, edition, dependencies, channels);
 	}
 
 	@Override

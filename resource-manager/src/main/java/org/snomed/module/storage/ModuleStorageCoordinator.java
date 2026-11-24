@@ -491,6 +491,7 @@ public class ModuleStorageCoordinator {
         try {
             if (remoteStorageManager.doesObjectExist(metadataPath)) {
                 ModuleMetadata obtainedMetadata = FileUtils.convertToObject(remoteStorageManager.readResourceStream(metadataPath), ModuleMetadata.class);
+                filterChannelsForEnvironment(obtainedMetadata);
                 //verifyUriMatches(requestedMetadata, obtainedMetadata);
                 String rf2ArchiveResourcePath = baseResourcePath + SLASH + obtainedMetadata.getFilename();
                 if (remoteStorageManager.doesObjectExist(rf2ArchiveResourcePath)) {
@@ -517,7 +518,9 @@ public class ModuleStorageCoordinator {
     private ModuleMetadata quickReadMetadata(String baseResourcePath) {
         String metadataPath = getMetadataResourcePath(baseResourcePath);
         try {
-            return FileUtils.convertToObject(remoteStorageManager.readResourceStream(metadataPath), ModuleMetadata.class);
+            ModuleMetadata metadata = FileUtils.convertToObject(remoteStorageManager.readResourceStream(metadataPath), ModuleMetadata.class);
+            filterChannelsForEnvironment(metadata);
+            return metadata;
         } catch (Exception e) {
             return null;
         }
@@ -1841,5 +1844,12 @@ public class ModuleStorageCoordinator {
         throw new ModuleStorageCoordinatorException.ResourceNotFoundException("Cannot find metadata for archive file: " + packageName);
     }
 
+    private void filterChannelsForEnvironment(ModuleMetadata metadata) {
+        if (metadata == null || metadata.getChannels() == null) {
+            return;
+        }
 
+        // Set environment specific channels
+        metadata.setChannels(metadata.getChannels().stream().filter(ch -> ch.isAvailableForEnvironment(writeDirectory)).toList());
+    }
 }
