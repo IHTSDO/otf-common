@@ -33,6 +33,7 @@ public class NamingConventions {
 	static final String CURRENT_ASSOCIATION = "Association";
 	static final String LEGACY_SIMPLE = "SimpleRefset";
 	static final String CURRENT_SIMPLE = "Simple";
+	private static final String REFSET = "Refset";
 	private static final Pattern FORMAT_SUFFIX = Pattern.compile("RF[12]$");
 
 	private final Map<NamingConvention, Pattern> packagePatterns = new EnumMap<>(NamingConvention.class);
@@ -179,7 +180,7 @@ public class NamingConventions {
 				group(m, "releaseType"),
 				group(m, "languageCode"),
 				m.group("countryNamespace"),
-				PackageType.fromTag(group(m, "packageType")).orElse(null),
+				PackageType.fromTag(contentTypeTag(m) != null ? contentTypeTag(m) : contentSubTypeTag(m)).orElse(null),
 				m.group("versionDate"),
 				group(m, "extension")));
 	}
@@ -208,8 +209,30 @@ public class NamingConventions {
 				errors.add(String.format("File name '%s': use '%s' instead of '%s' in the %s naming convention",
 						fileName, CURRENT_SIMPLE, LEGACY_SIMPLE, convention));
 			}
+			errors.addAll(validatePackageTypeTagPlace(fileName, parsed.get(), convention));
 		}
 		return errors;
+	}
+
+	/**
+	 * Core component files carry the package type tag after the content type ({@code sct2_ConceptEdition_Full_...});
+	 * refset files carry it before the release type ({@code der2_cRefset_LanguageEditionSnapshot-en_...}).
+	 */
+	private List<String> validatePackageTypeTagPlace(String fileName, ReleaseFileName parsed, NamingConvention convention) {
+		Matcher m = filePatterns.get(convention).matcher(parsed.name());
+		if (!m.matches()) {
+			return List.of();
+		}
+		boolean refset = parsed.contentType().endsWith(REFSET);
+		if (refset && contentTypeTag(m) != null) {
+			return List.of(String.format("File name '%s': in refset files the package type tag goes before the release type, e.g. %s, not after the content type",
+					fileName, "der2_cRefset_LanguageEditionSnapshot-en_INT_20270701.txt"));
+		}
+		if (!refset && contentSubTypeTag(m) != null) {
+			return List.of(String.format("File name '%s': in core component files the package type tag goes directly after the content type, e.g. %s",
+					fileName, "sct2_ConceptEdition_Snapshot_INT_20270701.txt"));
+		}
+		return List.of();
 	}
 
 	public boolean isValidFileName(String fileName, boolean legacyNaming) {
@@ -287,6 +310,14 @@ public class NamingConventions {
 			return Optional.empty();
 		}
 		return Optional.of(pattern);
+	}
+
+	private static String contentTypeTag(Matcher m) {
+		return group(m, "packageType");
+	}
+
+	private static String contentSubTypeTag(Matcher m) {
+		return group(m, "subTypePackageType");
 	}
 
 	private static String group(Matcher m, String name) {

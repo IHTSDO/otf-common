@@ -56,10 +56,22 @@ class NamingConventionsTest {
 			LEGACY  | false | sct2_Concept_INT_20250101.txt                                             | no release type
 			LEGACY  | false | doc_Readme_INT_20250101.txt                                               | not an RF2 data file
 			CURRENT | true  | sct2_Concept_Snapshot_INT_20270701.txt                                    | no tag
-			CURRENT | true  | sct2_Concept_Snapshot_INTEdition_20270701.txt                             | Edition tag after country/namespace
-			CURRENT | true  | der2_cRefset_LanguageSnapshot-en_US1000124Extension_20270901.txt          | Extension tag
+			CURRENT | true  | sct2_ConceptEdition_Full_INT_20270701.txt                                 | Edition tag after content type
+			CURRENT | true  | sct2_DescriptionEdition_Full-en_INT_20270701.txt                          | Edition tag with language code
+			CURRENT | true  | sct2_StatedRelationshipEdition_Full_INT_20270701.txt                      | stated relationships
+			CURRENT | true  | sct2_RelationshipEdition_Full_INT_20270701.txt                            | inferred relationships
+			CURRENT | true  | sct2_RelationshipConcreteValuesEdition_Full_INT_20270701.txt              | concrete relationships
+			CURRENT | true  | xsct2_ConceptEdition_Delta_INT_20270701.txt                               | beta prefix with tag
+			CURRENT | true  | der2_cRefset_DICOMLanguageEditionSnapshot-en_INT_20240701.txt             | refset tag before the release type
+			CURRENT | true  | der2_cRefset_LanguageExtensionSnapshot-en_US1000124_20270901.txt          | refset Extension tag
+			CURRENT | true  | sct2_sRefset_OWLExpressionEditionSnapshot_INT_20270701.txt                | OWL refset tag
 			CURRENT | true  | der2_cRefset_AssociationSnapshot_INT_20270701.txt                         | renamed association refset
-			CURRENT | true  | der2_Refset_SimpleFull_IE1000220Derivative_20271021.txt                   | renamed simple refset with Derivative tag
+			CURRENT | true  | der2_Refset_SimpleDerivativeFull_IE1000220_20271021.txt                   | renamed simple refset with Derivative tag
+			CURRENT | false | der2_cRefsetEdition_LanguageSnapshot-en_INT_20270701.txt                  | refset tag after the content type
+			CURRENT | false | sct2_Concept_EditionSnapshot_INT_20270701.txt                             | core component tag before the release type
+			CURRENT | false | sct2_Concept_Edition_Full_INT_20270701.txt                                | tag as its own element
+			CURRENT | false | Edition_sct2_Concept_Full_INT_20270701.txt                                | tag before the file type
+			CURRENT | false | der2_cRefset_AssociationReferenceEditionSnapshot_INT_20270701.txt         | AssociationReference renamed, with tag
 			CURRENT | true  | der2_ccRefset_ExtendedAssociationSnapshot_INT_20270701.txt                | other association-named refset unaffected
 			CURRENT | false | der2_cRefset_AssociationReferenceSnapshot_INT_20270701.txt                | AssociationReference renamed
 			CURRENT | false | der2_Refset_SimpleRefsetDelta_INT_20270701.txt                            | SimpleRefset renamed
@@ -153,15 +165,37 @@ class NamingConventionsTest {
 		assertEquals("20250101", legacy.versionDate());
 		assertEquals(".txt", legacy.extension());
 
-		ReleaseFileName current = conventions.parseFileName("sct2_Concept_Snapshot_INTEdition_20270701.txt", false).orElseThrow();
+		ReleaseFileName current = conventions.parseFileName("sct2_ConceptEdition_Snapshot_INT_20270701.txt", false).orElseThrow();
+		assertEquals("Concept", current.contentType());
 		assertEquals("", current.summary());
 		assertEquals("INT", current.countryNamespace());
 		assertEquals(PackageType.EDITION, current.packageType());
 
-		ReleaseFileName extension = conventions.parseFileName("der2_cRefset_LanguageSnapshot-en_US1000124Extension_20270901.txt", false).orElseThrow();
+		ReleaseFileName untagged = conventions.parseFileName("sct2_RelationshipConcreteValues_Snapshot_INT_20270701.txt", false).orElseThrow();
+		assertEquals("RelationshipConcreteValues", untagged.contentType());
+		assertNull(untagged.packageType());
+
+		ReleaseFileName refset = conventions.parseFileName("der2_cRefset_DICOMLanguageEditionSnapshot-en_INT_20240701.txt", false).orElseThrow();
+		assertEquals("cRefset", refset.contentType());
+		assertEquals("DICOMLanguageEditionSnapshot-en", refset.contentSubType());
+		assertEquals("DICOMLanguage", refset.summary());
+		assertEquals("Snapshot", refset.releaseType());
+		assertEquals("en", refset.languageCode());
+		assertEquals("INT", refset.countryNamespace());
+		assertEquals(PackageType.EDITION, refset.packageType());
+
+		ReleaseFileName extension = conventions.parseFileName("der2_cRefset_LanguageExtensionSnapshot-en_US1000124_20270901.txt", false).orElseThrow();
+		assertEquals("Language", extension.summary());
 		assertEquals("US1000124", extension.countryNamespace());
 		assertEquals(PackageType.EXTENSION, extension.packageType());
-		assertEquals("en", extension.languageCode());
+	}
+
+	@Test
+	void packageTypeTagPlaceErrorsExplainTheRule() {
+		assertTrue(conventions.validateFileName("der2_cRefsetEdition_LanguageSnapshot-en_INT_20270701.txt", false)
+				.getFirst().contains("refset files"));
+		assertTrue(conventions.validateFileName("sct2_Concept_EditionSnapshot_INT_20270701.txt", false)
+				.getFirst().contains("core component files"));
 	}
 
 	@Test

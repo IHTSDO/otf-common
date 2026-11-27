@@ -140,7 +140,7 @@ new convention first and extensions follow over time.
 | Convention | Package example | File example |
 |---|---|---|
 | `LEGACY` | `SnomedCT_InternationalRF2_PRODUCTION_20250101T120000Z.zip`, `SnomedCT_ManagedServiceIE_PRODUCTION_IE1000220_20250521T120000Z.zip` | `der2_cRefset_AssociationReferenceSnapshot_US1000124_20250301.txt` |
-| `CURRENT` | `SnomedCT_International_PRODUCTION_20270701T120000Z.zip`, `SnomedCT_IEExtension-11000220105_PRODUCTION_20271021T120000Z.zip` | `der2_cRefset_AssociationSnapshot_INTEdition_20270701.txt` |
+| `CURRENT` | `SnomedCT_International_PRODUCTION_20270701T120000Z.zip`, `SnomedCT_IEExtension-11000220105_PRODUCTION_20271021T120000Z.zip` | `sct2_ConceptEdition_Full_INT_20270701.txt`, `der2_cRefset_AssociationEditionSnapshot_INT_20270701.txt` |
 
 ```java
 Optional<PackageName> pkg = namingConventions.parsePackageName(name, codeSystem.isLegacyNaming());
