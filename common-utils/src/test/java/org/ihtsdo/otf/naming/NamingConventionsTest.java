@@ -150,7 +150,7 @@ class NamingConventionsTest {
 	}
 
 	@Test
-	void parseFileNames() {
+	void parseLegacyFileName() {
 		ReleaseFileName legacy = conventions.parseFileName("SnomedCT_X/Delta/Refset/Language/xder2_cRefset_LanguageDelta-en-GB_GB1000000_20250101.txt", true).orElseThrow();
 		assertEquals("xder2_cRefset_LanguageDelta-en-GB_GB1000000_20250101.txt", legacy.name());
 		assertTrue(legacy.beta());
@@ -164,7 +164,10 @@ class NamingConventionsTest {
 		assertNull(legacy.packageType());
 		assertEquals("20250101", legacy.versionDate());
 		assertEquals(".txt", legacy.extension());
+	}
 
+	@Test
+	void parseCurrentCoreComponentFileName() {
 		ReleaseFileName current = conventions.parseFileName("sct2_ConceptEdition_Snapshot_INT_20270701.txt", false).orElseThrow();
 		assertEquals("Concept", current.contentType());
 		assertEquals("", current.summary());
@@ -174,7 +177,10 @@ class NamingConventionsTest {
 		ReleaseFileName untagged = conventions.parseFileName("sct2_RelationshipConcreteValues_Snapshot_INT_20270701.txt", false).orElseThrow();
 		assertEquals("RelationshipConcreteValues", untagged.contentType());
 		assertNull(untagged.packageType());
+	}
 
+	@Test
+	void parseCurrentRefsetFileName() {
 		ReleaseFileName refset = conventions.parseFileName("der2_cRefset_DICOMLanguageEditionSnapshot-en_INT_20240701.txt", false).orElseThrow();
 		assertEquals("cRefset", refset.contentType());
 		assertEquals("DICOMLanguageEditionSnapshot-en", refset.contentSubType());
